@@ -82,26 +82,24 @@ const bookingSchema = new mongoose.Schema(
 );
 
 /* ── Pre-validate: seeker ≠ owner ────────────────────────── */
-bookingSchema.pre('validate', function (next) {
+bookingSchema.pre('validate', function () {
   if (
     this.seeker &&
     this.owner &&
     this.seeker.toString() === this.owner.toString()
   ) {
-    return next(new Error('Seeker and owner cannot be the same user'));
+    throw new Error('Seeker and owner cannot be the same user');
   }
-  next();
 });
 
 /* ── Pre-save: auto-set timestamp fields on status change ── */
-bookingSchema.pre('save', function (next) {
+bookingSchema.pre('save', function () {
   if (this.isModified('status')) {
     const now = new Date();
     if (this.status === 'accepted'  && !this.acceptedAt)  this.acceptedAt  = now;
     if (this.status === 'rejected'  && !this.rejectedAt)  this.rejectedAt  = now;
     if (this.status === 'cancelled' && !this.cancelledAt) this.cancelledAt = now;
   }
-  next();
 });
 
 /* ── Pre-findOneAndUpdate: auto-set timestamps on status change ─
@@ -110,7 +108,7 @@ bookingSchema.pre('save', function (next) {
    pre('save') hook was never firing for status changes via the API.
    Fix: add a pre('findOneAndUpdate') hook that reads the update payload
    and sets the timestamp fields when status changes. */
-bookingSchema.pre('findOneAndUpdate', function (next) {
+bookingSchema.pre('findOneAndUpdate', function () {
   const update = this.getUpdate();
   const status = update?.status || update?.$set?.status;
 
@@ -120,7 +118,6 @@ bookingSchema.pre('findOneAndUpdate', function (next) {
     if (status === 'rejected')  this.set({ rejectedAt:  now });
     if (status === 'cancelled') this.set({ cancelledAt: now });
   }
-  next();
 });
 
 /* ── Indexes ──────────────────────────────────────────────── */

@@ -76,25 +76,23 @@ const messageSchema = new mongoose.Schema(
 /* Deterministic ID: sort the two participant IDs alphabetically and join
    with '_'. This guarantees the same two users always get the same ID
    regardless of who sends first. */
-messageSchema.pre('save', function (next) {
+messageSchema.pre('save', function () {
   if (!this.conversationId) {
     if (!this.sender || !this.receiver) {
-      return next(new Error('Cannot generate conversationId: sender or receiver is missing'));
+      throw new Error('Cannot generate conversationId: sender or receiver is missing');
     }
     const ids = [this.sender.toString(), this.receiver.toString()].sort();
     this.conversationId = ids.join('_');
   }
-  next();
 });
 
 /* ── Pre-save: auto-set readAt when isRead changes ──────────
    BUG FIX: readAt was never populated. If someone marks a message as read
    without explicitly setting readAt, we should auto-populate it.          */
-messageSchema.pre('save', function (next) {
+messageSchema.pre('save', function () {
   if (this.isModified('isRead') && this.isRead && !this.readAt) {
     this.readAt = new Date();
   }
-  next();
 });
 
 /* ── Indexes ──────────────────────────────────────────────── */

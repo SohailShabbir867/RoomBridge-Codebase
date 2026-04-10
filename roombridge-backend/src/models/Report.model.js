@@ -70,15 +70,15 @@ const reportSchema = new mongoose.Schema(
 );
 
 /* ── Pre-validate: enforce single target + no self-reporting ── */
-reportSchema.pre('validate', function (next) {
+reportSchema.pre('validate', function () {
   /* Must target at least one entity */
   if (!this.reportedUser && !this.reportedListing) {
-    return next(new Error('A report must target either a user or a listing'));
+    throw new Error('A report must target either a user or a listing');
   }
 
   /* Cannot target both simultaneously */
   if (this.reportedUser && this.reportedListing) {
-    return next(new Error('A report cannot target both a user and a listing simultaneously'));
+    throw new Error('A report cannot target both a user and a listing simultaneously');
   }
 
   /* Reporter cannot self-report */
@@ -87,14 +87,12 @@ reportSchema.pre('validate', function (next) {
     this.reporter &&
     this.reporter.toString() === this.reportedUser.toString()
   ) {
-    return next(new Error('You cannot report yourself'));
+    throw new Error('You cannot report yourself');
   }
-
-  next();
 });
 
 /* ── Pre-save: auto-set resolvedAt on status change ────────── */
-reportSchema.pre('save', function (next) {
+reportSchema.pre('save', function () {
   if (
     this.isModified('status') &&
     ['resolved', 'dismissed'].includes(this.status) &&
@@ -102,7 +100,6 @@ reportSchema.pre('save', function (next) {
   ) {
     this.resolvedAt = new Date();
   }
-  next();
 });
 
 /* ── Pre-findOneAndUpdate: auto-set resolvedAt ──────────────
@@ -110,7 +107,7 @@ reportSchema.pre('save', function (next) {
    The admin controller uses findByIdAndUpdate to update report status.
    Without this hook, resolvedAt was never set when resolving reports via the API.
    Fix: mirror the pre('save') logic in a findOneAndUpdate middleware. */
-reportSchema.pre('findOneAndUpdate', function (next) {
+reportSchema.pre('findOneAndUpdate', function () {
   const update = this.getUpdate();
   /* Support both direct { status: '...' } and $set: { status: '...' } patterns */
   const status = update?.status || update?.$set?.status;
@@ -125,7 +122,6 @@ reportSchema.pre('findOneAndUpdate', function (next) {
       this.set({ resolvedAt: new Date() });
     }
   }
-  next();
 });
 
 /* ── Indexes ──────────────────────────────────────────────── */

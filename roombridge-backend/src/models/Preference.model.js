@@ -134,15 +134,14 @@ const preferenceSchema = new mongoose.Schema(
 );
 
 /* ── Custom validation: ageRange.min ≤ ageRange.max ─── */
-preferenceSchema.pre('validate', function (next) {
+preferenceSchema.pre('validate', function () {
   if (
     this.ageRange?.min != null &&
     this.ageRange?.max != null &&
     this.ageRange.min > this.ageRange.max
   ) {
-    return next(new Error('ageRange.min must be less than or equal to ageRange.max'));
+    throw new Error('ageRange.min must be less than or equal to ageRange.max');
   }
-  next();
 });
 
 /* ── Indexes ──────────────────────────────────────────── */
