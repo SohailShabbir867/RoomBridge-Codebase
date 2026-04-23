@@ -1,26 +1,26 @@
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { useState } from 'react';
-import api from '../../services/api';
-import toast from 'react-hot-toast';
-import { RiMailCheckLine, RiMailSendLine, RiLoader4Line } from 'react-icons/ri';
+import React from "react";
+import { Link, useLocation } from "react-router-dom";
+import { useState } from "react";
+import api from "../../services/api";
+import toast from "react-hot-toast";
+import { RiMailCheckLine, RiMailSendLine, RiLoader4Line } from "react-icons/ri";
 
 const CheckEmailPage = () => {
   const location = useLocation();
-  const email = location.state?.email || '';
+  const email = location.state?.email || "";
   const [resending, setResending] = useState(false);
 
   const handleResend = async () => {
     if (!email) {
-      toast.error('No email address found. Please register again.');
+      toast.error("No email address found. Please register again.");
       return;
     }
     try {
       setResending(true);
-      await api.post('/auth/resend-verification', { email });
-      toast.success('Verification email resent! Check your inbox.');
+      await api.post("/auth/resend-verification", { email });
+      toast.success("Verification email resent! Check your inbox.");
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to resend email.');
+      toast.error(err.response?.data?.message || "Failed to resend email.");
     } finally {
       setResending(false);
     }
@@ -34,18 +34,18 @@ const CheckEmailPage = () => {
           <RiMailCheckLine className="text-4xl text-primary" />
         </div>
 
-        <h1 className="text-2xl font-bold text-primary mb-3">Check Your Email</h1>
+        <h1 className="text-2xl font-bold text-primary mb-3">
+          Check Your Email
+        </h1>
 
         <p className="text-text-secondary mb-2">
           We've sent a verification link to:
         </p>
-        {email && (
-          <p className="text-primary font-semibold mb-4">{email}</p>
-        )}
+        {email && <p className="text-primary font-semibold mb-4">{email}</p>}
 
         <p className="text-text-secondary text-sm mb-6">
-          Click the link in the email to verify your account. 
-          The link expires in <strong>24 hours</strong>.
+          Click the link in the email to verify your account. The link expires
+          in <strong>24 hours</strong>.
         </p>
 
         <div className="space-y-3">
@@ -57,9 +57,13 @@ const CheckEmailPage = () => {
                        hover:bg-primary hover:text-white transition-all duration-200 disabled:opacity-50"
           >
             {resending ? (
-              <><RiLoader4Line className="animate-spin" /> Sending…</>
+              <>
+                <RiLoader4Line className="animate-spin" /> Sending…
+              </>
             ) : (
-              <><RiMailSendLine /> Resend Verification Email</>
+              <>
+                <RiMailSendLine /> Resend Verification Email
+              </>
             )}
           </button>
 
@@ -74,10 +78,14 @@ const CheckEmailPage = () => {
         </div>
 
         <p className="text-xs text-text-secondary mt-6">
-          Didn't receive the email? Check your spam folder or{' '}
-          <button onClick={handleResend} className="text-primary hover:underline">
+          Didn't receive the email? Check your spam folder or{" "}
+          <button
+            onClick={handleResend}
+            className="text-primary hover:underline"
+          >
             click here to resend
-          </button>.
+          </button>
+          .
         </p>
       </div>
     </div>

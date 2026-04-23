@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { RiStarFill, RiStarHalfFill, RiStarLine } from 'react-icons/ri';
+import React, { useState } from "react";
+import { RiStarFill, RiStarHalfFill, RiStarLine } from "react-icons/ri";
 
 /**
  * StarRating
@@ -15,26 +15,26 @@ import { RiStarFill, RiStarHalfFill, RiStarLine } from 'react-icons/ri';
  *   className   — extra wrapper classes
  */
 const sizeMap = {
-  sm: 'text-base',
-  md: 'text-xl',
-  lg: 'text-2xl',
+  sm: "text-base",
+  md: "text-xl",
+  lg: "text-2xl",
 };
 
 const valueSizeMap = {
-  sm: 'text-xs',
-  md: 'text-sm',
-  lg: 'text-base',
+  sm: "text-xs",
+  md: "text-sm",
+  lg: "text-base",
 };
 
 const StarRating = ({
-  rating      = 0,
-  maxStars    = 5,
-  size        = 'md',
+  rating = 0,
+  maxStars = 5,
+  size = "md",
   interactive = false,
   onChange,
-  showValue   = true,
-  label       = 'star',
-  className   = '',
+  showValue = true,
+  label = "star",
+  className = "",
 }) => {
   const [hovered, setHovered] = useState(null);
 
@@ -44,19 +44,19 @@ const StarRating = ({
 
   const getIcon = (index) => {
     const threshold = index + 1;
-    if (displayed >= threshold)        return RiStarFill;       // full
-    if (displayed >= threshold - 0.5)  return RiStarHalfFill;  // half
-    return RiStarLine;                                          // empty
+    if (displayed >= threshold) return RiStarFill; // full
+    if (displayed >= threshold - 0.5) return RiStarHalfFill; // half
+    return RiStarLine; // empty
   };
 
   const getColor = (index) => {
-    return displayed >= index + 0.5 ? 'text-warning' : 'text-border';
+    return displayed >= index + 0.5 ? "text-warning" : "text-border";
   };
 
   const handleClick = (value) => {
     if (!interactive) return;
     /*
-      BUG FIX: clicking the same value again de-selects (sets to 0).
+      clicking the same value again de-selects (sets to 0).
       This lets the user clear their rating.
     */
     onChange?.(Number(rating) === value ? 0 : value);
@@ -65,20 +65,24 @@ const StarRating = ({
   return (
     <div
       className={`flex items-center gap-1 ${className}`}
-      role={interactive ? 'radiogroup' : undefined}
-      aria-label={interactive ? 'Rating selector' : `Rating: ${Number(rating).toFixed(1)} out of ${maxStars}`}
+      role={interactive ? "radiogroup" : undefined}
+      aria-label={
+        interactive
+          ? "Rating selector"
+          : `Rating: ${Number(rating).toFixed(1)} out of ${maxStars}`
+      }
     >
       <div className="flex items-center gap-0.5">
         {[...Array(maxStars)].map((_, i) => {
-          const Icon  = getIcon(i);
+          const Icon = getIcon(i);
           const value = i + 1;
           return (
             <button
               key={i}
               type="button"
-              role={interactive ? 'radio' : undefined}
+              role={interactive ? "radio" : undefined}
               aria-checked={interactive ? Number(rating) === value : undefined}
-              aria-label={`${value} ${label}${value !== 1 ? 's' : ''}`}
+              aria-label={`${value} ${label}${value !== 1 ? "s" : ""}`}
               disabled={!interactive}
               onMouseEnter={() => interactive && setHovered(value)}
               onMouseLeave={() => interactive && setHovered(null)}
@@ -86,11 +90,11 @@ const StarRating = ({
               className={[
                 iconClass,
                 getColor(i),
-                'transition-colors duration-150',
+                "transition-colors duration-150",
                 interactive
-                  ? 'cursor-pointer hover:scale-110 transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warning'
-                  : 'cursor-default pointer-events-none',
-              ].join(' ')}
+                  ? "cursor-pointer hover:scale-110 transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warning"
+                  : "cursor-default pointer-events-none",
+              ].join(" ")}
             >
               <Icon />
             </button>
@@ -99,7 +103,9 @@ const StarRating = ({
       </div>
 
       {showValue && (
-        <span className={`font-semibold text-text-secondary ml-1 ${valueSizeMap[size] ?? valueSizeMap.md}`}>
+        <span
+          className={`font-semibold text-text-secondary ml-1 ${valueSizeMap[size] ?? valueSizeMap.md}`}
+        >
           {Number(rating).toFixed(1)}
         </span>
       )}

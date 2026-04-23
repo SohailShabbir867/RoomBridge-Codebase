@@ -1,7 +1,10 @@
 const express = require("express");
-const router  = express.Router();
+const router = express.Router();
 
-const { submitReport, getMyReports } = require("../controllers/report.controller");
+const {
+  submitReport,
+  getMyReports,
+} = require("../controllers/report.controller");
 const { protect } = require("../middleware/auth.middleware");
 
 /**

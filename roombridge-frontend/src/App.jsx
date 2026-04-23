@@ -1,10 +1,10 @@
-import React, { useEffect } from 'react';
-import { BrowserRouter as Router } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
-import AppRoutes from './routes/AppRoutes';
-import { SocketProvider } from './context/SocketContext';
-import authService from './services/authService';
-import { setCredentials, setAuthChecked } from './redux/slices/authSlice';
+import React, { useEffect } from "react";
+import { BrowserRouter as Router } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import AppRoutes from "./routes/AppRoutes";
+import { SocketProvider } from "./context/SocketContext";
+import authService from "./services/authService";
+import { setCredentials, setAuthChecked } from "./redux/slices/authSlice";
 
 /*
   App component structure (outer → inner):
@@ -35,7 +35,7 @@ function App() {
         } else {
           dispatch(setAuthChecked());
         }
-      } catch (err) {
+      } catch {
         // 401 = not logged in (expected when no cookie exists)
         // Just mark auth as checked so the app can render
         dispatch(setAuthChecked());

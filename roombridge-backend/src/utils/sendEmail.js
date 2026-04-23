@@ -1,30 +1,30 @@
-const nodemailer = require('nodemailer');
+const nodemailer = require("nodemailer");
 
 /**
  * Create a nodemailer transporter.
  *
- * BUG FIX: Original used `parseInt(process.env.EMAIL_PORT) || 587` but
+ * Original used `parseInt(process.env.EMAIL_PORT) || 587` but
  * parseInt('465') === 465 which is truthy, so the fallback never applies —
  * that's actually fine. The real bug: `secure` was set as a string comparison
  * `process.env.EMAIL_PORT === '465'` which works, but the check for a numeric
  * env var that's been parsed is unreliable. Normalise to a number before comparing.
  */
 const createTransporter = () => {
-  const port   = parseInt(process.env.EMAIL_PORT, 10) || 587;
+  const port = parseInt(process.env.EMAIL_PORT, 10) || 587;
   const secure = port === 465; // 465 uses SMTPS (TLS from start), 587 uses STARTTLS
 
   return nodemailer.createTransport({
-    host:   process.env.EMAIL_HOST || 'smtp.gmail.com',
+    host: process.env.EMAIL_HOST || "smtp.gmail.com",
     port,
     secure,
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
     },
-    // BUG FIX: Add connection timeout to prevent hanging forever on bad SMTP config
-    connectionTimeout: 10000,  // 10 seconds
-    greetingTimeout:   5000,
-    socketTimeout:     10000,
+    // Add connection timeout to prevent hanging forever on bad SMTP config
+    connectionTimeout: 10000, // 10 seconds
+    greetingTimeout: 5000,
+    socketTimeout: 10000,
   });
 };
 
@@ -33,7 +33,7 @@ const createTransporter = () => {
 /**
  * Send an email.
  *
- * BUG FIX: Original swallowed ALL errors via console.error. This means
+ * Original swallowed ALL errors via console.error. This means
  * forgotPassword emails failing silently would leave users unable to reset
  * their password with no feedback. Now we throw errors so the caller
  * (auth.controller forgotPassword) can catch and respond appropriately.
@@ -50,7 +50,7 @@ const createTransporter = () => {
 const sendEmail = async ({ to, subject, html }) => {
   const transporter = createTransporter();
   const info = await transporter.sendMail({
-    from:    `"RoomBridge" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
+    from: `"RoomBridge" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
     to,
     subject,
     html,
@@ -91,7 +91,7 @@ const layout = (content) => `
             <td style="background:#f8fafc;padding:16px 32px;text-align:center;border-radius:0 0 12px 12px;">
               <p style="margin:0;color:#9ca3af;font-size:12px;">
                 &copy; ${new Date().getFullYear()} RoomBridge Pakistan. All rights reserved.<br>
-                <a href="${process.env.CLIENT_URL || 'http://localhost:5173'}"
+                <a href="${process.env.CLIENT_URL || "http://localhost:5173"}"
                    style="color:#2C5F8A;text-decoration:none;">roombridge.pk</a>
               </p>
             </td>
@@ -117,7 +117,7 @@ const welcomeEmail = (name) =>
       across Pakistan, find compatible roommates, and connect with owners — all in one place.
     </p>
     <div style="text-align:center;margin:28px 0;">
-      <a href="${process.env.CLIENT_URL || 'http://localhost:5173'}/listings"
+      <a href="${process.env.CLIENT_URL || "http://localhost:5173"}/listings"
          style="background:#1A3A5C;color:#ffffff;padding:14px 32px;border-radius:8px;
                 text-decoration:none;font-weight:600;font-size:15px;display:inline-block;">
         Browse Rooms
@@ -205,7 +205,7 @@ const bookingAcceptedEmail = (seekerName, listingTitle) =>
       You can now contact the owner directly through your dashboard to arrange move-in details.
     </p>
     <div style="text-align:center;margin:28px 0;">
-      <a href="${process.env.CLIENT_URL || 'http://localhost:5173'}/seeker/requests"
+      <a href="${process.env.CLIENT_URL || "http://localhost:5173"}/seeker/requests"
          style="background:#1A3A5C;color:#ffffff;padding:14px 32px;border-radius:8px;
                 text-decoration:none;font-weight:600;font-size:15px;display:inline-block;">
         View My Bookings
@@ -217,8 +217,9 @@ const bookingAcceptedEmail = (seekerName, listingTitle) =>
  * Booking rejected notification to the seeker.
  * @param {string} seekerName
  * @param {string} listingTitle
+ * @param {string} [reason]
  */
-const bookingRejectedEmail = (seekerName, listingTitle) =>
+const bookingRejectedEmail = (seekerName, listingTitle, reason = "") =>
   layout(`
     <h2 style="color:#ef4444;margin-top:0;">Booking Update</h2>
     <p style="color:#6b7280;line-height:1.7;">Hi ${seekerName},</p>
@@ -228,11 +229,16 @@ const bookingRejectedEmail = (seekerName, listingTitle) =>
     <div style="background:#fef2f2;border:1px solid #ef4444;border-radius:8px;padding:16px 20px;margin:20px 0;">
       <p style="margin:0;color:#991b1b;font-weight:600;font-size:16px;">🏠 ${listingTitle}</p>
     </div>
+    ${
+      reason
+        ? `<p style="color:#6b7280;line-height:1.7;"><strong>Reason from owner:</strong> ${reason}</p>`
+        : ""
+    }
     <p style="color:#6b7280;line-height:1.7;">
       Don't be discouraged — there are thousands of other verified rooms on RoomBridge!
     </p>
     <div style="text-align:center;margin:28px 0;">
-      <a href="${process.env.CLIENT_URL || 'http://localhost:5173'}/listings"
+      <a href="${process.env.CLIENT_URL || "http://localhost:5173"}/listings"
          style="background:#1A3A5C;color:#ffffff;padding:14px 32px;border-radius:8px;
                 text-decoration:none;font-weight:600;font-size:15px;display:inline-block;">
         Browse More Rooms

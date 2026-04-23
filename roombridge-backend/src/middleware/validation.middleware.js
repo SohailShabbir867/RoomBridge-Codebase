@@ -11,18 +11,12 @@ const validate = (req, res, next) => {
   if (!errors.isEmpty()) {
     const details = errors.array();
     const messages = details.map((e) => e.msg);
-    console.log('[VALIDATION] Path:', req.path);
-    console.log('[VALIDATION] Body keys:', Object.keys(req.body || {}));
-    console.log('[VALIDATION] Body:', JSON.stringify(req.body, null, 2));
-    console.log('[VALIDATION] Errors:', JSON.stringify(details, null, 2));
     return errorResponse(res, 400, "Validation failed.", messages);
   }
   next();
 };
 
-/* ══════════════════════════════════════════════════════════
-   REGISTER VALIDATION RULES
-══════════════════════════════════════════════════════════ */
+/* ── REGISTER VALIDATION RULES ── */
 const registerRules = [
   body("name")
     .trim()
@@ -53,18 +47,16 @@ const registerRules = [
   body("phone")
     .optional()
     .trim()
-    .customSanitizer((val) => val ? val.replace(/[\s\-()]/g, '') : val)
+    .customSanitizer((val) => (val ? val.replace(/[\s\-()]/g, "") : val))
     .matches(/^(\+92|0)[0-9]{10}$/)
     .withMessage(
-      "Please provide a valid Pakistani phone number (e.g. 03001234567 or +923001234567)"
+      "Please provide a valid Pakistani phone number (e.g. 03001234567 or +923001234567)",
     ),
 
   body("city").trim().notEmpty().withMessage("City is required"),
 ];
 
-/* ══════════════════════════════════════════════════════════
-   LOGIN VALIDATION RULES
-══════════════════════════════════════════════════════════ */
+/* ── LOGIN VALIDATION RULES ── */
 const loginRules = [
   body("email")
     .isEmail()
@@ -74,9 +66,7 @@ const loginRules = [
   body("password").notEmpty().withMessage("Password is required"),
 ];
 
-/* ══════════════════════════════════════════════════════════
-   UPDATE PASSWORD RULES
-══════════════════════════════════════════════════════════ */
+/* ── UPDATE PASSWORD RULES ── */
 const updatePasswordRules = [
   body("currentPassword")
     .notEmpty()
@@ -93,9 +83,7 @@ const updatePasswordRules = [
     .withMessage("New password must contain at least one number"),
 ];
 
-/* ══════════════════════════════════════════════════════════
-   FORGOT PASSWORD RULES
-══════════════════════════════════════════════════════════ */
+/* ── FORGOT PASSWORD RULES ── */
 const forgotPasswordRules = [
   body("email")
     .isEmail()
@@ -103,9 +91,7 @@ const forgotPasswordRules = [
     .normalizeEmail(),
 ];
 
-/* ══════════════════════════════════════════════════════════
-   RESET PASSWORD RULES
-══════════════════════════════════════════════════════════ */
+/* ── RESET PASSWORD RULES ── */
 const resetPasswordRules = [
   body("password")
     .isLength({ min: 8 })
@@ -118,13 +104,23 @@ const resetPasswordRules = [
     .withMessage("Password must contain at least one number"),
 ];
 
-/* ══════════════════════════════════════════════════════════
-   LISTING VALIDATION RULES
-══════════════════════════════════════════════════════════ */
+/* ── LISTING VALIDATION RULES ── */
 const PAKISTAN_CITIES = [
-  "Karachi","Lahore","Islamabad","Rawalpindi","Peshawar","Quetta",
-  "Faisalabad","Multan","Hyderabad","Sialkot","Gujranwala",
-  "Bahawalpur","Sargodha","Abbottabad","Murree",
+  "Karachi",
+  "Lahore",
+  "Islamabad",
+  "Rawalpindi",
+  "Peshawar",
+  "Quetta",
+  "Faisalabad",
+  "Multan",
+  "Hyderabad",
+  "Sialkot",
+  "Gujranwala",
+  "Bahawalpur",
+  "Sargodha",
+  "Abbottabad",
+  "Murree",
 ];
 
 const listingRules = [
@@ -162,10 +158,7 @@ const listingRules = [
     .isIn(PAKISTAN_CITIES)
     .withMessage("Please select a valid Pakistani city"),
 
-  body("address")
-    .trim()
-    .notEmpty()
-    .withMessage("Address is required"),
+  body("address").trim().notEmpty().withMessage("Address is required"),
 
   body("roomType")
     .notEmpty()

@@ -1,9 +1,9 @@
-const jwt = require('jsonwebtoken');
+const jwt = require("jsonwebtoken");
 
 /**
  * Generate a signed JWT and set it as an httpOnly cookie on `res`.
  *
- * BUG FIX: The original used `sameSite: 'strict'` unconditionally.
+ * The original used `sameSite: 'strict'` unconditionally.
  * With 'strict', the browser NEVER sends the cookie on cross-origin requests
  * — even with CORS credentials: true — because the frontend (localhost:5173)
  * and backend (localhost:5000) are different origins in development.
@@ -18,21 +18,19 @@ const jwt = require('jsonwebtoken');
  * @returns {string}      - The signed JWT
  */
 const generateToken = (userId, res) => {
-  const token = jwt.sign(
-    { id: userId },
-    process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRE || '7d' }
-  );
+  const token = jwt.sign({ id: userId }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRE || "7d",
+  });
 
-  const isProd  = process.env.NODE_ENV === 'production';
-  const maxAge  = 7 * 24 * 60 * 60 * 1000; // 7 days in ms
+  const isProd = process.env.NODE_ENV === "production";
+  const maxAge = 7 * 24 * 60 * 60 * 1000; // 7 days in ms
 
-  res.cookie('jwt', token, {
+  res.cookie("jwt", token, {
     httpOnly: true,
-    secure:   isProd,          // HTTPS only in production
-    sameSite: isProd ? 'none' : 'lax',  // 'none' for cross-origin prod, 'lax' for dev
+    secure: isProd, // HTTPS only in production
+    sameSite: isProd ? "none" : "lax", // 'none' for cross-origin prod, 'lax' for dev
     maxAge,
-    path:     '/',
+    path: "/",
   });
 
   return token;
@@ -46,11 +44,7 @@ const generateToken = (userId, res) => {
  * @returns {string} - Signed refresh token (30-day expiry)
  */
 const generateRefreshToken = (userId) => {
-  return jwt.sign(
-    { id: userId },
-    process.env.JWT_SECRET,
-    { expiresIn: '30d' }
-  );
+  return jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: "30d" });
 };
 
 /**
@@ -60,14 +54,14 @@ const generateRefreshToken = (userId) => {
  * @param {object} res - Express response object
  */
 const clearToken = (res) => {
-  const isProd = process.env.NODE_ENV === 'production';
+  const isProd = process.env.NODE_ENV === "production";
 
-  res.cookie('jwt', '', {
+  res.cookie("jwt", "", {
     httpOnly: true,
-    secure:   isProd,
-    sameSite: isProd ? 'none' : 'lax',
-    expires:  new Date(0),    // Immediately expire
-    path:     '/',
+    secure: isProd,
+    sameSite: isProd ? "none" : "lax",
+    expires: new Date(0), // Immediately expire
+    path: "/",
   });
 };
 

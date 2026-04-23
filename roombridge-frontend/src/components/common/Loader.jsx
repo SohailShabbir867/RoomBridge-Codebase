@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 /**
  * Loader — spinning indicator
@@ -13,20 +13,20 @@ import React from 'react';
  */
 
 const sizeMap = {
-  xs: 'h-4 w-4',
-  sm: 'h-5 w-5',
-  md: 'h-9 w-9',
-  lg: 'h-14 w-14',
-  xl: 'h-20 w-20',
+  xs: "h-4 w-4",
+  sm: "h-5 w-5",
+  md: "h-9 w-9",
+  lg: "h-14 w-14",
+  xl: "h-20 w-20",
 };
 
 const Loader = ({
   fullScreen = false,
-  inline     = false,
-  size       = 'md',
-  color      = 'text-primary',
+  inline = false,
+  size = "md",
+  color = "text-primary",
   text,
-  className  = '',
+  className = "",
 }) => {
   const spinner = (
     <div className={`flex flex-col items-center gap-3 ${className}`}>
@@ -36,11 +36,13 @@ const Loader = ({
         fill="none"
         viewBox="0 0 24 24"
         role="status"
-        aria-label={text ?? 'Loading…'}
+        aria-label={text ?? "Loading…"}
       >
         <circle
           className="opacity-20"
-          cx="12" cy="12" r="10"
+          cx="12"
+          cy="12"
+          r="10"
           stroke="currentColor"
           strokeWidth="4"
         />
@@ -51,7 +53,9 @@ const Loader = ({
         />
       </svg>
       {text && (
-        <p className="text-sm text-text-secondary font-medium animate-pulse">{text}</p>
+        <p className="text-sm text-text-secondary font-medium animate-pulse">
+          {text}
+        </p>
       )}
     </div>
   );

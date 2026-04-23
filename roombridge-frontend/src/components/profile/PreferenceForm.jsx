@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import api from '../../services/api';
-import toast from 'react-hot-toast';
-import { RiSaveLine, RiLoader4Line, RiCheckLine } from 'react-icons/ri';
-import { CITIES } from '../../utils/constants';
+import React, { useState } from "react";
+import api from "../../services/api";
+import toast from "react-hot-toast";
+import { RiSaveLine, RiLoader4Line, RiCheckLine } from "react-icons/ri";
+import { CITIES } from "../../utils/constants";
 
 /*
   PreferenceForm — lifestyle preference form for roommate matching.
@@ -26,38 +26,40 @@ import { CITIES } from '../../utils/constants';
 */
 
 const SLEEP_OPTIONS = [
-  { value: 'early',    label: 'Early Bird 🌅' },
-  { value: 'late',     label: 'Night Owl 🦉' },
-  { value: 'flexible', label: 'Flexible 🔄' },
+  { value: "early", label: "Early Bird 🌅" },
+  { value: "late", label: "Night Owl 🦉" },
+  { value: "flexible", label: "Flexible 🔄" },
 ];
 
 const OCCUPATION_OPTIONS = [
-  { value: 'student',      label: 'Student 📚' },
-  { value: 'professional', label: 'Professional 💼' },
+  { value: "student", label: "Student 📚" },
+  { value: "professional", label: "Professional 💼" },
 ];
 
 const GENDER_OPTIONS = [
-  { value: 'male',   label: 'Male' },
-  { value: 'female', label: 'Female' },
+  { value: "male", label: "Male" },
+  { value: "female", label: "Female" },
 ];
 
 const GENDER_PREF_OPTIONS = [
-  { value: 'any',    label: 'Any' },
-  { value: 'male',   label: 'Male' },
-  { value: 'female', label: 'Female' },
+  { value: "any", label: "Any" },
+  { value: "male", label: "Male" },
+  { value: "female", label: "Female" },
 ];
 
 const OptionButton = ({ options, value, onChange, name }) => (
   <div className="flex flex-wrap gap-2">
-    {options.map(opt => (
+    {options.map((opt) => (
       <button
         key={opt.value}
         type="button"
-        onClick={() => onChange(name, value === opt.value ? '' : opt.value)}
+        onClick={() => onChange(name, value === opt.value ? "" : opt.value)}
         className={`px-3.5 py-1.5 rounded-full text-sm font-medium border transition-all duration-150
-                    ${value === opt.value
-                      ? 'bg-primary text-white border-primary shadow-card'
-                      : 'bg-white border-border text-text-secondary hover:border-primary hover:text-primary'}`}
+                    ${
+                      value === opt.value
+                        ? "bg-primary text-white border-primary shadow-card"
+                        : "bg-white border-border text-text-secondary hover:border-primary hover:text-primary"
+                    }`}
       >
         {opt.label}
       </button>
@@ -65,29 +67,25 @@ const OptionButton = ({ options, value, onChange, name }) => (
   </div>
 );
 
-const PreferenceForm = ({
-  initialValues = null,
-  onSaved,
-  compact = false,
-}) => {
+const PreferenceForm = ({ initialValues = null, onSaved, compact = false }) => {
   const [form, setForm] = useState({
-    sleepSchedule:    initialValues?.sleepSchedule    || '',
-    smoker:           initialValues?.smoker === true,
-    pets:             initialValues?.pets === true,
-    cleanliness:      initialValues?.cleanliness      || 3,
-    occupation:       initialValues?.occupation       || '',
-    gender:           initialValues?.gender           || '',
-    genderPreference: initialValues?.genderPreference || 'any',
-    bio:              initialValues?.bio              || '',
-    budget:           initialValues?.budget           || '',
-    preferredCity:    initialValues?.preferredCity    || '',
+    sleepSchedule: initialValues?.sleepSchedule || "",
+    smoker: initialValues?.smoker === true,
+    pets: initialValues?.pets === true,
+    cleanliness: initialValues?.cleanliness || 3,
+    occupation: initialValues?.occupation || "",
+    gender: initialValues?.gender || "",
+    genderPreference: initialValues?.genderPreference || "any",
+    bio: initialValues?.bio || "",
+    budget: initialValues?.budget || "",
+    preferredCity: initialValues?.preferredCity || "",
   });
 
-  const [saving,  setSaving]  = useState(false);
+  const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
 
   const handleField = (name, value) => {
-    setForm(f => ({ ...f, [name]: value }));
+    setForm((f) => ({ ...f, [name]: value }));
     setSuccess(false);
   };
 
@@ -95,33 +93,35 @@ const PreferenceForm = ({
     e.preventDefault();
 
     if (!form.sleepSchedule || !form.occupation || !form.gender) {
-      toast.error('Please fill in Sleep Schedule, Occupation, and Gender.');
+      toast.error("Please fill in Sleep Schedule, Occupation, and Gender.");
       return;
     }
     if (!form.cleanliness || form.cleanliness < 1 || form.cleanliness > 5) {
-      toast.error('Please set a cleanliness level (1-5).');
+      toast.error("Please set a cleanliness level (1-5).");
       return;
     }
 
     try {
       setSaving(true);
-      const res  = await api.post('/preferences', form);
+      const res = await api.post("/preferences", form);
       const pref = res.data?.preference || res.data?.data;
       setSuccess(true);
-      toast.success('Preferences saved!');
+      toast.success("Preferences saved!");
       if (onSaved) onSaved(pref);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to save preferences.');
+      toast.error(err.response?.data?.message || "Failed to save preferences.");
     } finally {
       setSaving(false);
     }
   };
 
-  const labelClass = 'block text-sm font-semibold text-primary mb-2';
+  const labelClass = "block text-sm font-semibold text-primary mb-2";
 
   return (
-    <form onSubmit={handleSubmit} className={compact ? 'space-y-4' : 'space-y-6'}>
-
+    <form
+      onSubmit={handleSubmit}
+      className={compact ? "space-y-4" : "space-y-6"}
+    >
       {/* Sleep Schedule */}
       <div>
         <label className={labelClass}>Sleep Schedule *</label>
@@ -168,38 +168,48 @@ const PreferenceForm = ({
 
       {/* Cleanliness (1-5 slider) */}
       <div>
-        <label className={labelClass}>Cleanliness Level * ({form.cleanliness}/5)</label>
+        <label className={labelClass}>
+          Cleanliness Level * ({form.cleanliness}/5)
+        </label>
         <input
           type="range"
-          min={1} max={5} step={1}
+          min={1}
+          max={5}
+          step={1}
           value={form.cleanliness}
-          onChange={e => handleField('cleanliness', parseInt(e.target.value))}
+          onChange={(e) => handleField("cleanliness", parseInt(e.target.value))}
           className="w-full accent-primary"
         />
         <div className="flex justify-between text-xs text-text-secondary mt-1">
-          <span>Relaxed</span><span>Average</span><span>Very Clean</span>
+          <span>Relaxed</span>
+          <span>Average</span>
+          <span>Very Clean</span>
         </div>
       </div>
 
       {/* Smoker toggle */}
-      <label className="flex items-center gap-3 p-3 bg-background rounded-input border border-border
-                         cursor-pointer select-none hover:border-primary transition-colors">
+      <label
+        className="flex items-center gap-3 p-3 bg-background rounded-input border border-border
+                         cursor-pointer select-none hover:border-primary transition-colors"
+      >
         <input
           type="checkbox"
           checked={form.smoker}
-          onChange={e => handleField('smoker', e.target.checked)}
+          onChange={(e) => handleField("smoker", e.target.checked)}
           className="accent-primary w-4 h-4"
         />
         <span className="text-sm text-primary">I smoke / smoking is OK</span>
       </label>
 
       {/* Pets toggle */}
-      <label className="flex items-center gap-3 p-3 bg-background rounded-input border border-border
-                         cursor-pointer select-none hover:border-primary transition-colors">
+      <label
+        className="flex items-center gap-3 p-3 bg-background rounded-input border border-border
+                         cursor-pointer select-none hover:border-primary transition-colors"
+      >
         <input
           type="checkbox"
           checked={form.pets}
-          onChange={e => handleField('pets', e.target.checked)}
+          onChange={(e) => handleField("pets", e.target.checked)}
           className="accent-primary w-4 h-4"
         />
         <span className="text-sm text-primary">I have pets / pets are OK</span>
@@ -207,46 +217,58 @@ const PreferenceForm = ({
 
       {/* Budget */}
       <div>
-        <label className={labelClass} htmlFor="pf-budget">Monthly Budget (PKR)</label>
+        <label className={labelClass} htmlFor="pf-budget">
+          Monthly Budget (PKR)
+        </label>
         <input
           id="pf-budget"
           type="number"
           min={1000}
           placeholder="e.g. 15000"
           value={form.budget}
-          onChange={e => handleField('budget', e.target.value)}
+          onChange={(e) => handleField("budget", e.target.value)}
           className="input"
         />
       </div>
 
       {/* City */}
       <div>
-        <label className={labelClass} htmlFor="pf-city">Preferred City</label>
+        <label className={labelClass} htmlFor="pf-city">
+          Preferred City
+        </label>
         <select
           id="pf-city"
           value={form.preferredCity}
-          onChange={e => handleField('preferredCity', e.target.value)}
+          onChange={(e) => handleField("preferredCity", e.target.value)}
           className="input"
         >
           <option value="">Any city</option>
-          {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
+          {CITIES.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
         </select>
       </div>
 
       {/* Bio */}
       {!compact && (
         <div>
-          <label className={labelClass} htmlFor="pf-bio">About Me</label>
+          <label className={labelClass} htmlFor="pf-bio">
+            About Me
+          </label>
           <textarea
             id="pf-bio"
             value={form.bio}
-            onChange={e => handleField('bio', e.target.value)}
+            onChange={(e) => handleField("bio", e.target.value)}
             rows={3}
             placeholder="Tell potential roommates about yourself…"
             className="input resize-none"
             maxLength={300}
           />
-          <p className="text-xs text-text-secondary text-right mt-0.5">{form.bio.length}/300</p>
+          <p className="text-xs text-text-secondary text-right mt-0.5">
+            {form.bio.length}/300
+          </p>
         </div>
       )}
 
@@ -256,14 +278,21 @@ const PreferenceForm = ({
         disabled={saving}
         aria-busy={saving}
         className={`w-full flex items-center justify-center gap-2 btn-primary
-                    ${success ? 'bg-success hover:bg-success/90 border-success' : ''}`}
+                    ${success ? "bg-success hover:bg-success/90 border-success" : ""}`}
       >
         {saving ? (
-          <><RiLoader4Line className="animate-spin" /> Saving…</>
+          <>
+            <RiLoader4Line className="animate-spin" /> Saving…
+          </>
         ) : success ? (
-          <><RiCheckLine /> Preferences Saved!</>
+          <>
+            <RiCheckLine /> Preferences Saved!
+          </>
         ) : (
-          <><RiSaveLine /> {initialValues ? 'Update Preferences' : 'Save Preferences'}</>
+          <>
+            <RiSaveLine />{" "}
+            {initialValues ? "Update Preferences" : "Save Preferences"}
+          </>
         )}
       </button>
     </form>

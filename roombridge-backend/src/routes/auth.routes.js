@@ -1,6 +1,6 @@
-const express   = require('express');
-const rateLimit = require('express-rate-limit');
-const router    = express.Router();
+const express = require("express");
+const rateLimit = require("express-rate-limit");
+const router = express.Router();
 
 const {
   registerUser,
@@ -12,9 +12,9 @@ const {
   updatePassword,
   verifyEmail,
   resendVerification,
-} = require('../controllers/auth.controller');
+} = require("../controllers/auth.controller");
 
-const { protect } = require('../middleware/auth.middleware');
+const { protect, optionalAuth } = require("../middleware/auth.middleware");
 
 const {
   validate,
@@ -23,7 +23,7 @@ const {
   forgotPasswordRules,
   resetPasswordRules,
   updatePasswordRules,
-} = require('../middleware/validation.middleware');
+} = require("../middleware/validation.middleware");
 
 /* ── Rate limiters ────────────────────────────────────────
    BUG FIX 1: standardHeaders: true is deprecated in express-rate-limit v8.
@@ -45,14 +45,14 @@ const {
  * Successful logins reset the counter (skipSuccessfulRequests: true).
  */
 const loginLimiter = rateLimit({
-  windowMs:               15 * 60 * 1000,
-  max:                    5,
-  standardHeaders:        'draft-7',
-  legacyHeaders:          false,
-  skipSuccessfulRequests: true,   // only count failed login attempts
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  skipSuccessfulRequests: true, // only count failed login attempts
   message: {
     success: false,
-    message: 'Too many failed login attempts. Please try again in 15 minutes.',
+    message: "Too many failed login attempts. Please try again in 15 minutes.",
   },
 });
 
@@ -62,14 +62,15 @@ const loginLimiter = rateLimit({
  * skipSuccessfulRequests MUST be false — we want to limit mass registrations.
  */
 const registerLimiter = rateLimit({
-  windowMs:               60 * 60 * 1000, // 1 hour
-  max:                    10,
-  standardHeaders:        'draft-7',
-  legacyHeaders:          false,
-  skipSuccessfulRequests: false,  // count every registration attempt
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 10,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  skipSuccessfulRequests: false, // count every registration attempt
   message: {
     success: false,
-    message: 'Too many registration attempts from this IP. Please try again in 1 hour.',
+    message:
+      "Too many registration attempts from this IP. Please try again in 1 hour.",
   },
 });
 
@@ -81,20 +82,18 @@ const registerLimiter = rateLimit({
  * (failures bump the counter, successes don't → keep sending to new valid emails).
  */
 const forgotPasswordLimiter = rateLimit({
-  windowMs:               60 * 60 * 1000,
-  max:                    5,
-  standardHeaders:        'draft-7',
-  legacyHeaders:          false,
-  skipSuccessfulRequests: false,  // all attempts count
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  skipSuccessfulRequests: false, // all attempts count
   message: {
     success: false,
-    message: 'Too many password reset attempts. Please try again in 1 hour.',
+    message: "Too many password reset attempts. Please try again in 1 hour.",
   },
 });
 
-/* ══════════════════════════════════════════════════════════
-   PUBLIC ROUTES
-══════════════════════════════════════════════════════════ */
+/* ── PUBLIC ROUTES ── */
 
 /**
  * @route   POST /api/v1/auth/register
@@ -102,11 +101,11 @@ const forgotPasswordLimiter = rateLimit({
  * @access  Public
  */
 router.post(
-  '/register',
-  registerLimiter,    // BUG FIX: separate, stricter limiter that counts all requests
+  "/register",
+  registerLimiter, // separate, stricter limiter that counts all requests
   registerRules,
   validate,
-  registerUser
+  registerUser,
 );
 
 /**
@@ -115,11 +114,11 @@ router.post(
  * @access  Public
  */
 router.post(
-  '/login',
-  loginLimiter,       // only counts failed attempts
+  "/login",
+  loginLimiter, // only counts failed attempts
   loginRules,
   validate,
-  loginUser
+  loginUser,
 );
 
 /**
@@ -128,11 +127,11 @@ router.post(
  * @access  Public
  */
 router.post(
-  '/forgot-password',
+  "/forgot-password",
   forgotPasswordLimiter,
   forgotPasswordRules,
   validate,
-  forgotPassword
+  forgotPassword,
 );
 
 /**
@@ -145,10 +144,10 @@ router.post(
  * The controller clears it immediately on use.
  */
 router.put(
-  '/reset-password/:token',
+  "/reset-password/:token",
   resetPasswordRules,
   validate,
-  resetPassword
+  resetPassword,
 );
 
 /**
@@ -156,19 +155,19 @@ router.put(
  * @desc    Clear JWT cookie and log the user out
  * @access  Public (intentionally — no protect middleware)
  *
- * BUG FIX: The original had `protect` middleware on logout.
+ * The original had `protect` middleware on logout.
  * If a user's JWT expired, protect() returned 401 and the cookie was
  * NEVER cleared — the user got stuck in a "logged in" state with no way out.
  * Logout only clears the cookie. No sensitive action. Must be public.
  */
-router.post('/logout', logoutUser);
+router.post("/logout", logoutUser);
 
 /**
  * @route   GET /api/v1/auth/verify-email/:token
  * @desc    Verify user email with token from verification email
  * @access  Public
  */
-router.get('/verify-email/:token', verifyEmail);
+router.get("/verify-email/:token", verifyEmail);
 
 /**
  * @route   POST /api/v1/auth/resend-verification
@@ -176,27 +175,28 @@ router.get('/verify-email/:token', verifyEmail);
  * @access  Public
  */
 router.post(
-  '/resend-verification',
+  "/resend-verification",
   rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 3,
-    standardHeaders: 'draft-7',
+    standardHeaders: "draft-7",
     legacyHeaders: false,
-    message: { success: false, message: 'Too many resend attempts. Try again in 15 minutes.' },
+    message: {
+      success: false,
+      message: "Too many resend attempts. Try again in 15 minutes.",
+    },
   }),
-  resendVerification
+  resendVerification,
 );
 
-/* ══════════════════════════════════════════════════════════
-   PROTECTED ROUTES  (require valid JWT)
-══════════════════════════════════════════════════════════ */
+/* ── PROTECTED ROUTES  (require valid JWT) ── */
 
 /**
  * @route   GET /api/v1/auth/me
  * @desc    Get current logged-in user profile with preferences + saved listings
- * @access  Protected
+ * @access  Public (session-aware)
  */
-router.get('/me', protect, getMe);
+router.get("/me", optionalAuth, getMe);
 
 /**
  * @route   PUT /api/v1/auth/update-password
@@ -204,11 +204,11 @@ router.get('/me', protect, getMe);
  * @access  Protected
  */
 router.put(
-  '/update-password',
+  "/update-password",
   protect,
   updatePasswordRules,
   validate,
-  updatePassword
+  updatePassword,
 );
 
 module.exports = router;

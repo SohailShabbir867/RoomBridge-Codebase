@@ -9,7 +9,7 @@
  *   occupation       10 pts — student/professional alignment
  *   gender           10 pts — preference compatibility
  *
- * BUG FIX: The original used 'genderPreference' as the key on Preference documents
+ * The original used 'genderPreference' as the key on Preference documents
  * but the Preference model defines the field as 'gender' (not 'genderPreference').
  * Using the wrong field name results in the gender check always taking the
  * "field not present → 0.5 * weight" fallback path, silently under-scoring.
@@ -20,11 +20,11 @@
 
 const WEIGHTS = {
   sleepSchedule: 25,
-  smoker:        20,
-  pets:          15,
-  cleanliness:   20,
-  occupation:    10,
-  gender:        10,   // BUG FIX: model field is 'gender', not 'genderPreference'
+  smoker: 20,
+  pets: 15,
+  cleanliness: 20,
+  occupation: 10,
+  gender: 10, // model field is 'gender', not 'genderPreference'
 };
 
 /**
@@ -35,9 +35,11 @@ const WEIGHTS = {
  * @returns {{ score: number, breakdown: object, label: string }}
  */
 const calculateCompatibility = (prefs1, prefs2) => {
-  // BUG FIX: Null guard — throw clearly instead of cryptic TypeError
+  // Null guard — throw clearly instead of cryptic TypeError
   if (!prefs1 || !prefs2) {
-    throw new Error('calculateCompatibility requires two non-null preference objects.');
+    throw new Error(
+      "calculateCompatibility requires two non-null preference objects.",
+    );
   }
 
   let score = 0;
@@ -53,8 +55,12 @@ const calculateCompatibility = (prefs1, prefs2) => {
   score += breakdown.sleepSchedule;
 
   /* smoker — exact match only */
-  if (prefs1.smoker === undefined || prefs1.smoker === null ||
-      prefs2.smoker === undefined || prefs2.smoker === null) {
+  if (
+    prefs1.smoker === undefined ||
+    prefs1.smoker === null ||
+    prefs2.smoker === undefined ||
+    prefs2.smoker === null
+  ) {
     breakdown.smoker = WEIGHTS.smoker * 0.5;
   } else {
     breakdown.smoker = prefs1.smoker === prefs2.smoker ? WEIGHTS.smoker : 0;
@@ -62,8 +68,12 @@ const calculateCompatibility = (prefs1, prefs2) => {
   score += breakdown.smoker;
 
   /* pets — exact match only */
-  if (prefs1.pets === undefined || prefs1.pets === null ||
-      prefs2.pets === undefined || prefs2.pets === null) {
+  if (
+    prefs1.pets === undefined ||
+    prefs1.pets === null ||
+    prefs2.pets === undefined ||
+    prefs2.pets === null
+  ) {
     breakdown.pets = WEIGHTS.pets * 0.5;
   } else {
     breakdown.pets = prefs1.pets === prefs2.pets ? WEIGHTS.pets : 0;
@@ -74,10 +84,12 @@ const calculateCompatibility = (prefs1, prefs2) => {
   if (!prefs1.cleanliness || !prefs2.cleanliness) {
     breakdown.cleanliness = WEIGHTS.cleanliness * 0.5;
   } else {
-    const diff = Math.abs(Number(prefs1.cleanliness) - Number(prefs2.cleanliness));
-    if (diff <= 1)      breakdown.cleanliness = WEIGHTS.cleanliness;
+    const diff = Math.abs(
+      Number(prefs1.cleanliness) - Number(prefs2.cleanliness),
+    );
+    if (diff <= 1) breakdown.cleanliness = WEIGHTS.cleanliness;
     else if (diff === 2) breakdown.cleanliness = WEIGHTS.cleanliness * 0.5;
-    else                breakdown.cleanliness = 0;
+    else breakdown.cleanliness = 0;
   }
   score += breakdown.cleanliness;
 
@@ -90,7 +102,7 @@ const calculateCompatibility = (prefs1, prefs2) => {
   }
   score += breakdown.occupation;
 
-  /* gender — BUG FIX: use 'gender' (model field name), not 'genderPreference'
+  /* gender — use 'gender' (model field name), not 'genderPreference'
    * Compatible if either user has no preference or both preferences match.
    * Note: Preference.gender is the seeker's own gender ('male'/'female'),
    * not their roommate preference. For roommate gender preference, use
@@ -100,16 +112,16 @@ const calculateCompatibility = (prefs1, prefs2) => {
   if (!g1 || !g2) {
     breakdown.gender = WEIGHTS.gender * 0.5;
   } else {
-    breakdown.gender = (g1 === g2) ? WEIGHTS.gender : 0;
+    breakdown.gender = g1 === g2 ? WEIGHTS.gender : 0;
   }
   score += breakdown.gender;
 
   const finalScore = Math.round(Math.min(100, Math.max(0, score)));
 
   return {
-    score:     finalScore,
+    score: finalScore,
     breakdown,
-    label:     getCompatibilityLabel(finalScore),
+    label: getCompatibilityLabel(finalScore),
   };
 };
 
@@ -119,10 +131,10 @@ const calculateCompatibility = (prefs1, prefs2) => {
  * @returns {string}
  */
 const getCompatibilityLabel = (score) => {
-  if (score >= 80) return 'Excellent Match';
-  if (score >= 60) return 'Good Match';
-  if (score >= 40) return 'Fair Match';
-  return 'Poor Match';
+  if (score >= 80) return "Excellent Match";
+  if (score >= 60) return "Good Match";
+  if (score >= 40) return "Fair Match";
+  return "Poor Match";
 };
 
 /**
@@ -132,7 +144,6 @@ const getCompatibilityLabel = (score) => {
  * @param {Array} matches - Array of objects with a `score` property
  * @returns {Array} sorted descending by score
  */
-const sortByScore = (matches) =>
-  [...matches].sort((a, b) => b.score - a.score);
+const sortByScore = (matches) => [...matches].sort((a, b) => b.score - a.score);
 
 module.exports = { calculateCompatibility, getCompatibilityLabel, sortByScore };

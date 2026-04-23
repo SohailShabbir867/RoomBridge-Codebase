@@ -15,9 +15,12 @@
 const getPaginationParams = (query = {}, defaults = {}) => {
   const { defaultPage = 1, defaultLimit = 12, maxLimit = 50 } = defaults;
 
-  const page  = Math.max(1, parseInt(query.page) || defaultPage);
-  const limit = Math.min(maxLimit, Math.max(1, parseInt(query.limit) || defaultLimit));
-  const skip  = (page - 1) * limit;
+  const page = Math.max(1, parseInt(query.page) || defaultPage);
+  const limit = Math.min(
+    maxLimit,
+    Math.max(1, parseInt(query.limit) || defaultLimit),
+  );
+  const skip = (page - 1) * limit;
 
   return { page, limit, skip };
 };

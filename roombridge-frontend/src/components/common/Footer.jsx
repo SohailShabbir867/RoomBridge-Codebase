@@ -1,52 +1,66 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React from "react";
+import { Link } from "react-router-dom";
 import {
-  RiMapPin2Line, RiMailLine, RiPhoneLine,
-  RiTwitterXLine, RiFacebookBoxLine, RiInstagramLine, RiLinkedinBoxLine,
-  RiBuildingLine, RiHeartLine,
-} from 'react-icons/ri';
+  RiMapPin2Line,
+  RiMailLine,
+  RiPhoneLine,
+  RiTwitterXLine,
+  RiFacebookBoxLine,
+  RiInstagramLine,
+  RiLinkedinBoxLine,
+  RiBuildingLine,
+  RiHeartLine,
+} from "react-icons/ri";
 
 const QUICK_LINKS = [
-  { to: '/listings',           label: 'Browse Rooms' },
-  { to: '/about',              label: 'How it Works' },
-  { to: '/register',           label: 'Post a Room'  },
-  { to: '/contact',            label: 'Contact Us'   },
-  { to: '/login',              label: 'Login'        },
+  { to: "/listings", label: "Browse Rooms" },
+  { to: "/about", label: "How it Works" },
+  { to: "/terms-and-conditions", label: "Terms & Conditions" },
+  { to: "/privacy-policy", label: "Privacy Policy" },
+  { to: "/register", label: "Post a Room" },
+  { to: "/contact", label: "Contact Us" },
+  { to: "/login", label: "Login" },
 ];
 
 const CITIES = [
-  'Karachi', 'Lahore', 'Islamabad', 'Rawalpindi',
-  'Peshawar', 'Quetta', 'Faisalabad', 'Multan',
+  "Karachi",
+  "Lahore",
+  "Islamabad",
+  "Rawalpindi",
+  "Peshawar",
+  "Quetta",
+  "Faisalabad",
+  "Multan",
 ];
 
 const SOCIAL = [
-  { icon: RiTwitterXLine,    href: '#', label: 'Twitter'   },
-  { icon: RiFacebookBoxLine, href: '#', label: 'Facebook'  },
-  { icon: RiInstagramLine,   href: '#', label: 'Instagram' },
-  { icon: RiLinkedinBoxLine, href: '#', label: 'LinkedIn'  },
+  { icon: RiTwitterXLine, href: "#", label: "Twitter" },
+  { icon: RiFacebookBoxLine, href: "#", label: "Facebook" },
+  { icon: RiInstagramLine, href: "#", label: "Instagram" },
+  { icon: RiLinkedinBoxLine, href: "#", label: "LinkedIn" },
 ];
 
 const CONTACT = [
-  { icon: RiMapPin2Line, text: 'Islamabad, Pakistan' },
-  { icon: RiMailLine,    text: 'hello@roombridge.pk' },
-  { icon: RiPhoneLine,   text: '+92 300 1234567'     },
+  { icon: RiMapPin2Line, text: "Islamabad, Pakistan" },
+  { icon: RiMailLine, text: "hello@roombridge.pk" },
+  { icon: RiPhoneLine, text: "+92 300 1234567" },
 ];
 
 const Footer = () => {
   const year = new Date().getFullYear();
 
   return (
-    <footer style={{ backgroundColor: '#0f2540' }} className="text-white">
-
+    <footer style={{ backgroundColor: "#0f2540" }} className="text-white">
       {/* ── Main grid ─────────────────────────────────────────── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 pb-10">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
-
           {/* Col 1 — Brand */}
           <div>
             <Link to="/" className="flex items-center gap-2 mb-4 group w-fit">
-              <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center
-                              group-hover:scale-110 transition-transform duration-200">
+              <div
+                className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center
+                              group-hover:scale-110 transition-transform duration-200"
+              >
                 <RiBuildingLine className="text-primary text-lg" />
               </div>
               <span className="text-xl font-bold">
@@ -54,8 +68,8 @@ const Footer = () => {
               </span>
             </Link>
             <p className="text-white/60 text-sm leading-relaxed">
-              Pakistan's smart room rental and roommate matching platform.
-              Find your perfect room or the ideal roommate — safely and easily.
+              Pakistan's smart room rental and roommate matching platform. Find
+              your perfect room or the ideal roommate — safely and easily.
             </p>
 
             {/* Social icons */}
@@ -126,7 +140,10 @@ const Footer = () => {
             </h4>
             <ul className="space-y-3">
               {CONTACT.map(({ icon: Icon, text }) => (
-                <li key={text} className="flex items-start gap-2.5 text-sm text-white/60">
+                <li
+                  key={text}
+                  className="flex items-start gap-2.5 text-sm text-white/60"
+                >
                   <Icon className="text-accent shrink-0 mt-0.5" />
                   <span>{text}</span>
                 </li>
@@ -138,10 +155,7 @@ const Footer = () => {
               <p className="text-xs text-white/40 uppercase tracking-wider font-medium mb-2">
                 Get room alerts
               </p>
-              <form
-                onSubmit={(e) => e.preventDefault()}
-                className="flex gap-2"
-              >
+              <form onSubmit={(e) => e.preventDefault()} className="flex gap-2">
                 <input
                   type="email"
                   placeholder="your@email.com"
@@ -165,16 +179,33 @@ const Footer = () => {
 
       {/* ── Bottom bar ────────────────────────────────────────── */}
       <div className="border-t border-white/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5
-                        flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div
+          className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5
+                        flex flex-col sm:flex-row items-center justify-between gap-3"
+        >
           <p className="text-sm text-white/40 flex items-center gap-1">
-            © {year} RoomBridge Pakistan. Made with{' '}
+            © {year} RoomBridge Pakistan. Made with{" "}
             <RiHeartLine className="text-error text-xs" /> in Pakistan.
           </p>
           <div className="flex items-center gap-5 text-xs text-white/40">
-            <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
-            <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
-            <a href="#" className="hover:text-white transition-colors">Cookie Policy</a>
+            <Link
+              to="/privacy-policy"
+              className="hover:text-white transition-colors"
+            >
+              Privacy Policy
+            </Link>
+            <Link
+              to="/terms-and-conditions"
+              className="hover:text-white transition-colors"
+            >
+              Terms of Service
+            </Link>
+            <Link
+              to="/privacy-policy#cookies"
+              className="hover:text-white transition-colors"
+            >
+              Cookie Policy
+            </Link>
           </div>
         </div>
       </div>

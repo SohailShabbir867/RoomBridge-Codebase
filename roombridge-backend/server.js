@@ -1,14 +1,17 @@
-require('dotenv').config();
-const http           = require('http');
-const app            = require('./src/app');
-const connectDB      = require('./src/config/db');
-const { initSocket } = require('./src/config/socket');
+require("dotenv").config();
+const http = require("http");
+const app = require("./src/app");
+const connectDB = require("./src/config/db");
+const { initSocket } = require("./src/config/socket");
 
 const PORT = process.env.PORT || 5000;
 
 /* ── Uncaught synchronous exceptions ───────────────────── */
-process.on('uncaughtException', (err) => {
-  console.error(`[${new Date().toISOString()}] ❌ UNCAUGHT EXCEPTION:`, err.message);
+process.on("uncaughtException", (err) => {
+  console.error(
+    `[${new Date().toISOString()}] ❌ UNCAUGHT EXCEPTION:`,
+    err.message,
+  );
   console.error(err.stack);
   process.exit(1);
 });
@@ -28,13 +31,15 @@ const startServer = async () => {
     // 3. Start listening
     httpServer.listen(PORT, () => {
       console.log(`\n🚀 RoomBridge API`);
-      console.log(`   Environment : ${process.env.NODE_ENV || 'development'}`);
+      console.log(`   Environment : ${process.env.NODE_ENV || "development"}`);
       console.log(`   Port        : ${PORT}`);
-      console.log(`   Frontend    : ${process.env.CLIENT_URL || 'http://localhost:5173'}`);
+      console.log(
+        `   Frontend    : ${process.env.CLIENT_URL || "http://localhost:5173"}`,
+      );
       console.log(`   Started at  : ${new Date().toISOString()}\n`);
     });
   } catch (err) {
-    console.error('❌ Failed to start server:', err.message);
+    console.error("❌ Failed to start server:", err.message);
     process.exit(1);
   }
 };
@@ -42,29 +47,36 @@ const startServer = async () => {
 startServer();
 
 /* ── Unhandled promise rejections ───────────────────────── */
-process.on('unhandledRejection', (reason) => {
-  console.error(`[${new Date().toISOString()}] ❌ UNHANDLED REJECTION:`, reason);
+process.on("unhandledRejection", (reason) => {
+  console.error(
+    `[${new Date().toISOString()}] ❌ UNHANDLED REJECTION:`,
+    reason,
+  );
   // Graceful shutdown
   httpServer.close(() => {
-    console.log('Server closed due to unhandled rejection.');
+    console.log("Server closed due to unhandled rejection.");
     process.exit(1);
   });
 });
 
 /* ── Graceful shutdown on SIGTERM (Docker / Railway / Render) */
-process.on('SIGTERM', () => {
-  console.log(`[${new Date().toISOString()}] SIGTERM received. Shutting down gracefully…`);
+process.on("SIGTERM", () => {
+  console.log(
+    `[${new Date().toISOString()}] SIGTERM received. Shutting down gracefully…`,
+  );
   httpServer.close(() => {
-    console.log('✅ HTTP server closed.');
+    console.log("✅ HTTP server closed.");
     process.exit(0);
   });
 });
 
 /* ── Graceful shutdown on SIGINT (Ctrl+C in dev) ────────── */
-process.on('SIGINT', () => {
-  console.log(`\n[${new Date().toISOString()}] SIGINT received. Shutting down…`);
+process.on("SIGINT", () => {
+  console.log(
+    `\n[${new Date().toISOString()}] SIGINT received. Shutting down…`,
+  );
   httpServer.close(() => {
-    console.log('✅ HTTP server closed.');
+    console.log("✅ HTTP server closed.");
     process.exit(0);
   });
 });

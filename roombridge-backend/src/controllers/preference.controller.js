@@ -1,13 +1,12 @@
-const Preference = require('../models/Preference.model');
-const User       = require('../models/User.model');
-const { successResponse, errorResponse } = require('../utils/apiResponse');
-const { calculateCompatibility } = require('../utils/compatibilityEngine');
+const Preference = require("../models/Preference.model");
+const { successResponse, errorResponse } = require("../utils/apiResponse");
+const { calculateCompatibility } = require("../utils/compatibilityEngine");
 
 /* Valid enum values — kept in sync with Preference.model.js */
-const VALID_SLEEP   = ['early', 'late', 'flexible'];
-const VALID_OCC     = ['student', 'professional'];
-const VALID_GENDER  = ['male', 'female'];
-const VALID_GENDER_PREF = ['male', 'female', 'any'];
+const VALID_SLEEP = ["early", "late", "flexible"];
+const VALID_OCC = ["student", "professional"];
+const VALID_GENDER = ["male", "female"];
+const VALID_GENDER_PREF = ["male", "female", "any"];
 
 /* ══════════════════════════════════════════════════════════
    GET MY PREFERENCES
@@ -16,14 +15,14 @@ const VALID_GENDER_PREF = ['male', 'female', 'any'];
 const getMyPreferences = async (req, res, next) => {
   try {
     const preference = await Preference.findOne({ user: req.user._id })
-      .select('-__v')
+      .select("-__v")
       .lean();
 
     return successResponse(
       res,
       200,
-      preference ? 'Preferences retrieved.' : 'No preferences set yet.',
-      { preference: preference || null }
+      preference ? "Preferences retrieved." : "No preferences set yet.",
+      { preference: preference || null },
     );
   } catch (err) {
     next(err);
@@ -37,9 +36,17 @@ const getMyPreferences = async (req, res, next) => {
 const createOrUpdatePreferences = async (req, res, next) => {
   try {
     const {
-      sleepSchedule, smoker, pets, cleanliness,
-      occupation, gender, genderPreference,
-      ageRange, bio, budget, preferredCity,
+      sleepSchedule,
+      smoker,
+      pets,
+      cleanliness,
+      occupation,
+      gender,
+      genderPreference,
+      ageRange,
+      bio,
+      budget,
+      preferredCity,
     } = req.body;
 
     /* ── Validate required fields ───────────────────────── */
@@ -47,76 +54,108 @@ const createOrUpdatePreferences = async (req, res, next) => {
       return errorResponse(
         res,
         400,
-        'sleepSchedule, cleanliness, occupation, and gender are required.'
+        "sleepSchedule, cleanliness, occupation, and gender are required.",
       );
     }
 
     if (!VALID_SLEEP.includes(sleepSchedule)) {
-      return errorResponse(res, 400, `sleepSchedule must be one of: ${VALID_SLEEP.join(', ')}.`);
+      return errorResponse(
+        res,
+        400,
+        `sleepSchedule must be one of: ${VALID_SLEEP.join(", ")}.`,
+      );
     }
     if (!VALID_OCC.includes(occupation)) {
-      return errorResponse(res, 400, `occupation must be one of: ${VALID_OCC.join(', ')}.`);
+      return errorResponse(
+        res,
+        400,
+        `occupation must be one of: ${VALID_OCC.join(", ")}.`,
+      );
     }
     if (!VALID_GENDER.includes(gender)) {
-      return errorResponse(res, 400, `gender must be one of: ${VALID_GENDER.join(', ')}.`);
+      return errorResponse(
+        res,
+        400,
+        `gender must be one of: ${VALID_GENDER.join(", ")}.`,
+      );
     }
 
     const cleanlinessNum = Number(cleanliness);
     if (isNaN(cleanlinessNum) || cleanlinessNum < 1 || cleanlinessNum > 5) {
-      return errorResponse(res, 400, 'cleanliness must be a number between 1 and 5.');
-    }
-
-    /* ── Validate optional genderPreference ─────────────── */
-    if (genderPreference !== undefined && !VALID_GENDER_PREF.includes(genderPreference)) {
       return errorResponse(
         res,
         400,
-        `genderPreference must be one of: ${VALID_GENDER_PREF.join(', ')}.`
+        "cleanliness must be a number between 1 and 5.",
+      );
+    }
+
+    /* ── Validate optional genderPreference ─────────────── */
+    if (
+      genderPreference !== undefined &&
+      !VALID_GENDER_PREF.includes(genderPreference)
+    ) {
+      return errorResponse(
+        res,
+        400,
+        `genderPreference must be one of: ${VALID_GENDER_PREF.join(", ")}.`,
       );
     }
 
     /* ── Build update data ──────────────────────────────── */
     const updateData = {
       sleepSchedule,
-      smoker:           smoker === true || smoker === 'true',
-      pets:             pets   === true || pets   === 'true',
-      cleanliness:      cleanlinessNum,
+      smoker: smoker === true || smoker === "true",
+      pets: pets === true || pets === "true",
+      cleanliness: cleanlinessNum,
       occupation,
       gender,
-      /* BUG FIX: genderPreference was entirely missing from the controller.
+      /* genderPreference was entirely missing from the controller.
          The Preference model has this field but it was never read or saved.
          Now correctly included in the upsert payload. */
-      genderPreference: genderPreference || 'any',
+      genderPreference: genderPreference || "any",
     };
 
     /* Optional scalar fields — only set when provided */
-    if (bio !== undefined)          updateData.bio          = bio.toString().trim().slice(0, 300) || undefined;
-    if (budget !== undefined)       updateData.budget       = Number(budget) || undefined;
-    if (preferredCity !== undefined && preferredCity !== '') {
+    if (bio !== undefined)
+      updateData.bio = bio.toString().trim().slice(0, 300) || undefined;
+    if (budget !== undefined) updateData.budget = Number(budget) || undefined;
+    if (preferredCity !== undefined && preferredCity !== "") {
       updateData.preferredCity = preferredCity;
     }
 
     /* ── Handle ageRange ────────────────────────────────── */
     if (ageRange !== undefined && ageRange !== null) {
-      /* BUG FIX: JSON.parse was unguarded — malformed string threw 500.
+      /* JSON.parse was unguarded — malformed string threw 500.
          Now returns a clear 400 validation error. */
       let parsed = ageRange;
-      if (typeof ageRange === 'string') {
+      if (typeof ageRange === "string") {
         try {
           parsed = JSON.parse(ageRange);
         } catch {
-          return errorResponse(res, 400, 'ageRange must be a valid JSON object with min and max fields.');
+          return errorResponse(
+            res,
+            400,
+            "ageRange must be a valid JSON object with min and max fields.",
+          );
         }
       }
-      if (parsed && typeof parsed === 'object') {
+      if (parsed && typeof parsed === "object") {
         const minAge = Number(parsed.min);
         const maxAge = Number(parsed.max);
         if (!isNaN(minAge) && !isNaN(maxAge)) {
           if (minAge > maxAge) {
-            return errorResponse(res, 400, 'ageRange.min must be less than or equal to ageRange.max.');
+            return errorResponse(
+              res,
+              400,
+              "ageRange.min must be less than or equal to ageRange.max.",
+            );
           }
           if (minAge < 16 || maxAge > 80) {
-            return errorResponse(res, 400, 'Age range must be between 16 and 80.');
+            return errorResponse(
+              res,
+              400,
+              "Age range must be between 16 and 80.",
+            );
           }
           updateData.ageRange = { min: minAge, max: maxAge };
         }
@@ -127,10 +166,17 @@ const createOrUpdatePreferences = async (req, res, next) => {
     const preference = await Preference.findOneAndUpdate(
       { user: req.user._id },
       { $set: { ...updateData, user: req.user._id } },
-      { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true }
+      {
+        returnDocument: "after",
+        upsert: true,
+        runValidators: true,
+        setDefaultsOnInsert: true,
+      },
     );
 
-    return successResponse(res, 200, 'Preferences saved successfully.', { preference });
+    return successResponse(res, 200, "Preferences saved successfully.", {
+      preference,
+    });
   } catch (err) {
     next(err);
   }
@@ -149,17 +195,20 @@ const getRoommateMatches = async (req, res, next) => {
       return errorResponse(
         res,
         400,
-        'Please fill out your roommate preferences first before viewing matches.'
+        "Please fill out your roommate preferences first before viewing matches.",
       );
     }
 
-    /* ── BUG FIX: N+1 query — original did User.findById inside a for-loop ──
+    /* ── N+1 query — original did User.findById inside a for-loop ──
        Fetch all preferences + their user docs using populate in one query,
        then filter in application code. Much more efficient. */
     const allPrefs = await Preference.find({
       user: { $ne: req.user._id },
     })
-      .populate('user', 'name profilePhoto city bio createdAt role isActive isBanned')
+      .populate(
+        "user",
+        "name profilePhoto city bio createdAt role isActive isBanned",
+      )
       .lean();
 
     const matches = [];
@@ -170,17 +219,21 @@ const getRoommateMatches = async (req, res, next) => {
 
       /* Only match with active, non-banned seekers */
       if (
-        pref.user.role     !== 'seeker' ||
-        pref.user.isActive === false    ||
+        pref.user.role !== "seeker" ||
+        pref.user.isActive === false ||
         pref.user.isBanned === true
-      ) continue;
+      )
+        continue;
 
       /* Calculate compatibility score */
       let result;
       try {
         result = calculateCompatibility(myPref, pref);
       } catch (calcErr) {
-        console.warn(`[Compatibility] Skipping seeker ${pref.user._id}:`, calcErr.message);
+        console.warn(
+          `[Compatibility] Skipping seeker ${pref.user._id}:`,
+          calcErr.message,
+        );
         continue;
       }
 
@@ -190,29 +243,29 @@ const getRoommateMatches = async (req, res, next) => {
       matches.push({
         user: {
           /* Strip role/isActive/isBanned from response — internal fields */
-          _id:          pref.user._id,
-          name:         pref.user.name,
+          _id: pref.user._id,
+          name: pref.user.name,
           profilePhoto: pref.user.profilePhoto,
-          city:         pref.user.city,
-          bio:          pref.user.bio,
-          createdAt:    pref.user.createdAt,
+          city: pref.user.city,
+          bio: pref.user.bio,
+          createdAt: pref.user.createdAt,
         },
         preference: {
-          sleepSchedule:    pref.sleepSchedule,
-          smoker:           pref.smoker,
-          pets:             pref.pets,
-          cleanliness:      pref.cleanliness,
-          occupation:       pref.occupation,
-          gender:           pref.gender,
+          sleepSchedule: pref.sleepSchedule,
+          smoker: pref.smoker,
+          pets: pref.pets,
+          cleanliness: pref.cleanliness,
+          occupation: pref.occupation,
+          gender: pref.gender,
           genderPreference: pref.genderPreference,
-          bio:              pref.bio,
-          budget:           pref.budget,
-          preferredCity:    pref.preferredCity,
+          bio: pref.bio,
+          budget: pref.budget,
+          preferredCity: pref.preferredCity,
         },
-        /* BUG FIX: calculateCompatibility already returns label — use it directly */
+        /* calculateCompatibility already returns label — use it directly */
         compatibility: {
-          score:     result.score,
-          label:     result.label,
+          score: result.score,
+          label: result.label,
           breakdown: result.breakdown,
         },
       });
@@ -224,10 +277,15 @@ const getRoommateMatches = async (req, res, next) => {
     /* Return top 20 matching seekers */
     const top = matches.slice(0, 20);
 
-    return successResponse(res, 200, `Found ${top.length} compatible roommate${top.length !== 1 ? 's' : ''}.`, {
-      matches: top,
-      total:   matches.length,
-    });
+    return successResponse(
+      res,
+      200,
+      `Found ${top.length} compatible roommate${top.length !== 1 ? "s" : ""}.`,
+      {
+        matches: top,
+        total: matches.length,
+      },
+    );
   } catch (err) {
     next(err);
   }

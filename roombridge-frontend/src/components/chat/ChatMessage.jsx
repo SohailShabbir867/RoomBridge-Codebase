@@ -1,6 +1,6 @@
-import React, { useEffect, useRef } from 'react';
-import { useSelector } from 'react-redux';
-import { RiCheckDoubleLine, RiCheckLine } from 'react-icons/ri';
+import React from "react";
+import { useSelector } from "react-redux";
+import { RiCheckDoubleLine, RiCheckLine } from "react-icons/ri";
 
 /*
   ChatMessage — single message bubble.
@@ -13,31 +13,44 @@ import { RiCheckDoubleLine, RiCheckLine } from 'react-icons/ri';
 */
 
 const formatTime = (dateStr) => {
-  if (!dateStr) return '';
-  return new Date(dateStr).toLocaleTimeString('en-PK', {
-    hour:   '2-digit',
-    minute: '2-digit',
+  if (!dateStr) return "";
+  return new Date(dateStr).toLocaleTimeString("en-PK", {
+    hour: "2-digit",
+    minute: "2-digit",
   });
 };
 
-const ChatMessage = ({ message, otherUser, showAvatar = true }) => {
-  const { user } = useSelector(s => s.auth);
+const ChatMessage = ({
+  message,
+  otherUser,
+  showAvatar = true,
+  onImageClick,
+}) => {
+  const { user } = useSelector((s) => s.auth);
   const senderId = message.sender?._id || message.sender;
-  const isMine   = senderId === user?._id;
+  const isMine = senderId === user?._id;
+  const hasImage =
+    message.messageType === "image" && Boolean(message.image?.url);
+  const hasCaption = message.message && message.message !== "Image";
 
   return (
-    <div className={`flex items-end gap-2 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
+    <div
+      className={`flex items-end gap-2 ${isMine ? "flex-row-reverse" : "flex-row"}`}
+    >
       {/* Avatar — only for other person's messages */}
       {!isMine && (
         <div className="w-7 h-7 shrink-0 mb-0.5">
           {showAvatar ? (
             otherUser?.profilePhoto?.url ? (
-              <img src={otherUser.profilePhoto.url} alt={otherUser.name}
-                   className="w-7 h-7 rounded-full object-cover" />
+              <img
+                src={otherUser.profilePhoto.url}
+                alt={otherUser.name}
+                className="w-7 h-7 rounded-full object-cover"
+              />
             ) : (
               <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center">
                 <span className="text-white text-[10px] font-bold">
-                  {(otherUser?.name || '?')[0].toUpperCase()}
+                  {(otherUser?.name || "?")[0].toUpperCase()}
                 </span>
               </div>
             )
@@ -48,21 +61,54 @@ const ChatMessage = ({ message, otherUser, showAvatar = true }) => {
       )}
 
       {/* Bubble */}
-      <div className={`max-w-[72%] flex flex-col ${isMine ? 'items-end' : 'items-start'}`}>
-        <div className={`px-3.5 py-2 rounded-2xl text-sm leading-relaxed break-words
-                        ${isMine
-                          ? 'bg-primary text-white rounded-br-sm'
-                          : 'bg-white border border-border text-primary rounded-bl-sm shadow-sm'}`}>
-          {message.message}
+      <div
+        className={`max-w-[72%] flex flex-col ${isMine ? "items-end" : "items-start"}`}
+      >
+        <div
+          className={`px-3.5 py-2 rounded-2xl text-sm leading-relaxed break-words
+                        ${
+                          isMine
+                            ? "bg-primary text-white rounded-br-sm"
+                            : "bg-white border border-border text-primary rounded-bl-sm shadow-sm"
+                        }`}
+        >
+          {hasImage && (
+            <button
+              type="button"
+              onClick={() => onImageClick?.(message.image.url)}
+              className="block w-full"
+            >
+              <img
+                src={message.image.url}
+                alt="Shared in chat"
+                className="rounded-xl max-h-72 w-full object-cover cursor-zoom-in"
+              />
+            </button>
+          )}
+          {hasCaption && (
+            <p className={hasImage ? "mt-2" : ""}>{message.message}</p>
+          )}
+          {!hasImage && !hasCaption && <p>{message.message}</p>}
         </div>
         {/* Timestamp + read receipt */}
-        <div className={`flex items-center gap-1 mt-0.5 ${isMine ? 'flex-row-reverse' : ''}`}>
-          <span className="text-[10px] text-text-secondary">{formatTime(message.createdAt)}</span>
-          {isMine && (
-            message.read
-              ? <RiCheckDoubleLine className="text-[10px] text-secondary" title="Read" />
-              : <RiCheckLine      className="text-[10px] text-text-secondary" title="Sent" />
-          )}
+        <div
+          className={`flex items-center gap-1 mt-0.5 ${isMine ? "flex-row-reverse" : ""}`}
+        >
+          <span className="text-[10px] text-text-secondary">
+            {formatTime(message.createdAt)}
+          </span>
+          {isMine &&
+            (message.read ? (
+              <RiCheckDoubleLine
+                className="text-[10px] text-secondary"
+                title="Read"
+              />
+            ) : (
+              <RiCheckLine
+                className="text-[10px] text-text-secondary"
+                title="Sent"
+              />
+            ))}
         </div>
       </div>
     </div>

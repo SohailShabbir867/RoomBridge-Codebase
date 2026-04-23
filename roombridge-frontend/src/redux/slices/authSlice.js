@@ -1,4 +1,4 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice } from "@reduxjs/toolkit";
 
 /*
   authSlice — manages authentication state.
@@ -16,32 +16,32 @@ import { createSlice } from '@reduxjs/toolkit';
      and authChecked prevents premature redirects.
 */
 const initialState = {
-  user:            null,
+  user: null,
   isAuthenticated: false,
-  /* BUG FIX: authChecked tells ProtectedRoute whether the initial getMe()
+  /* authChecked tells ProtectedRoute whether the initial getMe()
      has completed. Starts false, set to true regardless of login outcome. */
-  authChecked:     false,
-  loading:         false,
-  error:           null,
+  authChecked: false,
+  loading: false,
+  error: null,
 };
 
 const authSlice = createSlice({
-  name: 'auth',
+  name: "auth",
   initialState,
   reducers: {
     /* Called after successful login or getMe() */
     setCredentials: (state, action) => {
-      state.user            = action.payload.user;
+      state.user = action.payload.user;
       state.isAuthenticated = true;
-      state.authChecked     = true;  // getMe completed successfully
-      state.loading         = false;
-      state.error           = null;
+      state.authChecked = true; // getMe completed successfully
+      state.loading = false;
+      state.error = null;
     },
 
     /* Called when getMe() returns 401 (not logged in) — still "checked" */
     setAuthChecked: (state) => {
       state.authChecked = true;
-      state.loading     = false;
+      state.loading = false;
     },
 
     setLoading: (state, action) => {
@@ -49,21 +49,21 @@ const authSlice = createSlice({
     },
 
     setError: (state, action) => {
-      state.error       = action.payload;
-      state.loading     = false;
+      state.error = action.payload;
+      state.loading = false;
       state.authChecked = true; // even on error, auth check is done
     },
 
     /* Clears auth state — store.js rootReducer also resets ALL other slices */
     logout: (state) => {
-      state.user            = null;
+      state.user = null;
       state.isAuthenticated = false;
-      state.authChecked     = true; // still "checked" — user is just logged out
-      state.loading         = false;
-      state.error           = null;
+      state.authChecked = true; // still "checked" — user is just logged out
+      state.loading = false;
+      state.error = null;
     },
 
-    /* BUG FIX: updateUser merges at the top level but also handles
+    /* updateUser merges at the top level but also handles
        nested profilePhoto correctly without zeroing out subfields. */
     updateUser: (state, action) => {
       if (!state.user) return;
@@ -85,7 +85,12 @@ const authSlice = createSlice({
 });
 
 export const {
-  setCredentials, setAuthChecked, setLoading, setError, logout, updateUser,
+  setCredentials,
+  setAuthChecked,
+  setLoading,
+  setError,
+  logout,
+  updateUser,
 } = authSlice.actions;
 
 export default authSlice.reducer;

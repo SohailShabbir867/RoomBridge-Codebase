@@ -1,10 +1,10 @@
-const cloudinary  = require('cloudinary').v2;
-const streamifier = require('streamifier');
+const cloudinary = require("cloudinary").v2;
+const streamifier = require("streamifier");
 
 /* ── Configure from env ──────────────────────────────────── */
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key:    process.env.CLOUDINARY_API_KEY,
+  api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
@@ -23,25 +23,25 @@ cloudinary.config({
  * @param {string} folder  - Cloudinary folder (e.g. 'roombridge/listings')
  * @returns {Promise<{ url: string, public_id: string }>}
  */
-const uploadToCloudinary = (buffer, folder = 'roombridge') => {
+const uploadToCloudinary = (buffer, folder = "roombridge") => {
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
       {
         folder,
-        resource_type: 'image',
+        resource_type: "image",
         transformation: [
-          { quality: 'auto', fetch_format: 'auto' },
-          { width: 1200, crop: 'limit' },        // cap width, preserve aspect ratio
+          { quality: "auto", fetch_format: "auto" },
+          { width: 1200, crop: "limit" }, // cap width, preserve aspect ratio
         ],
-        allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+        allowed_formats: ["jpg", "jpeg", "png", "webp"],
       },
       (error, result) => {
         if (error) {
-          console.error('Cloudinary upload error:', error.message);
+          console.error("Cloudinary upload error:", error.message);
           return reject(new Error(`Image upload failed: ${error.message}`));
         }
         resolve({ url: result.secure_url, public_id: result.public_id });
-      }
+      },
     );
 
     // streamifier correctly handles buffer → readable stream
@@ -59,8 +59,11 @@ const deleteFromCloudinary = async (publicId) => {
   if (!publicId) return;
   try {
     const result = await cloudinary.uploader.destroy(publicId);
-    if (result.result !== 'ok' && result.result !== 'not found') {
-      console.warn(`Cloudinary delete returned unexpected result for ${publicId}:`, result.result);
+    if (result.result !== "ok" && result.result !== "not found") {
+      console.warn(
+        `Cloudinary delete returned unexpected result for ${publicId}:`,
+        result.result,
+      );
     }
   } catch (err) {
     // Non-fatal: log but don't crash the request

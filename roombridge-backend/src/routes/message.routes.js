@@ -1,5 +1,5 @@
 const express = require("express");
-const router  = express.Router();
+const router = express.Router();
 
 const {
   getConversations,
@@ -9,6 +9,7 @@ const {
 } = require("../controllers/message.controller");
 
 const { protect } = require("../middleware/auth.middleware");
+const { uploadSingle } = require("../middleware/upload.middleware");
 
 /**
  * @route   GET /api/v1/messages/conversations
@@ -29,7 +30,7 @@ router.get("/:conversationId", protect, getMessages);
  * @desc    Send a new message (also emits via Socket.io)
  * @access  Protected
  */
-router.post("/", protect, sendMessage);
+router.post("/", protect, uploadSingle("image"), sendMessage);
 
 /**
  * @route   PUT /api/v1/messages/:conversationId/read

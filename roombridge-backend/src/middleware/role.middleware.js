@@ -1,11 +1,11 @@
-const { errorResponse } = require('../utils/apiResponse');
+const { errorResponse } = require("../utils/apiResponse");
 
 /**
  * authorize(...roles) — Role-based access control middleware.
  *
  * Must be used AFTER `protect` middleware since it depends on req.user.
  *
- * BUG FIX: The original was missing a guard for the case where both `protect`
+ * The original was missing a guard for the case where both `protect`
  * AND `authorize` are stacked, but `protect` calls next(err) instead of
  * returning — if `protect` does errorResponse() and returns, `authorize`
  * never runs. That flow is correct. However, if somehow req.user is undefined
@@ -26,7 +26,7 @@ const authorize = (...roles) => {
       return errorResponse(
         res,
         401,
-        'Not authenticated. Ensure the protect middleware is applied before authorize.'
+        "Not authenticated. Ensure the protect middleware is applied before authorize.",
       );
     }
 
@@ -34,7 +34,7 @@ const authorize = (...roles) => {
       return errorResponse(
         res,
         403,
-        `Access denied. This action requires one of the following roles: ${roles.join(', ')}.`
+        `Access denied. This action requires one of the following roles: ${roles.join(", ")}.`,
       );
     }
 

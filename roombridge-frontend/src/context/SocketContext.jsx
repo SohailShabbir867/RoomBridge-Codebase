@@ -1,22 +1,27 @@
 import React, {
-  createContext, useContext, useEffect,
-  useRef, useState, useCallback,
-} from 'react';
-import { io } from 'socket.io-client';
-import { useSelector } from 'react-redux';
-import { API_BASE_URL } from '../utils/constants';
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+} from "react";
+import { io } from "socket.io-client";
+import { useSelector } from "react-redux";
+import { API_BASE_URL } from "../utils/constants";
 
 const SocketContext = createContext(null);
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useSocket = () => useContext(SocketContext);
 
 export const SocketProvider = ({ children }) => {
   const { user, isAuthenticated } = useSelector((state) => state.auth);
-  const socketRef  = useRef(null);
+  const socketRef = useRef(null);
   const [isConnected, setIsConnected] = useState(false);
 
   /*
-    BUG FIX: Dependency was [isAuthenticated, user] — every time the user
+    Dependency was [isAuthenticated, user] — every time the user
     object reference changed (e.g. after Redux updateUser dispatch), the
     socket disconnected and reconnected unnecessarily.
     Fix: use user?._id as the dependency. The socket only needs to reconnect
@@ -30,7 +35,6 @@ export const SocketProvider = ({ children }) => {
       if (socketRef.current) {
         socketRef.current.disconnect();
         socketRef.current = null;
-        setIsConnected(false);
       }
       return;
     }
@@ -39,42 +43,42 @@ export const SocketProvider = ({ children }) => {
     if (socketRef.current?.connected) return;
 
     /* Strip /api/v1 suffix to get the server root URL for Socket.io */
-    const socketUrl = API_BASE_URL.replace(/\/api(\/v\d+)?$/, '');
+    const socketUrl = API_BASE_URL.replace(/\/api(\/v\d+)?$/, "");
 
     const socket = io(socketUrl, {
       withCredentials: true,
-      transports:      ['websocket', 'polling'],
-      autoConnect:     true,
-      reconnection:    true,
+      transports: ["websocket", "polling"],
+      autoConnect: true,
+      reconnection: true,
       reconnectionAttempts: 5,
-      reconnectionDelay:    1000,
+      reconnectionDelay: 1000,
     });
 
     socketRef.current = socket;
 
-    socket.on('connect', () => {
+    socket.on("connect", () => {
       setIsConnected(true);
       /* Join personal room — backend registers userId as online and joins user's personal room */
-      socket.emit('user_online', userId);
+      socket.emit("user_online", userId);
     });
 
-    socket.on('disconnect', (reason) => {
+    socket.on("disconnect", (reason) => {
       setIsConnected(false);
       /* If server closed the connection intentionally, don't auto-reconnect */
-      if (reason === 'io server disconnect') {
+      if (reason === "io server disconnect") {
         socket.connect();
       }
     });
 
-    socket.on('connect_error', (err) => {
-      console.warn('[Socket] Connection error:', err.message);
+    socket.on("connect_error", (err) => {
+      console.warn("[Socket] Connection error:", err.message);
       setIsConnected(false);
     });
 
-    socket.on('reconnect', () => {
+    socket.on("reconnect", () => {
       setIsConnected(true);
       /* Re-join personal room after reconnection */
-      socket.emit('user_online', userId);
+      socket.emit("user_online", userId);
     });
 
     return () => {
@@ -85,7 +89,7 @@ export const SocketProvider = ({ children }) => {
   }, [isAuthenticated, userId]); // Only runs when login state or user ID changes
 
   /*
-    BUG FIX: emit/on/off helpers now guard against null socketRef.current.
+    emit/on/off helpers now guard against null socketRef.current.
     Using useCallback so these functions have stable references and don't
     cause re-renders when passed as props to child components.
   */
@@ -109,9 +113,7 @@ export const SocketProvider = ({ children }) => {
     }
   }, []);
 
-  /* Expose the raw socket for components that need direct access */
   const contextValue = {
-    socket:      socketRef.current,
     isConnected,
     emit,
     on,

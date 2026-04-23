@@ -8,11 +8,11 @@
 
 const escapeHtml = (str) =>
   str
-    .replace(/&/g,  "&amp;")
-    .replace(/</g,  "&lt;")
-    .replace(/>/g,  "&gt;")
-    .replace(/"/g,  "&quot;")
-    .replace(/'/g,  "&#x27;");
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;");
 
 const sanitizeObject = (obj) => {
   if (!obj || typeof obj !== "object") return obj;
@@ -42,8 +42,8 @@ const sanitizeObject = (obj) => {
 };
 
 const sanitize = (req, _res, next) => {
-  if (req.body)   req.body   = sanitizeObject(req.body);
-  if (req.query)  req.query  = sanitizeObject(req.query);
+  if (req.body) req.body = sanitizeObject(req.body);
+  if (req.query) req.query = sanitizeObject(req.query);
   if (req.params) req.params = sanitizeObject(req.params);
   next();
 };

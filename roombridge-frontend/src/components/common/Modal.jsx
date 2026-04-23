@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useCallback } from 'react';
-import { createPortal } from 'react-dom';
-import { RiCloseLine } from 'react-icons/ri';
+import React, { useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
+import { RiCloseLine } from "react-icons/ri";
 
 /**
  * Modal — accessible dialog with ESC close, outside-click close, focus trap.
@@ -18,33 +18,36 @@ import { RiCloseLine } from 'react-icons/ri';
  */
 
 const sizeMap = {
-  sm:   'max-w-sm',
-  md:   'max-w-lg',
-  lg:   'max-w-2xl',
-  xl:   'max-w-4xl',
-  full: 'max-w-full mx-4',
+  sm: "max-w-sm",
+  md: "max-w-lg",
+  lg: "max-w-2xl",
+  xl: "max-w-4xl",
+  full: "max-w-full mx-4",
 };
 
 /* Focusable elements inside the modal for focus-trap */
 const FOCUSABLE = [
-  'a[href]', 'button:not([disabled])', 'input:not([disabled])',
-  'select:not([disabled])', 'textarea:not([disabled])',
+  "a[href]",
+  "button:not([disabled])",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
   '[tabindex]:not([tabindex="-1"])',
-].join(', ');
+].join(", ");
 
 const Modal = ({
   isOpen,
   onClose,
   title,
-  size          = 'md',
+  size = "md",
   children,
   footer,
   closeOnOverlay = true,
-  showClose      = true,
-  className      = '',
+  showClose = true,
+  className = "",
 }) => {
   const overlayRef = useRef(null);
-  const panelRef   = useRef(null);
+  const panelRef = useRef(null);
   const triggerRef = useRef(null); // element that opened the modal (to restore focus)
 
   /* ── Escape key close ────────────────────────────────────────── */
@@ -52,19 +55,22 @@ const Modal = ({
     (e) => {
       if (!isOpen) return;
 
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         e.preventDefault();
         onClose?.();
         return;
       }
 
       /* ── Focus trap ─────────────────────────────────────────── */
-      if (e.key === 'Tab' && panelRef.current) {
+      if (e.key === "Tab" && panelRef.current) {
         const focusable = [...panelRef.current.querySelectorAll(FOCUSABLE)];
-        if (focusable.length === 0) { e.preventDefault(); return; }
+        if (focusable.length === 0) {
+          e.preventDefault();
+          return;
+        }
 
         const first = focusable[0];
-        const last  = focusable[focusable.length - 1];
+        const last = focusable[focusable.length - 1];
 
         if (e.shiftKey) {
           /* Shift+Tab: if on first element, wrap to last */
@@ -81,7 +87,7 @@ const Modal = ({
         }
       }
     },
-    [isOpen, onClose]
+    [isOpen, onClose],
   );
 
   useEffect(() => {
@@ -92,12 +98,12 @@ const Modal = ({
 
     /* Lock body scroll */
     const scrollY = window.scrollY;
-    document.body.style.overflow = 'hidden';
-    document.body.style.top      = `-${scrollY}px`;
-    document.body.style.position = 'fixed';
-    document.body.style.width    = '100%';
+    document.body.style.overflow = "hidden";
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.position = "fixed";
+    document.body.style.width = "100%";
 
-    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown);
 
     /* Move focus into the modal on open */
     requestAnimationFrame(() => {
@@ -111,14 +117,14 @@ const Modal = ({
     });
 
     return () => {
-      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener("keydown", handleKeyDown);
 
       /* Restore body scroll */
-      const savedY = parseInt(document.body.style.top || '0', 10);
-      document.body.style.overflow = '';
-      document.body.style.top      = '';
-      document.body.style.position = '';
-      document.body.style.width    = '';
+      const savedY = parseInt(document.body.style.top || "0", 10);
+      document.body.style.overflow = "";
+      document.body.style.top = "";
+      document.body.style.position = "";
+      document.body.style.width = "";
       window.scrollTo(0, Math.abs(savedY));
 
       /* Restore focus to the element that opened the modal */
@@ -143,11 +149,11 @@ const Modal = ({
                  bg-primary/50 backdrop-blur-sm animate-fade-in"
       role="dialog"
       aria-modal="true"
-      aria-labelledby={title ? 'modal-title' : undefined}
+      aria-labelledby={title ? "modal-title" : undefined}
     >
       <div
         ref={panelRef}
-        tabIndex={-1}  /* make panel focusable as a fallback */
+        tabIndex={-1} /* make panel focusable as a fallback */
         className={`relative w-full ${sizeMap[size] ?? sizeMap.md} bg-white
                     rounded-card shadow-hover animate-scale-in
                     flex flex-col max-h-[90vh] outline-none ${className}`}
@@ -156,7 +162,10 @@ const Modal = ({
         {(title || showClose) && (
           <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
             {title && (
-              <h2 id="modal-title" className="text-lg font-semibold text-primary">
+              <h2
+                id="modal-title"
+                className="text-lg font-semibold text-primary"
+              >
                 {title}
               </h2>
             )}
@@ -176,9 +185,7 @@ const Modal = ({
         )}
 
         {/* ── Body (scrollable) ────────────────────────────────── */}
-        <div className="flex-1 overflow-y-auto px-6 py-5">
-          {children}
-        </div>
+        <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>
 
         {/* ── Footer ──────────────────────────────────────────── */}
         {footer && (
@@ -188,7 +195,7 @@ const Modal = ({
         )}
       </div>
     </div>,
-    document.body
+    document.body,
   );
 };
 

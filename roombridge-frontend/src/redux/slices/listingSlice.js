@@ -1,4 +1,4 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice } from "@reduxjs/toolkit";
 
 /*
   listingSlice — manages listing browse, owner listings, and filter state.
@@ -7,73 +7,75 @@ import { createSlice } from '@reduxjs/toolkit';
     city, roomType (NOT 'type'), minRent (NOT 'minPrice'), maxRent (NOT 'maxPrice')
 */
 const initialState = {
-  listings:        [],
-  myListings:      [],          // owner's own listings
-  savedListings:   [],          // seeker's saved listings
-  currentListing:  null,
-  loading:         false,
-  error:           null,
-  totalCount:      0,
-  totalPages:      1,
-  currentPage:     1,
+  listings: [],
+  myListings: [], // owner's own listings
+  savedListings: [], // seeker's saved listings
+  currentListing: null,
+  loading: false,
+  error: null,
+  totalCount: 0,
+  totalPages: 1,
+  currentPage: 1,
   filters: {
-    city:       '',
+    city: "",
     /*
-      BUG FIX: was 'type' — backend filter param is 'roomType'.
+      was 'type' — backend filter param is 'roomType'.
       Changed to 'roomType' to match Listing.model.js and listing.controller.js.
     */
-    roomType:   '',
+    roomType: "",
     /*
-      BUG FIX: was 'minPrice'/'maxPrice' — backend uses 'minRent'/'maxRent'.
+      was 'minPrice'/'maxPrice' — backend uses 'minRent'/'maxRent'.
       Changed to match listing.controller.js getAllListings filter logic.
     */
-    minRent:    '',
-    maxRent:    '',
-    amenities:  [],
-    gender:     '',
-    search:     '',
-    sortBy:     'newest',
+    minRent: "",
+    maxRent: "",
+    amenities: [],
+    gender: "",
+    search: "",
+    sortBy: "newest",
   },
 };
 
 const listingSlice = createSlice({
-  name: 'listing',
+  name: "listing",
   initialState,
   reducers: {
     /* Public listing list */
     setListings: (state, action) => {
-      state.listings   = action.payload.listings ?? [];
+      state.listings = action.payload.listings ?? [];
       /*
-        BUG FIX: backend returns { listings, pagination: { total, totalPages } }
+        backend returns { listings, pagination: { total, totalPages } }
         not { listings, total }. Original code used action.payload.total (undefined).
       */
-      state.totalCount = action.payload.pagination?.total
-                      ?? action.payload.total
-                      ?? action.payload.listings?.length
-                      ?? 0;
-      state.totalPages = action.payload.pagination?.totalPages
-                      ?? Math.ceil(state.totalCount / 12)
-                      ?? 1;
-      state.loading    = false;
-      state.error      = null;
+      state.totalCount =
+        action.payload.pagination?.total ??
+        action.payload.total ??
+        action.payload.listings?.length ??
+        0;
+      state.totalPages =
+        action.payload.pagination?.totalPages ??
+        Math.ceil(state.totalCount / 12) ??
+        1;
+      state.loading = false;
+      state.error = null;
     },
 
     /* Owner's own listings */
     setMyListings: (state, action) => {
       state.myListings = action.payload.listings ?? action.payload ?? [];
-      state.loading    = false;
+      state.loading = false;
     },
 
     /* Seeker's saved listings */
     setSavedListings: (state, action) => {
       state.savedListings = action.payload.listings ?? action.payload ?? [];
-      state.loading       = false;
+      state.loading = false;
     },
 
     setCurrentListing: (state, action) => {
       state.currentListing = action.payload;
-      state.loading        = false;
-      state.error          = null;
+      state.loading = false;
+      state.error = null;
     },
 
     addListing: (state, action) => {
@@ -97,9 +99,9 @@ const listingSlice = createSlice({
 
     removeListing: (state, action) => {
       const id = action.payload;
-      state.listings    = state.listings.filter((l) => l._id !== id);
-      state.myListings  = state.myListings.filter((l) => l._id !== id);
-      state.totalCount  = Math.max(0, state.totalCount - 1);
+      state.listings = state.listings.filter((l) => l._id !== id);
+      state.myListings = state.myListings.filter((l) => l._id !== id);
+      state.totalCount = Math.max(0, state.totalCount - 1);
     },
 
     /* Toggle isSaved flag on a listing in local state */
@@ -112,12 +114,12 @@ const listingSlice = createSlice({
     },
 
     setFilters: (state, action) => {
-      state.filters     = { ...state.filters, ...action.payload };
+      state.filters = { ...state.filters, ...action.payload };
       state.currentPage = 1; // reset to first page when filter changes
     },
 
     resetFilters: (state) => {
-      state.filters     = initialState.filters;
+      state.filters = initialState.filters;
       state.currentPage = 1;
     },
 
@@ -130,18 +132,26 @@ const listingSlice = createSlice({
     },
 
     setError: (state, action) => {
-      state.error   = action.payload;
+      state.error = action.payload;
       state.loading = false;
     },
   },
 });
 
 export const {
-  setListings, setMyListings, setSavedListings,
-  setCurrentListing, addListing, updateListing,
-  removeListing, toggleSavedListing,
-  setFilters, resetFilters, setPage,
-  setLoading, setError,
+  setListings,
+  setMyListings,
+  setSavedListings,
+  setCurrentListing,
+  addListing,
+  updateListing,
+  removeListing,
+  toggleSavedListing,
+  setFilters,
+  resetFilters,
+  setPage,
+  setLoading,
+  setError,
 } = listingSlice.actions;
 
 export default listingSlice.reducer;

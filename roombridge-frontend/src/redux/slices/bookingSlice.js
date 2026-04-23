@@ -1,20 +1,20 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice } from "@reduxjs/toolkit";
 
 /*
   bookingSlice — manages booking request state for both seekers and owners.
 */
 const initialState = {
-  bookings:       [],   // seeker's sent requests OR owner's received requests
+  bookings: [], // seeker's sent requests OR owner's received requests
   currentBooking: null,
-  loading:        false,
-  error:          null,
-  totalCount:     0,
-  totalPages:     1,
-  currentPage:    1,
+  loading: false,
+  error: null,
+  totalCount: 0,
+  totalPages: 1,
+  currentPage: 1,
 };
 
 const bookingSlice = createSlice({
-  name: 'booking',
+  name: "booking",
   initialState,
   reducers: {
     /* Set the full bookings list (from API response) */
@@ -25,17 +25,17 @@ const bookingSlice = createSlice({
           - A paginated response { bookings, pagination }
       */
       if (Array.isArray(action.payload)) {
-        state.bookings    = action.payload;
-        state.totalCount  = action.payload.length;
-        state.totalPages  = 1;
+        state.bookings = action.payload;
+        state.totalCount = action.payload.length;
+        state.totalPages = 1;
       } else {
-        state.bookings    = action.payload.bookings   ?? [];
-        state.totalCount  = action.payload.pagination?.total      ?? 0;
-        state.totalPages  = action.payload.pagination?.totalPages ?? 1;
-        state.currentPage = action.payload.pagination?.page       ?? 1;
+        state.bookings = action.payload.bookings ?? [];
+        state.totalCount = action.payload.pagination?.total ?? 0;
+        state.totalPages = action.payload.pagination?.totalPages ?? 1;
+        state.currentPage = action.payload.pagination?.page ?? 1;
       }
       state.loading = false;
-      state.error   = null;
+      state.error = null;
     },
 
     setCurrentBooking: (state, action) => {
@@ -49,7 +49,7 @@ const bookingSlice = createSlice({
     },
 
     /*
-      BUG FIX: was only updating { id, status } — the booking controller
+      was only updating { id, status } — the booking controller
       returns the full populated booking doc. Now accepts the full booking
       object and replaces the stale entry in state.
     */
@@ -65,12 +65,12 @@ const bookingSlice = createSlice({
     },
 
     /*
-      BUG FIX: removeBooking was hard-deleting from state — but the backend
+      removeBooking was hard-deleting from state — but the backend
       now soft-cancels (status = 'cancelled'). Use updateBookingInState for
       cancellations. removeBooking is kept for admin hard-delete use cases.
     */
     removeBooking: (state, action) => {
-      state.bookings   = state.bookings.filter((b) => b._id !== action.payload);
+      state.bookings = state.bookings.filter((b) => b._id !== action.payload);
       state.totalCount = Math.max(0, state.totalCount - 1);
     },
 
@@ -83,16 +83,21 @@ const bookingSlice = createSlice({
     },
 
     setError: (state, action) => {
-      state.error   = action.payload;
+      state.error = action.payload;
       state.loading = false;
     },
   },
 });
 
 export const {
-  setBookings, setCurrentBooking, addBooking,
-  updateBookingInState, removeBooking,
-  setPage, setLoading, setError,
+  setBookings,
+  setCurrentBooking,
+  addBooking,
+  updateBookingInState,
+  removeBooking,
+  setPage,
+  setLoading,
+  setError,
 } = bookingSlice.actions;
 
 export default bookingSlice.reducer;

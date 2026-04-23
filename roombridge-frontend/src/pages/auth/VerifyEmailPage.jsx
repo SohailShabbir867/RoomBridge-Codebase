@@ -1,28 +1,44 @@
-import React, { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import api from '../../services/api';
-import { RiCheckboxCircleLine, RiCloseCircleLine, RiLoader4Line } from 'react-icons/ri';
+import React, { useEffect, useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import api from "../../services/api";
+import {
+  RiCheckboxCircleLine,
+  RiCloseCircleLine,
+  RiLoader4Line,
+} from "react-icons/ri";
+
+// Avoid duplicate verification requests for the same token in a single app session.
+// This prevents false "failed" UI when the first request succeeds and a second
+// duplicate request hits an already-consumed token.
+const requestedVerificationTokens = new Set();
 
 const VerifyEmailPage = () => {
   const { token } = useParams();
-  const [status, setStatus] = useState('loading'); // loading | success | error
-  const [message, setMessage] = useState('');
+  const [status, setStatus] = useState(token ? "loading" : "error"); // loading | success | error
+  const [message, setMessage] = useState(
+    token ? "" : "No verification token found.",
+  );
 
   useEffect(() => {
-    if (!token) {
-      setStatus('error');
-      setMessage('No verification token found.');
+    if (!token) return;
+
+    if (requestedVerificationTokens.has(token)) {
       return;
     }
+
+    requestedVerificationTokens.add(token);
 
     const verify = async () => {
       try {
         const res = await api.get(`/auth/verify-email/${token}`);
-        setStatus('success');
-        setMessage(res.data?.message || 'Email verified successfully!');
+        setStatus("success");
+        setMessage(res.data?.message || "Email verified successfully!");
       } catch (err) {
-        setStatus('error');
-        setMessage(err.response?.data?.message || 'Verification failed. The link may be expired.');
+        setStatus("error");
+        setMessage(
+          err.response?.data?.message ||
+            "Verification failed. The link may be expired.",
+        );
       }
     };
 
@@ -32,23 +48,28 @@ const VerifyEmailPage = () => {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="bg-white rounded-card border border-border shadow-card max-w-md w-full p-8 text-center">
-
-        {status === 'loading' && (
+        {status === "loading" && (
           <>
             <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
               <RiLoader4Line className="text-4xl text-primary animate-spin" />
             </div>
-            <h1 className="text-2xl font-bold text-primary mb-3">Verifying Your Email…</h1>
-            <p className="text-text-secondary">Please wait while we verify your account.</p>
+            <h1 className="text-2xl font-bold text-primary mb-3">
+              Verifying Your Email…
+            </h1>
+            <p className="text-text-secondary">
+              Please wait while we verify your account.
+            </p>
           </>
         )}
 
-        {status === 'success' && (
+        {status === "success" && (
           <>
             <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6">
               <RiCheckboxCircleLine className="text-4xl text-green-500" />
             </div>
-            <h1 className="text-2xl font-bold text-primary mb-3">Email Verified! 🎉</h1>
+            <h1 className="text-2xl font-bold text-primary mb-3">
+              Email Verified! 🎉
+            </h1>
             <p className="text-text-secondary mb-6">{message}</p>
             <Link
               to="/login"
@@ -60,12 +81,14 @@ const VerifyEmailPage = () => {
           </>
         )}
 
-        {status === 'error' && (
+        {status === "error" && (
           <>
             <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
               <RiCloseCircleLine className="text-4xl text-red-500" />
             </div>
-            <h1 className="text-2xl font-bold text-primary mb-3">Verification Failed</h1>
+            <h1 className="text-2xl font-bold text-primary mb-3">
+              Verification Failed
+            </h1>
             <p className="text-text-secondary mb-6">{message}</p>
             <div className="space-y-3">
               <Link
@@ -86,7 +109,6 @@ const VerifyEmailPage = () => {
             </div>
           </>
         )}
-
       </div>
     </div>
   );

@@ -1,27 +1,27 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice } from "@reduxjs/toolkit";
 
 /*
   adminSlice — manages admin panel data (users, listings, reports, stats).
 */
 const initialState = {
-  users:        [],
-  listings:     [],
-  reports:      [],
-  bookings:     [],
-  stats:        null,
-  loading:      false,
-  error:        null,
-  /* BUG FIX: pagination state was missing — admin tables had no page info */
+  users: [],
+  listings: [],
+  reports: [],
+  bookings: [],
+  stats: null,
+  loading: false,
+  error: null,
+  /* pagination state was missing — admin tables had no page info */
   pagination: {
-    users:    { total: 0, page: 1, totalPages: 1 },
+    users: { total: 0, page: 1, totalPages: 1 },
     listings: { total: 0, page: 1, totalPages: 1 },
-    reports:  { total: 0, page: 1, totalPages: 1 },
+    reports: { total: 0, page: 1, totalPages: 1 },
     bookings: { total: 0, page: 1, totalPages: 1 },
   },
 };
 
 const adminSlice = createSlice({
-  name: 'admin',
+  name: "admin",
   initialState,
   reducers: {
     /* Users */
@@ -35,13 +35,13 @@ const adminSlice = createSlice({
       } else {
         state.users = action.payload.users ?? action.payload.data ?? [];
         state.pagination.users = {
-          total:      action.payload.pagination?.total      ?? state.users.length,
-          page:       action.payload.pagination?.page       ?? 1,
+          total: action.payload.pagination?.total ?? state.users.length,
+          page: action.payload.pagination?.page ?? 1,
           totalPages: action.payload.pagination?.totalPages ?? 1,
         };
       }
       state.loading = false;
-      state.error   = null;
+      state.error = null;
     },
 
     updateUserStatus: (state, action) => {
@@ -53,9 +53,14 @@ const adminSlice = createSlice({
     removeUser: (state, action) => {
       const id = action.payload;
       state.users = state.users.filter((u) => u._id !== id);
-      /* BUG FIX: also remove listings that belonged to this user */
-      state.listings = state.listings.filter((l) => l.owner?._id !== id && l.owner !== id);
-      state.pagination.users.total = Math.max(0, state.pagination.users.total - 1);
+      /* also remove listings that belonged to this user */
+      state.listings = state.listings.filter(
+        (l) => l.owner?._id !== id && l.owner !== id,
+      );
+      state.pagination.users.total = Math.max(
+        0,
+        state.pagination.users.total - 1,
+      );
     },
 
     /* Listings */
@@ -65,13 +70,13 @@ const adminSlice = createSlice({
       } else {
         state.listings = action.payload.listings ?? action.payload.data ?? [];
         state.pagination.listings = {
-          total:      action.payload.pagination?.total      ?? state.listings.length,
-          page:       action.payload.pagination?.page       ?? 1,
+          total: action.payload.pagination?.total ?? state.listings.length,
+          page: action.payload.pagination?.page ?? 1,
           totalPages: action.payload.pagination?.totalPages ?? 1,
         };
       }
       state.loading = false;
-      state.error   = null;
+      state.error = null;
     },
 
     updateListingStatus: (state, action) => {
@@ -79,13 +84,17 @@ const adminSlice = createSlice({
       const listing = state.listings.find((l) => l._id === id);
       if (listing) {
         listing.status = status;
-        if (rejectionReason !== undefined) listing.rejectionReason = rejectionReason;
+        if (rejectionReason !== undefined)
+          listing.rejectionReason = rejectionReason;
       }
     },
 
     removeListing: (state, action) => {
       state.listings = state.listings.filter((l) => l._id !== action.payload);
-      state.pagination.listings.total = Math.max(0, state.pagination.listings.total - 1);
+      state.pagination.listings.total = Math.max(
+        0,
+        state.pagination.listings.total - 1,
+      );
     },
 
     /* Reports */
@@ -95,13 +104,13 @@ const adminSlice = createSlice({
       } else {
         state.reports = action.payload.reports ?? action.payload.data ?? [];
         state.pagination.reports = {
-          total:      action.payload.pagination?.total      ?? state.reports.length,
-          page:       action.payload.pagination?.page       ?? 1,
+          total: action.payload.pagination?.total ?? state.reports.length,
+          page: action.payload.pagination?.page ?? 1,
           totalPages: action.payload.pagination?.totalPages ?? 1,
         };
       }
       state.loading = false;
-      state.error   = null;
+      state.error = null;
     },
 
     updateReport: (state, action) => {
@@ -117,20 +126,20 @@ const adminSlice = createSlice({
       } else {
         state.bookings = action.payload.bookings ?? action.payload.data ?? [];
         state.pagination.bookings = {
-          total:      action.payload.pagination?.total      ?? state.bookings.length,
-          page:       action.payload.pagination?.page       ?? 1,
+          total: action.payload.pagination?.total ?? state.bookings.length,
+          page: action.payload.pagination?.page ?? 1,
           totalPages: action.payload.pagination?.totalPages ?? 1,
         };
       }
       state.loading = false;
-      state.error   = null;
+      state.error = null;
     },
 
     /* Stats */
     setStats: (state, action) => {
-      state.stats   = action.payload;
+      state.stats = action.payload;
       state.loading = false;
-      state.error   = null;
+      state.error = null;
     },
 
     /* Set pagination page for a specific resource */
@@ -146,20 +155,26 @@ const adminSlice = createSlice({
     },
 
     setError: (state, action) => {
-      state.error   = action.payload;
+      state.error = action.payload;
       state.loading = false;
     },
   },
 });
 
 export const {
-  setUsers, updateUserStatus, removeUser,
-  setAdminListings, updateListingStatus, removeListing,
-  setReports, updateReport,
+  setUsers,
+  updateUserStatus,
+  removeUser,
+  setAdminListings,
+  updateListingStatus,
+  removeListing,
+  setReports,
+  updateReport,
   setAdminBookings,
   setStats,
   setAdminPage,
-  setLoading, setError,
+  setLoading,
+  setError,
 } = adminSlice.actions;
 
 export default adminSlice.reducer;

@@ -1,7 +1,7 @@
-import React from 'react';
-import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import Loader from './Loader';
+import React from "react";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { useSelector } from "react-redux";
+import Loader from "./Loader";
 
 /**
  * ProtectedRoute
@@ -22,9 +22,9 @@ import Loader from './Loader';
  *   4. If authenticated and correct role → render <Outlet />.
  */
 const DASHBOARD = {
-  owner:  '/owner/dashboard',
-  seeker: '/seeker/dashboard',
-  admin:  '/admin/dashboard',
+  owner: "/owner/dashboard",
+  seeker: "/seeker/dashboard",
+  admin: "/admin/dashboard",
 };
 
 const ProtectedRoute = ({ role }) => {
@@ -32,7 +32,7 @@ const ProtectedRoute = ({ role }) => {
   const { user, isAuthenticated, authChecked } = useSelector((s) => s.auth);
 
   /*
-    BUG FIX: Original code had no authChecked guard.
+    Original code had no authChecked guard.
     On first page load the Redux store initialises with isAuthenticated: false
     and user: null. If the user has a valid httpOnly cookie, getMe() runs in
     App.jsx and will eventually set credentials — but ProtectedRoute renders
@@ -51,18 +51,12 @@ const ProtectedRoute = ({ role }) => {
 
   /* Not logged in → /login (save current path for post-login redirect) */
   if (!isAuthenticated || !user) {
-    return (
-      <Navigate
-        to="/login"
-        replace
-        state={{ from: location.pathname }}
-      />
-    );
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 
   /* Logged in but wrong role → their own dashboard */
   if (role && user.role !== role) {
-    const dest = DASHBOARD[user.role] ?? '/';
+    const dest = DASHBOARD[user.role] ?? "/";
     return <Navigate to={dest} replace />;
   }
 
