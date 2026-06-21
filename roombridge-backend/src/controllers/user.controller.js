@@ -363,7 +363,7 @@ const getSupportAdmin = async (req, res, next) => {
 ══════════════════════════════════════════════════════════ */
 const submitContactMessage = async (req, res, next) => {
   try {
-    const { name, email, subject, message } = req.body;
+    const { name, email, subject, message, phone, role } = req.body;
 
     if (
       !name?.trim() ||
@@ -378,12 +378,21 @@ const submitContactMessage = async (req, res, next) => {
       );
     }
 
+    /* Validate role if provided */
+    const validRoles = ["Student", "Owner", "Other", ""];
+    const cleanRole = role?.trim() || "";
+    if (cleanRole && !validRoles.includes(cleanRole)) {
+      return errorResponse(res, 400, "Invalid role. Must be Student, Owner, or Other.");
+    }
+
     const saved = await ContactMessage.create({
       senderUser: req.user?._id,
       name: name.trim(),
       email: email.trim(),
       subject: subject.trim(),
       message: message.trim(),
+      phone: phone?.trim() || "",
+      role: cleanRole,
     });
 
     return successResponse(

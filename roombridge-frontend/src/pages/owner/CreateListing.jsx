@@ -1,9 +1,9 @@
 import React, { useState, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import listingService from "../../services/listingService";
+import RoleDashboardLayout from "../../components/dashboard/common/RoleDashboardLayout";
 import toast from "react-hot-toast";
 import {
-  RiArrowLeftLine,
   RiImageAddLine,
   RiCloseLine,
   RiHome4Line,
@@ -11,56 +11,137 @@ import {
   RiMoneyDollarCircleLine,
   RiCheckboxCircleLine,
   RiLoader4Line,
+  RiArrowRightLine,
+  RiArrowLeftLine,
+  RiCheckLine,
+  RiBuildingLine,
+  RiStarLine,
 } from "react-icons/ri";
 import { CITIES, AMENITIES } from "../../utils/constants";
 
 document.title = "Post a Room — RoomBridge";
 
-/*
-  Room type values must match the Listing.model.js enum exactly:
-  'single_room' | 'shared_room' | 'full_apartment' | 'hostel'
-  Old values 'single', 'shared', 'apartment' were rejected by validator.
-*/
-const ROOM_TYPES = [
-  { value: "single", label: "Single Room" },
-  { value: "shared", label: "Shared Room" },
-  { value: "apartment", label: "Full Apartment" },
+/* ── Design tokens ──────────────────────────────────────────── */
+const DK  = "#012D1D";
+const BTN = "#8E4E14";
+const ACC = "#FFAB69";
+const CR  = "#F7F4EF";
+
+/* ── Form steps definition ──────────────────────────────────── */
+const STEPS = [
+  { id: 1, label: "Basic Info",         icon: RiHome4Line },
+  { id: 2, label: "Room Details",       icon: RiStarLine },
+  { id: 3, label: "Location",           icon: RiMapPin2Line },
+  { id: 4, label: "Pricing & Pricing",  icon: RiMoneyDollarCircleLine },
+  { id: 5, label: "Photos",             icon: RiImageAddLine },
 ];
 
-const CreateListing = () => {
-  const fileRef = useRef();
+const ROOM_TYPES = [
+  { value: "single",    label: "Single Room",    desc: "Private room for one person" },
+  { value: "shared",    label: "Shared Room",    desc: "Shared space with others" },
+  { value: "apartment", label: "Full Apartment", desc: "Entire apartment" },
+];
 
-  const [form, setForm] = useState({
-    title: "",
-    description: "",
-    rent: "",
-    city: "",
-    address: "",
-    area: "",
-    roomType: "",
-    genderPreference: "any",
-    availableFrom: "",
-    furnished: false,
-    amenities: [],
-  });
-  const [photos, setPhotos] = useState([]); // File objects
-  const [previews, setPreviews] = useState([]); // Data URLs
-  const [errors, setErrors] = useState({});
+const GENDER_OPTIONS = [
+  { value: "any",    label: "Any" },
+  { value: "male",   label: "Male Only" },
+  { value: "female", label: "Female Only" },
+];
+
+/* ── Helper components ──────────────────────────────────────── */
+const Label = ({ children, required }) => (
+  <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">
+    {children} {required && <span style={{ color: "#EF4444" }}>*</span>}
+  </label>
+);
+
+const InputField = ({ error, className = "", ...props }) => (
+  <input
+    {...props}
+    className={`w-full rounded-xl py-3 px-4 text-sm outline-none transition-all border
+                ${error ? "border-red-400 ring-1 ring-red-400" : "border-[#E8E2D9] focus:ring-2 focus:ring-[#012D1D]/20"}
+                ${className}`}
+    style={{ backgroundColor: CR }}
+  />
+);
+
+const SelectField = ({ error, children, ...props }) => (
+  <select
+    {...props}
+    className={`w-full rounded-xl py-3 px-4 text-sm outline-none transition-all border
+                ${error ? "border-red-400 ring-1 ring-red-400" : "border-[#E8E2D9] focus:ring-2 focus:ring-[#012D1D]/20"}`}
+    style={{ backgroundColor: CR }}
+  >
+    {children}
+  </select>
+);
+
+const ErrMsg = ({ msg }) =>
+  msg ? <p className="text-red-500 text-xs mt-1 font-medium">{msg}</p> : null;
+
+/* ── Step progress bar ──────────────────────────────────────── */
+const StepBar = ({ current, total }) => (
+  <div className="flex items-center gap-1.5 mb-8">
+    {Array.from({ length: total }, (_, i) => {
+      const n = i + 1;
+      const done = n < current;
+      const active = n === current;
+      return (
+        <React.Fragment key={n}>
+          <div
+            className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-all"
+            style={{
+              backgroundColor: done ? "#16A34A" : active ? DK : "#E8E2D9",
+              color: done || active ? "#fff" : "#9CA3AF",
+            }}
+          >
+            {done ? <RiCheckLine className="text-sm" /> : n}
+          </div>
+          {n < total && (
+            <div
+              className="flex-1 h-0.5 rounded-full transition-all"
+              style={{ backgroundColor: done ? "#16A34A" : "#E8E2D9" }}
+            />
+          )}
+        </React.Fragment>
+      );
+    })}
+  </div>
+);
+
+/* ════════════════════════════════════════════════════════════ */
+const CreateListing = () => {
+  const navigate = useNavigate();
+  const fileRef  = useRef();
+  const [step, setStep]       = useState(1);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [errors, setErrors]   = useState({});
 
+  const [form, setForm] = useState({
+    title:            "",
+    description:      "",
+    rent:             "",
+    city:             "",
+    address:          "",
+    area:             "",
+    nearbyUniversity: "",
+    roomType:         "",
+    genderPreference: "any",
+    availableFrom:    "",
+    furnished:        false,
+    amenities:        [],
+  });
+  const [photos, setPhotos]   = useState([]);
+  const [previews, setPreviews] = useState([]);
+
+  /* ── Field handlers ─────────────────────────────────────── */
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setForm((f) => ({ ...f, [name]: type === "checkbox" ? checked : value }));
     if (errors[name]) setErrors((er) => ({ ...er, [name]: "" }));
   };
 
-  /*
-    The old code used field name 'features' and sent:
-      JSON.stringify(amenities.map(name => ({ name, available: true })))
-    Backend Listing.model.js amenities field is a plain string array.
-    Fixed: use field name 'amenities' and send the string values directly.
-  */
   const handleAmenity = (a) => {
     setForm((f) => ({
       ...f,
@@ -74,15 +155,13 @@ const CreateListing = () => {
     const files = Array.from(e.target.files);
     const remaining = 6 - photos.length;
     const toAdd = files.slice(0, remaining);
-    if (files.length > remaining)
-      toast.error(`Max 6 photos. Only adding ${remaining}.`);
+    if (files.length > remaining) toast.error(`Max 6 photos. Only adding ${remaining}.`);
     setPhotos((p) => [...p, ...toAdd]);
     toAdd.forEach((f) => {
       const reader = new FileReader();
       reader.onload = (ev) => setPreviews((p) => [...p, ev.target.result]);
       reader.readAsDataURL(f);
     });
-    /* Reset file input so the same file can be picked again */
     e.target.value = "";
   };
 
@@ -91,57 +170,55 @@ const CreateListing = () => {
     setPreviews((p) => p.filter((_, idx) => idx !== i));
   };
 
-  const validate = () => {
+  /* ── Per-step validation ────────────────────────────────── */
+  const validateStep = (s) => {
     const e = {};
-    if (!form.title.trim() || form.title.length < 10)
-      e.title = "Title must be at least 10 characters";
-    if (!form.description.trim() || form.description.length < 50)
-      e.description = "Description must be at least 50 characters";
-    if (!form.rent || Number(form.rent) < 1000)
-      e.rent = "Rent must be at least PKR 1,000";
-    if (!form.city) e.city = "City is required";
-    if (!form.address.trim()) e.address = "Address is required";
-    if (!form.roomType) e.roomType = "Room type is required";
-    if (!form.availableFrom)
-      e.availableFrom = "Available from date is required";
-    if (photos.length === 0) e.photos = "At least one photo is required";
+    if (s === 1) {
+      if (!form.title.trim() || form.title.length < 10)
+        e.title = "Title must be at least 10 characters";
+      if (!form.description.trim() || form.description.length < 50)
+        e.description = "Description must be at least 50 characters";
+    }
+    if (s === 2) {
+      if (!form.roomType) e.roomType = "Room type is required";
+    }
+    if (s === 3) {
+      if (!form.city)             e.city    = "City is required";
+      if (!form.address.trim())   e.address = "Address is required";
+    }
+    if (s === 4) {
+      if (!form.rent || Number(form.rent) < 1000)
+        e.rent = "Rent must be at least PKR 1,000";
+      if (!form.availableFrom)
+        e.availableFrom = "Available from date is required";
+    }
+    if (s === 5) {
+      if (photos.length === 0) e.photos = "At least one photo is required";
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validate()) {
-      toast.error("Please fix the errors below.");
-      return;
-    }
+  const goNext = () => {
+    if (validateStep(step)) setStep((s) => Math.min(s + 1, STEPS.length));
+  };
+  const goPrev = () => setStep((s) => Math.max(s - 1, 1));
 
+  /* ── Submit ─────────────────────────────────────────────── */
+  const handleSubmit = async () => {
+    if (!validateStep(5)) return;
     try {
       setLoading(true);
       const fd = new FormData();
-
-      /*
-        amenities (formerly 'features') must be appended as individual
-        string values, not as a JSON blob of objects. The backend expects:
-          amenities: ['WiFi', 'AC', 'Parking']  (plain string array from req.body)
-        FormData sends repeated keys as an array when parsed by express:
-          fd.append('amenities', 'WiFi')
-          fd.append('amenities', 'AC')
-        Backend Listing model: amenities: [{ type: String }]
-      */
       const { amenities, ...rest } = form;
       Object.entries(rest).forEach(([k, v]) => fd.append(k, v));
       amenities.forEach((a) => fd.append("amenities", a));
       photos.forEach((f) => fd.append("photos", f));
-
       await listingService.createListing(fd);
       setSuccess(true);
       toast.success("Listing submitted for review! 🎉");
     } catch (err) {
-      /* err.message is undefined on axios errors */
-      toast.error(
-        err.response?.data?.message || "Failed to create listing. Try again.",
-      );
+      toast.error(err.response?.data?.message || "Failed to create listing. Try again.");
     } finally {
       setLoading(false);
     }
@@ -149,404 +226,524 @@ const CreateListing = () => {
 
   const resetForm = () => {
     setSuccess(false);
+    setStep(1);
     setForm({
-      title: "",
-      description: "",
-      rent: "",
-      city: "",
-      address: "",
-      area: "",
-      roomType: "",
-      genderPreference: "any",
-      availableFrom: "",
-      furnished: false,
-      amenities: [],
+      title: "", description: "", rent: "", city: "", address: "", area: "",
+      nearbyUniversity: "", roomType: "", genderPreference: "any",
+      availableFrom: "", furnished: false, amenities: [],
     });
-    setPhotos([]);
-    setPreviews([]);
-    setErrors({});
+    setPhotos([]); setPreviews([]); setErrors({});
   };
 
+  /* ── Success screen ─────────────────────────────────────── */
   if (success)
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4">
-        <div className="bg-white rounded-card shadow-card border border-border p-10 text-center max-w-md w-full">
-          <div className="w-20 h-20 bg-success/10 rounded-2xl flex items-center justify-center mx-auto mb-5">
-            <RiCheckboxCircleLine className="text-success text-5xl" />
-          </div>
-          <h2 className="text-2xl font-bold text-primary mb-2">
-            Submitted for Review!
-          </h2>
-          <p className="text-text-secondary text-sm mb-6">
-            Your listing is pending admin approval. You'll be notified once it's
-            live.
-          </p>
-          <div className="flex gap-3 justify-center">
-            <Link to="/owner/listings" className="btn-secondary">
-              My Listings
-            </Link>
-            <button onClick={resetForm} className="btn-primary">
-              Post Another
-            </button>
+      <RoleDashboardLayout role="owner" title="Post a Room">
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div
+            className="bg-white rounded-2xl border shadow-sm p-10 text-center max-w-md w-full"
+            style={{ borderColor: "#E8E2D9" }}
+          >
+            <div
+              className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-5"
+              style={{ backgroundColor: "#D1FAE5" }}
+            >
+              <RiCheckboxCircleLine className="text-5xl text-green-600" />
+            </div>
+            <h2 className="text-2xl font-extrabold mb-2" style={{ color: DK }}>
+              Submitted for Review!
+            </h2>
+            <p className="text-gray-400 text-sm mb-7">
+              Your listing is pending admin approval. You'll be notified once it's live.
+            </p>
+            <div className="flex gap-3 justify-center">
+              <Link
+                to="/owner/listings"
+                className="px-5 py-2.5 rounded-xl border text-sm font-bold text-gray-600 hover:bg-gray-50 transition-all"
+                style={{ borderColor: "#E8E2D9" }}
+              >
+                My Listings
+              </Link>
+              <button
+                onClick={resetForm}
+                className="px-5 py-2.5 rounded-xl text-sm font-bold text-white hover:opacity-90 transition-all"
+                style={{ backgroundColor: BTN }}
+              >
+                Post Another
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      </RoleDashboardLayout>
     );
 
+  /* ── Main form ──────────────────────────────────────────── */
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-20 bg-white border-b border-border px-6 py-4 flex items-center gap-4">
-        <Link
-          to="/owner/dashboard"
-          className="p-2 rounded-lg hover:bg-background text-text-secondary hover:text-primary transition-colors"
+    <RoleDashboardLayout
+      role="owner"
+      title="Post a Room"
+      subtitle="List your hostel / room on RoomBridge for free"
+    >
+      <div className="max-w-2xl mx-auto">
+
+        {/* Step progress */}
+        <StepBar current={step} total={STEPS.length} />
+
+        {/* Card wrapper */}
+        <div
+          className="bg-white rounded-2xl border shadow-sm overflow-hidden"
+          style={{ borderColor: "#E8E2D9" }}
         >
-          <RiArrowLeftLine className="text-xl" />
-        </Link>
-        <div>
-          <h1 className="font-bold text-primary">Post a Room</h1>
-          <p className="text-text-secondary text-xs">
-            Fill in details to list your room
-          </p>
-        </div>
-      </header>
-
-      <div className="max-w-3xl mx-auto px-4 py-8">
-        <form onSubmit={handleSubmit} noValidate className="space-y-8">
-          {/* Photos */}
-          <div className="bg-white rounded-card border border-border shadow-card p-6">
-            <h2 className="font-semibold text-primary mb-1 flex items-center gap-2">
-              <RiImageAddLine className="text-secondary" /> Photos
-            </h2>
-            <p className="text-xs text-text-secondary mb-4">
-              Upload up to 6 photos. First photo will be the cover.
-            </p>
-
-            <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-3">
-              {previews.map((src, i) => (
-                <div
-                  key={i}
-                  className="relative aspect-square rounded-lg overflow-hidden border border-border"
-                >
-                  <img
-                    src={src}
-                    alt=""
-                    className="w-full h-full object-cover"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removePhoto(i)}
-                    aria-label="Remove photo"
-                    className="absolute top-1 right-1 w-5 h-5 bg-error rounded-full flex items-center justify-center"
-                  >
-                    <RiCloseLine className="text-white text-xs" />
-                  </button>
-                  {i === 0 && (
-                    <span className="absolute bottom-1 left-1 text-[9px] bg-primary text-white px-1 rounded">
-                      Cover
-                    </span>
-                  )}
-                </div>
-              ))}
-              {photos.length < 6 && (
-                <button
-                  type="button"
-                  onClick={() => fileRef.current.click()}
-                  className="aspect-square rounded-lg border-2 border-dashed border-border
-                                   flex flex-col items-center justify-center text-text-secondary
-                                   hover:border-secondary hover:text-secondary transition-colors cursor-pointer"
-                >
-                  <RiImageAddLine className="text-xl mb-1" />
-                  <span className="text-xs">Add</span>
-                </button>
-              )}
+          {/* Card header */}
+          <div
+            className="px-6 py-5 border-b"
+            style={{ borderColor: "#F3EFE9", backgroundColor: `${DK}08` }}
+          >
+            <div className="flex items-center gap-3">
+              {React.createElement(STEPS[step - 1].icon, {
+                className: "text-xl",
+                style: { color: ACC },
+              })}
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                  Step {step} of {STEPS.length}
+                </p>
+                <h2 className="font-extrabold text-base" style={{ color: DK }}>
+                  {STEPS[step - 1].label}
+                </h2>
+              </div>
             </div>
-            <input
-              ref={fileRef}
-              type="file"
-              multiple
-              accept="image/*"
-              className="hidden"
-              onChange={handlePhotos}
-            />
-            {errors.photos && (
-              <p className="text-xs text-error mt-1">{errors.photos}</p>
-            )}
           </div>
 
-          {/* Basic Info */}
-          <div className="bg-white rounded-card border border-border shadow-card p-6 space-y-4">
-            <h2 className="font-semibold text-primary flex items-center gap-2">
-              <RiHome4Line className="text-secondary" /> Basic Information
-            </h2>
+          {/* Card body */}
+          <div className="px-6 py-6 space-y-5">
 
-            <div>
-              <label className="label" htmlFor="cl-title">
-                Listing Title *
-              </label>
-              <input
-                id="cl-title"
-                name="title"
-                value={form.title}
-                onChange={handleChange}
-                placeholder="e.g. Cozy Single Room in DHA Phase 6"
-                className={`input ${errors.title ? "input-error" : ""}`}
-              />
-              <div className="flex items-center justify-between mt-1">
-                {errors.title && <p className="error-msg">{errors.title}</p>}
-                <span className="text-xs text-text-secondary ml-auto">
-                  {form.title.length}/100
-                </span>
-              </div>
-            </div>
-
-            <div>
-              <label className="label" htmlFor="cl-desc">
-                Description *
-              </label>
-              <textarea
-                id="cl-desc"
-                name="description"
-                value={form.description}
-                onChange={handleChange}
-                rows={5}
-                placeholder="Describe your room in detail — size, floor, nearby facilities..."
-                className={`input resize-none ${errors.description ? "input-error" : ""}`}
-              />
-              <div className="flex items-center justify-between mt-1">
-                {errors.description && (
-                  <p className="error-msg">{errors.description}</p>
-                )}
-                <span className="text-xs text-text-secondary ml-auto">
-                  {form.description.length}/2000
-                </span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="label" htmlFor="cl-roomType">
-                  Room Type *
-                </label>
-                {/*
-                  Values now match the backend Listing model enum:
-                  single_room | shared_room | full_apartment | hostel
-                */}
-                <select
-                  id="cl-roomType"
-                  name="roomType"
-                  value={form.roomType}
-                  onChange={handleChange}
-                  className={`input ${errors.roomType ? "input-error" : ""}`}
-                >
-                  <option value="">Select type</option>
-                  {ROOM_TYPES.map(({ value, label }) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-                {errors.roomType && (
-                  <p className="error-msg">{errors.roomType}</p>
-                )}
-              </div>
-              <div>
-                <label className="label" htmlFor="cl-gender">
-                  Gender Preference
-                </label>
-                <select
-                  id="cl-gender"
-                  name="genderPreference"
-                  value={form.genderPreference}
-                  onChange={handleChange}
-                  className="input"
-                >
-                  <option value="any">Any</option>
-                  <option value="male">Male only</option>
-                  <option value="female">Female only</option>
-                </select>
-              </div>
-            </div>
-
-            <label className="flex items-center gap-3 p-3 bg-background rounded-input border border-border cursor-pointer select-none">
-              <input
-                type="checkbox"
-                id="cl-furnished"
-                name="furnished"
-                checked={form.furnished}
-                onChange={handleChange}
-                className="accent-primary w-4 h-4"
-              />
-              <span className="text-sm text-primary">Furnished room</span>
-            </label>
-          </div>
-
-          {/* Pricing & Date */}
-          <div className="bg-white rounded-card border border-border shadow-card p-6 space-y-4">
-            <h2 className="font-semibold text-primary flex items-center gap-2">
-              <RiMoneyDollarCircleLine className="text-secondary" /> Pricing &
-              Availability
-            </h2>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="label" htmlFor="cl-rent">
-                  Monthly Rent (PKR) *
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-text-secondary font-medium pointer-events-none">
-                    ₨
-                  </span>
-                  <input
-                    id="cl-rent"
-                    name="rent"
-                    type="number"
-                    min="1000"
-                    max="500000"
-                    value={form.rent}
+            {/* ── STEP 1: Basic Info ─────────────────────────── */}
+            {step === 1 && (
+              <>
+                <div>
+                  <Label required>Listing Title</Label>
+                  <InputField
+                    name="title"
+                    value={form.title}
                     onChange={handleChange}
-                    placeholder="15000"
-                    className={`input pl-8 ${errors.rent ? "input-error" : ""}`}
+                    placeholder="e.g. Cozy Single Room in DHA Phase 6"
+                    maxLength={100}
+                    error={errors.title}
                   />
+                  <div className="flex items-center justify-between mt-1">
+                    <ErrMsg msg={errors.title} />
+                    <span className="text-xs text-gray-400 ml-auto">{form.title.length}/100</span>
+                  </div>
                 </div>
-                {errors.rent && <p className="error-msg">{errors.rent}</p>}
-              </div>
-              <div>
-                <label className="label" htmlFor="cl-available">
-                  Available From *
-                </label>
-                <input
-                  id="cl-available"
-                  name="availableFrom"
-                  type="date"
-                  min={new Date().toISOString().split("T")[0]}
-                  value={form.availableFrom}
-                  onChange={handleChange}
-                  className={`input ${errors.availableFrom ? "input-error" : ""}`}
-                />
-                {errors.availableFrom && (
-                  <p className="error-msg">{errors.availableFrom}</p>
-                )}
-              </div>
-            </div>
-          </div>
 
-          {/* Location */}
-          <div className="bg-white rounded-card border border-border shadow-card p-6 space-y-4">
-            <h2 className="font-semibold text-primary flex items-center gap-2">
-              <RiMapPin2Line className="text-secondary" /> Location
-            </h2>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="label" htmlFor="cl-city">
-                  City *
-                </label>
-                <select
-                  id="cl-city"
-                  name="city"
-                  value={form.city}
-                  onChange={handleChange}
-                  className={`input ${errors.city ? "input-error" : ""}`}
-                >
-                  <option value="">Select city</option>
-                  {CITIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-                {errors.city && <p className="error-msg">{errors.city}</p>}
-              </div>
-              <div>
-                <label className="label" htmlFor="cl-area">
-                  Area / Sector
-                </label>
-                <input
-                  id="cl-area"
-                  name="area"
-                  value={form.area}
-                  onChange={handleChange}
-                  placeholder="e.g. DHA Phase 6"
-                  className="input"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="label" htmlFor="cl-address">
-                Full Address *
-              </label>
-              <input
-                id="cl-address"
-                name="address"
-                value={form.address}
-                onChange={handleChange}
-                placeholder="e.g. House 123, Street 5, DHA Phase 6"
-                className={`input ${errors.address ? "input-error" : ""}`}
-              />
-              {errors.address && <p className="error-msg">{errors.address}</p>}
-            </div>
-          </div>
+                <div>
+                  <Label required>Description</Label>
+                  <textarea
+                    name="description"
+                    value={form.description}
+                    onChange={handleChange}
+                    rows={6}
+                    maxLength={2000}
+                    placeholder="Describe your room in detail — size, floor, nearby facilities, house rules..."
+                    className={`w-full rounded-xl py-3 px-4 text-sm outline-none transition-all border resize-none
+                                ${errors.description ? "border-red-400 ring-1 ring-red-400" : "border-[#E8E2D9] focus:ring-2 focus:ring-[#012D1D]/20"}`}
+                    style={{ backgroundColor: CR }}
+                  />
+                  <div className="flex items-center justify-between mt-1">
+                    <ErrMsg msg={errors.description} />
+                    <span className="text-xs text-gray-400 ml-auto">{form.description.length}/2000</span>
+                  </div>
+                </div>
+              </>
+            )}
 
-          {/* Amenities
-            Was called 'features' and sent as JSON objects [{name, available}].
-            Now correctly uses 'amenities' with AMENITIES from constants.js (string labels
-            that match the backend string array field).
-          */}
-          <div className="bg-white rounded-card border border-border shadow-card p-6">
-            <h2 className="font-semibold text-primary mb-4">
-              Amenities & Features
-            </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {AMENITIES.map((a) => (
+            {/* ── STEP 2: Room Details ───────────────────────── */}
+            {step === 2 && (
+              <>
+                <div>
+                  <Label required>Room Type</Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-1">
+                    {ROOM_TYPES.map(({ value, label, desc }) => {
+                      const sel = form.roomType === value;
+                      return (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => {
+                            setForm((f) => ({ ...f, roomType: value }));
+                            if (errors.roomType) setErrors((e) => ({ ...e, roomType: "" }));
+                          }}
+                          className="text-left p-4 rounded-xl border transition-all"
+                          style={{
+                            borderColor: sel ? DK : "#E8E2D9",
+                            backgroundColor: sel ? `${DK}08` : "#fff",
+                          }}
+                        >
+                          <p className="font-bold text-sm" style={{ color: sel ? DK : "#374151" }}>
+                            {label}
+                          </p>
+                          <p className="text-xs text-gray-400 mt-0.5">{desc}</p>
+                          {sel && (
+                            <div
+                              className="mt-2 w-5 h-5 rounded-full flex items-center justify-center"
+                              style={{ backgroundColor: DK }}
+                            >
+                              <RiCheckLine className="text-white text-xs" />
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <ErrMsg msg={errors.roomType} />
+                </div>
+
+                <div>
+                  <Label>Gender Preference</Label>
+                  <div className="flex gap-2 mt-1">
+                    {GENDER_OPTIONS.map(({ value, label }) => {
+                      const sel = form.genderPreference === value;
+                      return (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => setForm((f) => ({ ...f, genderPreference: value }))}
+                          className="flex-1 py-2.5 rounded-xl border text-sm font-bold transition-all"
+                          style={{
+                            borderColor:     sel ? DK : "#E8E2D9",
+                            backgroundColor: sel ? DK : "#fff",
+                            color:           sel ? "#fff" : "#6B7280",
+                          }}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 <label
-                  key={a}
-                  className={`flex items-center gap-2 p-3 rounded-input border cursor-pointer
-                                   transition-all duration-150 text-sm select-none
-                                   ${
-                                     form.amenities.includes(a)
-                                       ? "border-secondary bg-secondary/5 text-secondary font-medium"
-                                       : "border-border text-text-secondary hover:border-border/80"
-                                   }`}
+                  className="flex items-center gap-3 p-4 rounded-xl border cursor-pointer select-none transition-all"
+                  style={{
+                    borderColor:     form.furnished ? DK : "#E8E2D9",
+                    backgroundColor: form.furnished ? `${DK}08` : CR,
+                  }}
                 >
                   <input
                     type="checkbox"
-                    checked={form.amenities.includes(a)}
-                    onChange={() => handleAmenity(a)}
-                    className="accent-secondary shrink-0"
+                    name="furnished"
+                    checked={form.furnished}
+                    onChange={handleChange}
+                    className="w-4 h-4 rounded"
+                    style={{ accentColor: DK }}
                   />
-                  {a}
+                  <div>
+                    <p className="font-bold text-sm" style={{ color: DK }}>Furnished Room</p>
+                    <p className="text-xs text-gray-400">Beds, tables, wardrobes included</p>
+                  </div>
                 </label>
-              ))}
-            </div>
-          </div>
 
-          {/* Submit */}
-          <div className="flex gap-3">
-            <Link
-              to="/owner/dashboard"
-              className="btn-secondary flex-1 justify-center"
-            >
-              Cancel
-            </Link>
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-primary flex-1 justify-center gap-2"
-              aria-busy={loading}
-            >
-              {loading ? (
-                <>
-                  <RiLoader4Line className="animate-spin" /> Submitting…
-                </>
-              ) : (
-                <>
-                  <RiCheckboxCircleLine /> Submit Listing
-                </>
-              )}
-            </button>
+                <div>
+                  <Label>Amenities & Features</Label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-1">
+                    {AMENITIES.map((a) => {
+                      const sel = form.amenities.includes(a);
+                      return (
+                        <label
+                          key={a}
+                          className="flex items-center gap-2 p-3 rounded-xl border cursor-pointer text-sm select-none transition-all"
+                          style={{
+                            borderColor:     sel ? DK : "#E8E2D9",
+                            backgroundColor: sel ? `${DK}08` : "#fff",
+                            color:           sel ? DK : "#6B7280",
+                            fontWeight:      sel ? 600 : 400,
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={sel}
+                            onChange={() => handleAmenity(a)}
+                            className="shrink-0"
+                            style={{ accentColor: DK }}
+                          />
+                          {a}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* ── STEP 3: Location ───────────────────────────── */}
+            {step === 3 && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label required>City</Label>
+                    <SelectField
+                      name="city"
+                      value={form.city}
+                      onChange={handleChange}
+                      error={errors.city}
+                    >
+                      <option value="">Select city</option>
+                      {CITIES.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </SelectField>
+                    <ErrMsg msg={errors.city} />
+                  </div>
+                  <div>
+                    <Label>Area / Sector</Label>
+                    <InputField
+                      name="area"
+                      value={form.area}
+                      onChange={handleChange}
+                      placeholder="e.g. DHA Phase 6"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label required>Full Address</Label>
+                  <InputField
+                    name="address"
+                    value={form.address}
+                    onChange={handleChange}
+                    placeholder="e.g. House 123, Street 5, DHA Phase 6, Karachi"
+                    error={errors.address}
+                  />
+                  <ErrMsg msg={errors.address} />
+                </div>
+
+                <div>
+                  <Label>Nearby University</Label>
+                  <div className="relative">
+                    <RiBuildingLine
+                      className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                    />
+                    <InputField
+                      name="nearbyUniversity"
+                      value={form.nearbyUniversity}
+                      onChange={handleChange}
+                      placeholder="e.g. FAST NUCES, UET Lahore"
+                      className="pl-10"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Optional — helps students find accommodation near their campus.
+                  </p>
+                </div>
+              </>
+            )}
+
+            {/* ── STEP 4: Pricing & Availability ────────────── */}
+            {step === 4 && (
+              <>
+                <div>
+                  <Label required>Monthly Rent (PKR)</Label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400 pointer-events-none">
+                      ₨
+                    </span>
+                    <InputField
+                      name="rent"
+                      type="number"
+                      min="1000"
+                      max="500000"
+                      value={form.rent}
+                      onChange={handleChange}
+                      placeholder="15000"
+                      error={errors.rent}
+                      className="pl-9"
+                    />
+                  </div>
+                  <ErrMsg msg={errors.rent} />
+                </div>
+
+                <div>
+                  <Label required>Available From</Label>
+                  <InputField
+                    name="availableFrom"
+                    type="date"
+                    min={new Date().toISOString().split("T")[0]}
+                    value={form.availableFrom}
+                    onChange={handleChange}
+                    error={errors.availableFrom}
+                  />
+                  <ErrMsg msg={errors.availableFrom} />
+                </div>
+
+                {/* Rent summary card */}
+                {form.rent && Number(form.rent) >= 1000 && (
+                  <div
+                    className="rounded-xl p-4 border"
+                    style={{ backgroundColor: `${DK}08`, borderColor: `${DK}20` }}
+                  >
+                    <p className="text-xs text-gray-400 font-medium mb-1">Rent Summary</p>
+                    <p className="text-2xl font-extrabold" style={{ color: DK }}>
+                      PKR {Number(form.rent).toLocaleString()}
+                      <span className="text-sm font-medium text-gray-400">/month</span>
+                    </p>
+                    {form.availableFrom && (
+                      <p className="text-xs text-gray-400 mt-1">
+                        Available from {new Date(form.availableFrom).toLocaleDateString("en-PK", { year: "numeric", month: "long", day: "numeric" })}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* ── STEP 5: Photos ─────────────────────────────── */}
+            {step === 5 && (
+              <>
+                <div>
+                  <p className="text-sm text-gray-400 mb-4">
+                    Upload up to <strong>6 photos</strong>. The first photo will be the cover image shown in listings.
+                  </p>
+
+                  {/* Photo grid */}
+                  <div className="grid grid-cols-3 gap-3 mb-4">
+                    {previews.map((src, i) => (
+                      <div
+                        key={i}
+                        className="relative aspect-square rounded-xl overflow-hidden border"
+                        style={{ borderColor: "#E8E2D9" }}
+                      >
+                        <img src={src} alt="" className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => removePhoto(i)}
+                          aria-label="Remove photo"
+                          className="absolute top-2 right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center shadow-md"
+                        >
+                          <RiCloseLine className="text-white text-xs" />
+                        </button>
+                        {i === 0 && (
+                          <span
+                            className="absolute bottom-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full text-white"
+                            style={{ backgroundColor: DK }}
+                          >
+                            Cover
+                          </span>
+                        )}
+                      </div>
+                    ))}
+
+                    {/* Add photo slot */}
+                    {photos.length < 6 && (
+                      <button
+                        type="button"
+                        onClick={() => fileRef.current.click()}
+                        className="aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center
+                                   cursor-pointer transition-all hover:border-opacity-60"
+                        style={{ borderColor: `${DK}40`, backgroundColor: `${DK}05` }}
+                      >
+                        <RiImageAddLine className="text-2xl mb-1" style={{ color: DK }} />
+                        <span className="text-xs font-semibold" style={{ color: DK }}>
+                          Add Photo
+                        </span>
+                        <span className="text-[10px] text-gray-400 mt-0.5">
+                          {photos.length}/6
+                        </span>
+                      </button>
+                    )}
+                  </div>
+
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handlePhotos}
+                  />
+                  <ErrMsg msg={errors.photos} />
+
+                  {photos.length > 0 && (
+                    <p className="text-xs text-gray-400 mt-2">
+                      ✓ {photos.length} photo{photos.length !== 1 ? "s" : ""} selected. Drag the first slot to change the cover.
+                    </p>
+                  )}
+                </div>
+              </>
+            )}
+
+          </div>{/* end card body */}
+
+          {/* Card footer — navigation */}
+          <div
+            className="px-6 py-4 border-t flex items-center justify-between gap-3"
+            style={{ borderColor: "#F3EFE9", backgroundColor: "#FAFAF8" }}
+          >
+            {step > 1 ? (
+              <button
+                type="button"
+                onClick={goPrev}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-bold text-gray-600
+                           hover:bg-gray-50 transition-all"
+                style={{ borderColor: "#E8E2D9" }}
+              >
+                <RiArrowLeftLine /> Back
+              </button>
+            ) : (
+              <Link
+                to="/owner/dashboard"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-bold text-gray-600
+                           hover:bg-gray-50 transition-all"
+                style={{ borderColor: "#E8E2D9" }}
+              >
+                Cancel
+              </Link>
+            )}
+
+            {step < STEPS.length ? (
+              <button
+                type="button"
+                onClick={goNext}
+                className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white
+                           hover:opacity-90 active:scale-95 transition-all shadow-sm"
+                style={{ backgroundColor: DK }}
+              >
+                Next <RiArrowRightLine />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={loading}
+                className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white
+                           hover:opacity-90 disabled:opacity-60 active:scale-95 transition-all shadow-sm"
+                style={{ backgroundColor: BTN }}
+              >
+                {loading ? (
+                  <><RiLoader4Line className="animate-spin" /> Submitting…</>
+                ) : (
+                  <><RiCheckboxCircleLine /> Submit Listing</>
+                )}
+              </button>
+            )}
           </div>
-        </form>
+        </div>
+
+        {/* Step labels below */}
+        <div className="flex justify-between mt-3 px-1">
+          {STEPS.map(({ id, label }) => (
+            <p
+              key={id}
+              className="text-[10px] font-semibold text-center"
+              style={{ color: id === step ? DK : "#9CA3AF", flex: 1 }}
+            >
+              {label}
+            </p>
+          ))}
+        </div>
+
       </div>
-    </div>
+    </RoleDashboardLayout>
   );
 };
 

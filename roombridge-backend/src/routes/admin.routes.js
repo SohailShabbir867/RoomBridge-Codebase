@@ -16,6 +16,10 @@ const {
   updateContactMessageStatus,
   deleteContactMessage,
   getAllBookings,
+  getRecipientCount,
+  sendNotification,
+  sendMaintenanceNotification,
+  sendErrorAlert,
 } = require("../controllers/admin.controller");
 
 const { protect } = require("../middleware/auth.middleware");
@@ -137,5 +141,35 @@ router.delete("/contact-messages/:id", deleteContactMessage);
  * @access  Admin
  */
 router.get("/bookings", getAllBookings);
+
+/* ── Notifications ──────────────────────────────────── */
+
+/**
+ * @route   GET /api/v1/admin/notifications/recipient-count
+ * @desc    Returns the count of users for a given recipientType
+ * @access  Admin
+ */
+router.get("/notifications/recipient-count", getRecipientCount);
+
+/**
+ * @route   POST /api/v1/admin/notifications/send
+ * @desc    Send a general email notification to selected recipients
+ * @access  Admin
+ */
+router.post("/notifications/send", sendNotification);
+
+/**
+ * @route   POST /api/v1/admin/notifications/maintenance
+ * @desc    Send a scheduled maintenance notice to all active users
+ * @access  Admin
+ */
+router.post("/notifications/maintenance", sendMaintenanceNotification);
+
+/**
+ * @route   POST /api/v1/admin/notifications/error-alert
+ * @desc    Send a system error alert to all admin users
+ * @access  Admin
+ */
+router.post("/notifications/error-alert", sendErrorAlert);
 
 module.exports = router;

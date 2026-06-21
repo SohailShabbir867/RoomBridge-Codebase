@@ -263,7 +263,10 @@ const getOwnerBookings = async (req, res, next) => {
 const updateBookingStatus = async (req, res, next) => {
   try {
     const { status, ownerNote } = req.body;
-    const sanitizedOwnerNote = (ownerNote || "").toString().trim().slice(0, 500);
+    const sanitizedOwnerNote = (ownerNote || "")
+      .toString()
+      .trim()
+      .slice(0, 500);
 
     /* Only owner can accept or reject */
     if (!["accepted", "rejected"].includes(status)) {
@@ -363,11 +366,15 @@ const updateBookingStatus = async (req, res, next) => {
       /* Mark listing as inactive after accepting a booking
          so no more requests can come in. Owner can reactivate if the
          accepted seeker cancels later. */
-      await Listing.findByIdAndUpdate(booking.listing._id, { status: "inactive" });
+      await Listing.findByIdAndUpdate(booking.listing._id, {
+        status: "inactive",
+      });
     }
 
     if (status === "rejected") {
-      await Listing.findByIdAndUpdate(booking.listing._id, { status: "active" });
+      await Listing.findByIdAndUpdate(booking.listing._id, {
+        status: "active",
+      });
     }
 
     /* ── Send email notification to the seeker ──────────── */

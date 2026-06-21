@@ -11,48 +11,45 @@ import {
   RiDeleteBinLine,
   RiEyeLine,
   RiMapPin2Line,
-  RiCheckboxCircleLine,
   RiTimeLine,
 } from "react-icons/ri";
 
 document.title = "My Listings — RoomBridge";
 
+/* ── Design tokens ──────────────────────────────────────────── */
+const DK  = "#012D1D";
+const BTN = "#8E4E14";
+const ACC = "#FFAB69";
+
 const ROOM_TYPE_LABELS = {
-  single: "Single Room",
-  shared: "Shared Room",
+  single:    "Single Room",
+  shared:    "Shared Room",
   apartment: "Apartment",
 };
 
-const STATUS_BADGE = {
-  pending: "bg-warning/10 text-warning border-warning/20",
-  active: "bg-success/10 text-success border-success/20",
-  inactive: "bg-border text-text-secondary border-border",
-  rejected: "bg-error/10 text-error border-error/20",
+const STATUS_COLOR = {
+  active:   { bg: "#D1FAE5", text: "#065F46" },
+  pending:  { bg: "#FEF3C7", text: "#92400E" },
+  rejected: { bg: "#FEE2E2", text: "#991B1B" },
+  inactive: { bg: "#F3F4F6", text: "#6B7280" },
 };
 
 const MyListings = () => {
   const [listings, setListings] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading]   = useState(true);
   const [deleting, setDeleting] = useState(null);
-  const [filter, setFilter] = useState("all");
+  const [filter, setFilter]     = useState("all");
 
   useEffect(() => {
     listingService
       .getMyListings({ limit: 50 })
-      .then((res) => {
-        /*
-          Backend returns { success, listings, pagination }.
-          Old code: res.data → always undefined → always empty array.
-          New code: res.listings with res.data fallback.
-        */
+      .then((res) =>
         setListings(
-          Array.isArray(res.listings)
-            ? res.listings
-            : Array.isArray(res.data)
-              ? res.data
-              : [],
-        );
-      })
+          Array.isArray(res.listings) ? res.listings
+          : Array.isArray(res.data)   ? res.data
+          : [],
+        ),
+      )
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
@@ -65,7 +62,6 @@ const MyListings = () => {
       setListings((ls) => ls.filter((l) => l._id !== id));
       toast.success("Listing deleted.");
     } catch (err) {
-      /* err.message is undefined on axios errors */
       toast.error(err.response?.data?.message || "Failed to delete listing.");
     } finally {
       setDeleting(null);
@@ -75,6 +71,8 @@ const MyListings = () => {
   const filtered =
     filter === "all" ? listings : listings.filter((l) => l.status === filter);
 
+  const FILTERS = ["all", "active", "pending", "rejected", "inactive"];
+
   return (
     <RoleDashboardLayout
       role="owner"
@@ -83,165 +81,176 @@ const MyListings = () => {
       headerAction={
         <Link
           to="/owner/listings/create"
-          className="flex items-center gap-2 bg-primary text-white text-sm font-semibold px-4 py-2 rounded-btn hover:bg-secondary transition-colors shadow-card"
+          className="flex items-center gap-2 text-white text-xs font-bold px-4 py-2 rounded-xl
+                     hover:opacity-90 active:scale-95 transition-all shadow-sm"
+          style={{ backgroundColor: BTN }}
         >
           <RiAddLine /> Post Room
         </Link>
       }
     >
       <div className="max-w-5xl mx-auto">
+
         {/* Filter tabs */}
         <div className="flex gap-2 mb-6 flex-wrap">
-          {["all", "active", "pending", "rejected", "inactive"].map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium capitalize transition-all
-                                ${
-                                  filter === f
-                                    ? "bg-primary text-white shadow-card"
-                                    : "bg-white border border-border text-text-secondary hover:text-primary"
-                                }`}
-            >
-              {f}
-              {f !== "all" && (
-                <span className="ml-1 text-xs opacity-70">
-                  ({listings.filter((l) => l.status === f).length})
-                </span>
-              )}
-            </button>
-          ))}
+          {FILTERS.map((f) => {
+            const isActive = filter === f;
+            return (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className="px-4 py-1.5 rounded-full text-xs font-bold capitalize transition-all border"
+                style={{
+                  backgroundColor: isActive ? DK : "#FFFFFF",
+                  color:           isActive ? "#FFFFFF" : "#6B7280",
+                  borderColor:     isActive ? DK : "#E8E2D9",
+                }}
+              >
+                {f}
+                {f !== "all" && (
+                  <span className="ml-1 opacity-60">
+                    ({listings.filter((l) => l.status === f).length})
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
+        {/* Content */}
         {loading ? (
-          <div className="flex justify-center py-20">
-            <RiLoader4Line className="animate-spin text-4xl text-primary" />
+          <div className="flex justify-center py-24">
+            <RiLoader4Line className="animate-spin text-4xl" style={{ color: DK }} />
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-card border border-border shadow-card">
-            <RiHome4Line className="text-6xl text-border mx-auto mb-4" />
-            <p className="text-primary font-semibold text-xl mb-2">
+          <div
+            className="text-center py-20 bg-white rounded-2xl border shadow-sm"
+            style={{ borderColor: "#E8E2D9" }}
+          >
+            <RiHome4Line className="text-5xl mx-auto mb-4 text-gray-200" />
+            <p className="font-bold text-base mb-1" style={{ color: DK }}>
               {filter === "all" ? "No Listings Yet" : `No ${filter} listings`}
             </p>
-            <p className="text-text-secondary text-sm mb-6">
+            <p className="text-gray-400 text-sm mb-6">
               {filter === "all" && "Start by posting your first room listing."}
             </p>
             {filter === "all" && (
               <Link
                 to="/owner/listings/create"
-                className="btn-primary inline-flex items-center gap-2"
+                className="inline-flex items-center gap-2 text-white text-xs font-bold px-5 py-2.5 rounded-xl"
+                style={{ backgroundColor: BTN }}
               >
                 <RiAddLine /> Post First Room
               </Link>
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {filtered.map((l) => (
-              <div
-                key={l._id}
-                className="bg-white rounded-card border border-border shadow-card hover:shadow-hover
-                              transition-all duration-300 overflow-hidden"
-              >
-                {/* Image */}
-                <div className="relative">
-                  <img
-                    src={
-                      l.photos?.[0]?.url ||
-                      "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400&q=80"
-                    }
-                    alt={l.title}
-                    className="w-full h-40 object-cover"
-                    onError={(e) => {
-                      e.target.src =
-                        "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400&q=80";
-                    }}
-                    loading="lazy"
-                  />
-                  <div className="absolute top-3 left-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {filtered.map((l) => {
+              const sc = STATUS_COLOR[l.status] || STATUS_COLOR.inactive;
+              return (
+                <div
+                  key={l._id}
+                  className="bg-white rounded-2xl border shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+                  style={{ borderColor: "#E8E2D9" }}
+                >
+                  {/* Image */}
+                  <div className="relative h-40 bg-gray-100">
+                    <img
+                      src={
+                        l.photos?.[0]?.url ||
+                        "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400&q=80"
+                      }
+                      alt={l.title}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.src =
+                          "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400&q=80";
+                      }}
+                      loading="lazy"
+                    />
+                    {/* Status badge */}
                     <span
-                      className={`text-xs font-medium px-2.5 py-1 rounded-full border capitalize
-                                      ${STATUS_BADGE[l.status] || STATUS_BADGE.inactive}`}
+                      className="absolute top-3 left-3 text-[11px] font-semibold px-2.5 py-0.5 rounded-full capitalize"
+                      style={{ backgroundColor: sc.bg, color: sc.text }}
                     >
                       {l.status}
                     </span>
-                  </div>
-                  {l.bookingCount > 0 && (
-                    <div
-                      className="absolute top-3 right-3 bg-primary text-white text-xs
-                                    font-medium px-2 py-0.5 rounded-full"
-                    >
-                      {l.bookingCount} request{l.bookingCount !== 1 ? "s" : ""}
-                    </div>
-                  )}
-                </div>
-
-                {/* Info */}
-                <div className="p-4">
-                  <h3 className="font-semibold text-primary line-clamp-1 mb-1">
-                    {l.title}
-                  </h3>
-                  <div className="flex flex-wrap gap-3 text-xs text-text-secondary mb-3">
-                    <span className="flex items-center gap-1">
-                      <RiMapPin2Line className="text-accent" />
-                      {l.city}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <RiEyeLine className="text-secondary" />
-                      {l.views || 0} views
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <RiTimeLine className="text-secondary" />
-                      {new Date(l.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="font-bold text-primary text-lg">
-                      PKR {(l.rent || 0).toLocaleString()}
-                    </span>
-                    <span className="text-xs text-text-secondary">
-                      {ROOM_TYPE_LABELS[l.roomType] || l.roomType}
-                    </span>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex gap-2 pt-3 border-t border-border">
-                    {l.status === "active" && (
-                      <Link
-                        to={`/listings/${l._id}`}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-btn
-                                       border border-border text-text-secondary text-sm hover:text-primary
-                                       hover:border-primary transition-colors"
+                    {l.bookingCount > 0 && (
+                      <span
+                        className="absolute top-3 right-3 text-[11px] font-bold px-2.5 py-0.5 rounded-full text-white"
+                        style={{ backgroundColor: DK }}
                       >
-                        <RiEyeLine className="text-sm" /> View
-                      </Link>
+                        {l.bookingCount} request{l.bookingCount !== 1 ? "s" : ""}
+                      </span>
                     )}
-                    <Link
-                      to={`/owner/listings/${l._id}/edit`}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-btn
-                                     border border-secondary/30 text-secondary text-sm hover:bg-secondary
-                                     hover:text-white transition-colors"
-                    >
-                      <RiEditLine className="text-sm" /> Edit
-                    </Link>
-                    <button
-                      onClick={() => handleDelete(l._id, l.title)}
-                      disabled={deleting === l._id}
-                      aria-label="Delete listing"
-                      className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-btn
-                                 border border-error/30 text-error text-sm hover:bg-error hover:text-white
-                                 disabled:opacity-60 transition-colors"
-                    >
-                      {deleting === l._id ? (
-                        <RiLoader4Line className="animate-spin text-sm" />
-                      ) : (
-                        <RiDeleteBinLine className="text-sm" />
+                  </div>
+
+                  {/* Info */}
+                  <div className="p-4">
+                    <h3 className="font-bold text-sm line-clamp-1 mb-2" style={{ color: DK }}>
+                      {l.title}
+                    </h3>
+                    <div className="flex flex-wrap gap-3 text-xs text-gray-400 mb-3">
+                      <span className="flex items-center gap-1">
+                        <RiMapPin2Line style={{ color: ACC }} /> {l.city}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <RiEyeLine /> {l.views || 0} views
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <RiTimeLine /> {new Date(l.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="font-extrabold text-base" style={{ color: DK }}>
+                        PKR {(l.rent || 0).toLocaleString()}
+                        <span className="font-medium text-xs text-gray-400">/mo</span>
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        {ROOM_TYPE_LABELS[l.roomType] || l.roomType}
+                      </span>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex gap-2 pt-3 border-t" style={{ borderColor: "#F3EFE9" }}>
+                      {l.status === "active" && (
+                        <Link
+                          to={`/listings/${l._id}`}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl
+                                     border text-xs font-semibold text-gray-500 hover:border-gray-400 transition-colors"
+                          style={{ borderColor: "#E8E2D9" }}
+                        >
+                          <RiEyeLine /> View
+                        </Link>
                       )}
-                    </button>
+                      <Link
+                        to={`/owner/listings/${l._id}/edit`}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl
+                                   border text-xs font-bold text-white transition-colors hover:opacity-90"
+                        style={{ backgroundColor: DK, borderColor: DK }}
+                      >
+                        <RiEditLine /> Edit
+                      </Link>
+                      <button
+                        onClick={() => handleDelete(l._id, l.title)}
+                        disabled={deleting === l._id}
+                        aria-label="Delete listing"
+                        className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl
+                                   border text-xs font-semibold text-red-500 hover:bg-red-50 disabled:opacity-60 transition-colors"
+                        style={{ borderColor: "#FECACA" }}
+                      >
+                        {deleting === l._id ? (
+                          <RiLoader4Line className="animate-spin" />
+                        ) : (
+                          <RiDeleteBinLine />
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

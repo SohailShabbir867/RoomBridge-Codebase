@@ -13,8 +13,9 @@ import {
 } from "react-icons/ri";
 
 const QUICK_LINKS = [
-  { to: "/listings", label: "Browse Rooms" },
-  { to: "/about", label: "How it Works" },
+  { to: "/explore", label: "Browse Rooms" },
+  { to: "/how-it-works", label: "How It Works" },
+  { to: "/about", label: "About Us" },
   { to: "/terms-and-conditions", label: "Terms & Conditions" },
   { to: "/privacy-policy", label: "Privacy Policy" },
   { to: "/register", label: "Post a Room" },
@@ -50,7 +51,7 @@ const Footer = () => {
   const year = new Date().getFullYear();
 
   return (
-    <footer style={{ backgroundColor: "#0f2540" }} className="text-white">
+    <footer style={{ backgroundColor: "#012D1D" }} className="text-white">
       {/* ── Main grid ─────────────────────────────────────────── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 pb-10">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
@@ -58,13 +59,14 @@ const Footer = () => {
           <div>
             <Link to="/" className="flex items-center gap-2 mb-4 group w-fit">
               <div
-                className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center
+                className="w-8 h-8 rounded-lg flex items-center justify-center
                               group-hover:scale-110 transition-transform duration-200"
+                style={{ backgroundColor: "#8E4E14" }}
               >
-                <RiBuildingLine className="text-primary text-lg" />
+                <RiBuildingLine className="text-white text-lg" />
               </div>
-              <span className="text-xl font-bold">
-                Room<span className="text-accent">Bridge</span>
+              <span className="text-xl font-bold text-white">
+                Room<span style={{ color: "#FFAB69" }}>Bridge</span>
               </span>
             </Link>
             <p className="text-white/60 text-sm leading-relaxed">
@@ -81,8 +83,9 @@ const Footer = () => {
                   aria-label={label}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center
-                             hover:bg-accent hover:text-primary transition-all duration-200 text-sm"
+                  className="w-8 h-8 rounded-lg flex items-center justify-center
+                             hover:opacity-80 transition-all duration-200 text-sm"
+                  style={{ backgroundColor: "rgba(255,255,255,0.12)" }}
                 >
                   <Icon />
                 </a>
@@ -92,7 +95,8 @@ const Footer = () => {
 
           {/* Col 2 — Quick Links */}
           <div>
-            <h4 className="text-sm font-semibold text-accent uppercase tracking-wider mb-4">
+            <h4 className="text-sm font-semibold uppercase tracking-wider mb-4"
+                style={{ color: "#FBBF24" }}>
               Quick Links
             </h4>
             <ul className="space-y-2.5">
@@ -111,20 +115,22 @@ const Footer = () => {
 
           {/* Col 3 — Browse by City */}
           <div>
-            <h4 className="text-sm font-semibold text-accent uppercase tracking-wider mb-4">
+            <h4 className="text-sm font-semibold uppercase tracking-wider mb-4"
+                style={{ color: "#FBBF24" }}>
               Browse by City
             </h4>
             <ul className="space-y-2.5">
               {CITIES.map((city) => (
                 <li key={city}>
                   <Link
-                    to={`/listings?city=${city}`}
+                    to={`/explore?city=${city}`}
                     className="text-sm text-white/60 hover:text-white
                                flex items-center gap-1.5 transition-colors duration-200 group"
                   >
                     <RiMapPin2Line
-                      className="text-accent text-xs shrink-0
+                      className="text-xs shrink-0
                                  opacity-0 group-hover:opacity-100 transition-opacity"
+                      style={{ color: "#FFAB69" }}
                     />
                     {city}
                   </Link>
@@ -135,7 +141,8 @@ const Footer = () => {
 
           {/* Col 4 — Contact + Newsletter */}
           <div>
-            <h4 className="text-sm font-semibold text-accent uppercase tracking-wider mb-4">
+            <h4 className="text-sm font-semibold uppercase tracking-wider mb-4"
+                style={{ color: "#FBBF24" }}>
               Contact Info
             </h4>
             <ul className="space-y-3">
@@ -144,7 +151,7 @@ const Footer = () => {
                   key={text}
                   className="flex items-start gap-2.5 text-sm text-white/60"
                 >
-                  <Icon className="text-accent shrink-0 mt-0.5" />
+                  <Icon className="shrink-0 mt-0.5" style={{ color: "#FFAB69" }} />
                   <span>{text}</span>
                 </li>
               ))}
@@ -160,14 +167,19 @@ const Footer = () => {
                   type="email"
                   placeholder="your@email.com"
                   autoComplete="email"
-                  className="flex-1 text-xs px-3 py-2 rounded-lg bg-white/10 border border-white/20
+                  className="flex-1 text-xs px-3 py-2 rounded-lg border
                              text-white placeholder-white/40 outline-none
-                             focus:border-accent transition-colors"
+                             transition-colors"
+                  style={{
+                    backgroundColor: "rgba(255,255,255,0.08)",
+                    borderColor: "rgba(255,255,255,0.2)",
+                  }}
                 />
                 <button
                   type="submit"
-                  className="px-3 py-2 bg-accent text-primary text-xs font-semibold
-                             rounded-lg hover:bg-white transition-colors duration-200 shrink-0"
+                  className="px-3 py-2 text-white text-xs font-semibold
+                             rounded-lg hover:opacity-90 transition-colors duration-200 shrink-0"
+                  style={{ backgroundColor: "#8E4E14" }}
                 >
                   Go
                 </button>

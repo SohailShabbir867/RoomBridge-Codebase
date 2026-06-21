@@ -137,6 +137,13 @@ const listingSchema = new mongoose.Schema(
       trim: true,
     },
     area: { type: String, trim: true },
+    nearbyUniversity: {
+      type: String,
+      trim: true,
+      maxlength: [150, "University name cannot exceed 150 characters"],
+      default: "",
+    },
+
     photos: {
       type: [photoSchema],
       validate: {

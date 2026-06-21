@@ -99,8 +99,13 @@ const errorHandler = (err, req, res, _next) => {
 
 /**
  * 404 handler — mount AFTER all routes, BEFORE errorHandler.
+ * Silently returns 404 for known bot scanner paths to avoid log noise.
  */
+const BOT_PATTERNS = ['.git', '.env', 'wp-admin', 'wp-login', 'phpunit', 'eval-stdin', '.php', 'cgi-bin'];
 const notFound = (req, res, next) => {
+  if (BOT_PATTERNS.some(p => req.originalUrl.includes(p))) {
+    return res.status(404).json({ success: false, message: 'Not found.' });
+  }
   const err = new Error(`Route not found: ${req.method} ${req.originalUrl}`);
   err.statusCode = 404;
   err.isOperational = true;

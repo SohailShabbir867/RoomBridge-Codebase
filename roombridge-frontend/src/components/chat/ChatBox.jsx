@@ -5,7 +5,7 @@ import ChatMessage from "./ChatMessage";
 import ChatInput from "./ChatInput";
 import ImageLightbox from "./ImageLightbox";
 import toast from "react-hot-toast";
-import { RiLoader4Line } from "react-icons/ri";
+import { RiLoader4Line, RiMoreLine, RiUser3Line } from "react-icons/ri";
 
 /*
   ChatBox — the message thread for a single conversation.
@@ -16,38 +16,33 @@ import { RiLoader4Line } from "react-icons/ri";
     }
     onMessageSent: (savedMessage) => void   — to update ChatList last message
     onUnreadCleared: (convId) => void       — to zero-out unread count in parent
-
-  Key behaviours fixed:
-  1. Real-time receive via socket 'new_message' event
-  2. Typing indicator: emit 'typing' / 'stop_typing' with throttle
-  3. Auto-scroll to bottom on new message
-  4. Mark as read on mount and on new incoming message
-  5. Send on Enter (delegated to ChatInput)
-  6. Unread count update propagated to parent via onUnreadCleared
-  7. Avatar grouping: only show avatar for first message in a sequence
 */
 
-const TYPING_THROTTLE_MS = 1500; // how often we re-emit 'typing'
-const TYPING_TIMEOUT_MS = 3000; // how long before 'stop_typing' fires
-const READ_SYNC_WINDOW_MS = 1200; // guard repeated read calls
+const DK  = "#012D1D";
+const ACC = "#FFAB69";
+const CR  = "#F7F4EF";
+
+const TYPING_THROTTLE_MS = 1500;
+const TYPING_TIMEOUT_MS  = 3000;
+const READ_SYNC_WINDOW_MS = 1200;
 
 const ChatBox = ({ conversation, onMessageSent, onUnreadCleared }) => {
   const { on, off, emit } = useSocket();
 
-  const [messages, setMessages] = useState([]);
-  const [text, setText] = useState("");
+  const [messages, setMessages]         = useState([]);
+  const [text, setText]                 = useState("");
   const [selectedImage, setSelectedImage] = useState(null);
   const [lightboxImageUrl, setLightboxImageUrl] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
+  const [loading, setLoading]           = useState(true);
+  const [sending, setSending]           = useState(false);
   const [otherIsTyping, setOtherIsTyping] = useState(false);
 
-  const messagesEndRef = useRef(null);
-  const typingTimerRef = useRef(null); // for 'stop_typing' timeout
-  const lastTypingEmitRef = useRef(0); // timestamp of last 'typing' emit
-  const readSyncRef = useRef({ convId: null, inFlight: false, lastAt: 0 });
+  const messagesEndRef    = useRef(null);
+  const typingTimerRef    = useRef(null);
+  const lastTypingEmitRef = useRef(0);
+  const readSyncRef       = useRef({ convId: null, inFlight: false, lastAt: 0 });
 
-  const convId = conversation.conversationId;
+  const convId    = conversation.conversationId;
   const otherUser = conversation.otherUser;
 
   /* ── Scroll to bottom ─────────────────────────────────── */
@@ -62,33 +57,18 @@ const ChatBox = ({ conversation, onMessageSent, onUnreadCleared }) => {
   const markAsReadSafely = useCallback(
     (force = false) => {
       if (!convId) return;
-
-      const now = Date.now();
+      const now   = Date.now();
       const state = readSyncRef.current;
-      const sameConversation = state.convId === convId;
-
-      if (
-        !force &&
-        sameConversation &&
-        (state.inFlight || now - state.lastAt < READ_SYNC_WINDOW_MS)
-      ) {
+      const same  = state.convId === convId;
+      if (!force && same && (state.inFlight || now - state.lastAt < READ_SYNC_WINDOW_MS)) {
         if (onUnreadCleared) onUnreadCleared(convId);
         return;
       }
-
       readSyncRef.current = { convId, inFlight: true, lastAt: state.lastAt };
       if (onUnreadCleared) onUnreadCleared(convId);
-
-      chatService
-        .markAsRead(convId)
-        .catch(() => {})
-        .finally(() => {
-          readSyncRef.current = {
-            convId,
-            inFlight: false,
-            lastAt: Date.now(),
-          };
-        });
+      chatService.markAsRead(convId).catch(() => {}).finally(() => {
+        readSyncRef.current = { convId, inFlight: false, lastAt: Date.now() };
+      });
     },
     [convId, onUnreadCleared],
   );
@@ -98,74 +78,44 @@ const ChatBox = ({ conversation, onMessageSent, onUnreadCleared }) => {
     if (!convId) return;
     setLoading(true);
     setMessages([]);
-
-    /* Join the conversation room so we receive socket events for this chat */
     emit("join_room", convId);
-
-    chatService
-      .getMessages(convId)
+    chatService.getMessages(convId)
       .then((res) => {
         const msgs = Array.isArray(res.data) ? res.data : res.messages || [];
         setMessages(msgs);
-        /* Mark as read on open */
         markAsReadSafely(true);
       })
-      .catch((err) => {
-        toast.error(err.response?.data?.message || "Failed to load messages.");
-      })
+      .catch((err) => toast.error(err.response?.data?.message || "Failed to load messages."))
       .finally(() => setLoading(false));
-
-    /* Leave room on cleanup (conversation switch or unmount) */
-    return () => {
-      emit("leave_room", convId);
-    };
+    return () => emit("leave_room", convId);
   }, [convId, emit, markAsReadSafely]);
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, scrollToBottom]);
+  useEffect(() => { scrollToBottom(); }, [messages, scrollToBottom]);
 
   /* ── Socket: receive new_message ─────────────────────── */
   useEffect(() => {
     const handleNewMessage = (msg) => {
       if (msg.conversationId !== convId) return;
       setMessages((ms) => {
-        /* Deduplicate: ignore if we already have this _id (own sent message) */
         if (ms.some((m) => m._id && m._id === msg._id)) return ms;
         return [...ms, msg];
       });
-      /* Mark incoming as read immediately since we're in this conversation */
       markAsReadSafely();
     };
-
     on("new_message", handleNewMessage);
     return () => off("new_message", handleNewMessage);
   }, [on, off, convId, markAsReadSafely]);
 
   /* ── Socket: typing indicators ────────────────────────── */
   useEffect(() => {
-    const handleTyping = ({ conversationId }) => {
-      if (conversationId === convId) setOtherIsTyping(true);
-    };
-    const handleStopTyping = ({ conversationId }) => {
-      if (conversationId === convId) setOtherIsTyping(false);
-    };
-
-    on("typing", handleTyping);
-    on("stop_typing", handleStopTyping);
-    return () => {
-      off("typing", handleTyping);
-      off("stop_typing", handleStopTyping);
-    };
+    const onType     = ({ conversationId }) => { if (conversationId === convId) setOtherIsTyping(true);  };
+    const onStopType = ({ conversationId }) => { if (conversationId === convId) setOtherIsTyping(false); };
+    on("typing", onType);
+    on("stop_typing", onStopType);
+    return () => { off("typing", onType); off("stop_typing", onStopType); };
   }, [on, off, convId]);
 
-  /* Cleanup typing timer on unmount / conversation change */
-  useEffect(
-    () => () => {
-      clearTimeout(typingTimerRef.current);
-    },
-    [convId],
-  );
+  useEffect(() => () => clearTimeout(typingTimerRef.current), [convId]);
 
   /* ── Typing emission (throttled) ───────────────────────── */
   const handleTyping = useCallback(() => {
@@ -174,13 +124,9 @@ const ChatBox = ({ conversation, onMessageSent, onUnreadCleared }) => {
       lastTypingEmitRef.current = now;
       emit("typing", { conversationId: convId, receiverId: otherUser?._id });
     }
-    /* Reset stop_typing timer */
     clearTimeout(typingTimerRef.current);
     typingTimerRef.current = setTimeout(() => {
-      emit("stop_typing", {
-        conversationId: convId,
-        receiverId: otherUser?._id,
-      });
+      emit("stop_typing", { conversationId: convId, receiverId: otherUser?._id });
     }, TYPING_TIMEOUT_MS);
   }, [emit, convId, otherUser]);
 
@@ -189,31 +135,23 @@ const ChatBox = ({ conversation, onMessageSent, onUnreadCleared }) => {
     e?.preventDefault();
     const trimmed = text.trim();
     if ((!trimmed && !selectedImage) || sending) return;
-
-    /* Stop typing indicator immediately */
     clearTimeout(typingTimerRef.current);
     emit("stop_typing", { conversationId: convId, receiverId: otherUser?._id });
-
     try {
       setSending(true);
-      const res = await chatService.sendMessage({
+      const res   = await chatService.sendMessage({
         receiverId: otherUser._id,
         message: trimmed,
         listingId: conversation.listingId,
         imageFile: selectedImage,
       });
       const saved = res.data?.message || res.message || res.data;
-
-      /* Add to local state immediately (optimistic) */
       setMessages((ms) => {
         if (ms.some((m) => m._id === saved._id)) return ms;
         return [...ms, saved];
       });
-
       setText("");
       setSelectedImage(null);
-
-      /* Bubble up to parent (ChatList) to update last message preview */
       if (onMessageSent) onMessageSent(saved);
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to send message.");
@@ -222,29 +160,70 @@ const ChatBox = ({ conversation, onMessageSent, onUnreadCleared }) => {
     }
   };
 
-  /* ── Avatar grouping: show avatar only on first msg in a run ── */
   const isFirstInGroup = (idx) => {
     if (idx === 0) return true;
-    const cur = messages[idx];
-    const prev = messages[idx - 1];
-    const curSender = cur.sender?._id || cur.sender;
-    const prevSender = prev.sender?._id || prev.sender;
+    const curSender  = messages[idx].sender?._id  || messages[idx].sender;
+    const prevSender = messages[idx - 1].sender?._id || messages[idx - 1].sender;
     return curSender !== prevSender;
   };
 
+  /* ── Avatar helper ─────────────────────────────────────── */
+  const OtherAvatar = ({ size = "sm" }) => {
+    const sz = size === "sm" ? "w-8 h-8 text-[11px]" : "w-10 h-10 text-sm";
+    return otherUser?.profilePhoto?.url ? (
+      <img src={otherUser.profilePhoto.url} alt={otherUser.name}
+        className={`${sz} rounded-full object-cover shrink-0`} />
+    ) : (
+      <div className={`${sz} rounded-full flex items-center justify-center font-bold shrink-0 text-white`}
+        style={{ backgroundColor: DK }}>
+        {(otherUser?.name || "?")[0].toUpperCase()}
+      </div>
+    );
+  };
+
   return (
-    <div className="flex flex-col h-full">
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-background">
+    <div className="flex flex-col h-full" style={{ backgroundColor: CR }}>
+
+      {/* ── Chat header (navbar) ──────────────────────────── */}
+      <div
+        className="flex items-center gap-3 px-4 py-3 border-b shrink-0"
+        style={{ backgroundColor: DK, borderColor: "rgba(255,255,255,0.08)" }}
+      >
+        <OtherAvatar size="md" />
+        <div className="flex-1 min-w-0">
+          <p className="text-white font-bold text-sm leading-tight truncate">
+            {otherUser?.name || "Unknown"}
+          </p>
+          <p className="text-xs mt-0.5 font-medium capitalize truncate"
+            style={{ color: otherIsTyping ? ACC : "rgba(255,255,255,0.45)" }}>
+            {otherIsTyping ? "typing…" : (otherUser?.role || "user")}
+          </p>
+          {conversation.listingTitle && (
+            <p className="text-[10px] truncate mt-0.5" style={{ color: `${ACC}80` }}>
+              re: {conversation.listingTitle}
+            </p>
+          )}
+        </div>
+        <div className="w-8 h-8 rounded-full flex items-center justify-center"
+          style={{ backgroundColor: "rgba(255,255,255,0.08)" }}>
+          <RiUser3Line className="text-white/60 text-sm" />
+        </div>
+      </div>
+
+      {/* ── Messages area ────────────────────────────────── */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-1.5">
         {loading ? (
-          <div className="flex justify-center py-10">
-            <RiLoader4Line className="animate-spin text-2xl text-primary" />
+          <div className="flex justify-center py-12">
+            <RiLoader4Line className="animate-spin text-3xl" style={{ color: DK }} />
           </div>
         ) : messages.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-text-secondary text-sm">
-              No messages yet. Say hello! 👋
-            </p>
+          <div className="flex flex-col items-center justify-center h-full py-16 text-center">
+            <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
+              style={{ backgroundColor: `${DK}12` }}>
+              <RiUser3Line className="text-2xl" style={{ color: DK }} />
+            </div>
+            <p className="font-bold text-sm" style={{ color: DK }}>Start a conversation</p>
+            <p className="text-xs text-gray-400 mt-1">Say hello to {otherUser?.name || "them"} 👋</p>
           </div>
         ) : (
           messages.map((msg, idx) => (
@@ -263,26 +242,20 @@ const ChatBox = ({ conversation, onMessageSent, onUnreadCleared }) => {
           <div className="flex items-end gap-2 mt-1">
             <div className="w-7 h-7 shrink-0">
               {otherUser?.profilePhoto?.url ? (
-                <img
-                  src={otherUser.profilePhoto.url}
-                  alt=""
-                  className="w-7 h-7 rounded-full object-cover"
-                />
+                <img src={otherUser.profilePhoto.url} alt=""
+                  className="w-7 h-7 rounded-full object-cover" />
               ) : (
-                <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center">
-                  <span className="text-white text-[10px] font-bold">
-                    {(otherUser?.name || "?")[0].toUpperCase()}
-                  </span>
+                <div className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-[10px] text-white"
+                  style={{ backgroundColor: DK }}>
+                  {(otherUser?.name || "?")[0].toUpperCase()}
                 </div>
               )}
             </div>
-            <div className="flex gap-1 bg-white border border-border rounded-2xl rounded-bl-sm px-3 py-2.5 shadow-sm">
+            <div className="flex gap-1 rounded-2xl rounded-bl-sm px-3.5 py-2.5 shadow-sm"
+              style={{ backgroundColor: "#FFF", border: "1px solid #E8E2D9" }}>
               {[0, 1, 2].map((i) => (
-                <span
-                  key={i}
-                  className="w-1.5 h-1.5 rounded-full bg-text-secondary animate-bounce"
-                  style={{ animationDelay: `${i * 150}ms` }}
-                />
+                <span key={i} className="w-1.5 h-1.5 rounded-full animate-bounce"
+                  style={{ backgroundColor: DK, animationDelay: `${i * 150}ms` }} />
               ))}
             </div>
           </div>
@@ -291,7 +264,7 @@ const ChatBox = ({ conversation, onMessageSent, onUnreadCleared }) => {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
+      {/* ── Input ─────────────────────────────────────────── */}
       <ChatInput
         value={text}
         onChange={setText}

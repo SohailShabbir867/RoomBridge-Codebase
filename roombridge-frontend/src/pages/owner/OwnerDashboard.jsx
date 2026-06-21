@@ -6,9 +6,7 @@ import {
   RiCalendarCheckLine,
   RiEyeLine,
   RiAddLine,
-  RiTimeLine,
   RiCheckboxCircleLine,
-  RiCloseCircleLine,
   RiArrowRightLine,
   RiUserLine,
   RiLogoutBoxLine,
@@ -16,45 +14,82 @@ import {
   RiMessageLine,
   RiSettings3Line,
   RiMenuLine,
+  RiCloseLine,
   RiFlagLine,
+  RiTimeLine,
 } from "react-icons/ri";
 import listingService from "../../services/listingService";
 import bookingService from "../../services/bookingService";
 import authService from "../../services/authService";
 import { logout } from "../../redux/slices/authSlice";
 import toast from "react-hot-toast";
+import Logo from "../../components/common/Logo";
 
 document.title = "Owner Dashboard — RoomBridge";
 
-const StatCard = ({ icon: Icon, label, value, color, sub }) => (
-  <div className="bg-white rounded-card border border-border p-2 sm:p-3 flex items-start gap-2 sm:gap-3 shadow-card hover:shadow-hover transition-shadow">
+/* ── Design tokens ──────────────────────────────────────────── */
+const DK  = "#012D1D";
+const ACC = "#FFAB69";
+const BTN = "#8E4E14";
+const CR  = "#F7F4EF";
+
+/* ── Helpers ─────────────────────────────────────────────────── */
+const getGreeting = () => {
+  const h = new Date().getHours();
+  if (h < 12) return "Good Morning";
+  if (h < 17) return "Good Afternoon";
+  return "Good Evening";
+};
+
+const STATUS_COLOR = {
+  active:   { bg: "#D1FAE5", text: "#065F46" },
+  pending:  { bg: "#FEF3C7", text: "#92400E" },
+  rejected: { bg: "#FEE2E2", text: "#991B1B" },
+  inactive: { bg: "#F3F4F6", text: "#6B7280" },
+};
+
+const BOOKING_COLOR = {
+  pending:   { bg: "#FEF3C7", text: "#92400E" },
+  accepted:  { bg: "#D1FAE5", text: "#065F46" },
+  rejected:  { bg: "#FEE2E2", text: "#991B1B" },
+  cancelled: { bg: "#F3F4F6", text: "#6B7280" },
+};
+
+/* ── Stat card ────────────────────────────────────────────────── */
+const StatCard = ({ icon: Icon, label, value, iconBg, iconColor }) => (
+  <div
+    className="bg-white rounded-2xl p-5 flex items-center gap-4 shadow-sm border"
+    style={{ borderColor: "#E8E2D9" }}
+  >
     <div
-      className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0 ${color}`}
+      className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+      style={{ backgroundColor: iconBg }}
     >
-      <Icon className="text-white text-sm sm:text-base" />
+      <Icon style={{ color: iconColor }} className="text-lg" />
     </div>
     <div>
-      <p className="text-xl sm:text-2xl font-bold text-primary leading-none">{value ?? "—"}</p>
-      <p className="text-xs sm:text-sm text-text-secondary mt-1">{label}</p>
-      {sub && <p className="text-xs text-text-secondary mt-0.5">{sub}</p>}
+      <p className="text-2xl font-extrabold leading-none" style={{ color: DK }}>
+        {value ?? "—"}
+      </p>
+      <p className="text-xs text-gray-400 mt-1 font-medium">{label}</p>
     </div>
   </div>
 );
 
-const STATUS_BADGE = {
-  pending: "bg-warning/10 text-warning border-warning/20",
-  active: "bg-success/10 text-success border-success/20",
-  inactive: "bg-border text-text-secondary border-border",
-  rejected: "bg-error/10 text-error border-error/20",
+/* ── Status pill ──────────────────────────────────────────────── */
+const Pill = ({ status, map }) => {
+  const c = map[status] || map.inactive || map.cancelled || { bg: "#F3F4F6", text: "#6B7280" };
+  return (
+    <span
+      className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full capitalize whitespace-nowrap"
+      style={{ backgroundColor: c.bg, color: c.text }}
+    >
+      {status}
+    </span>
+  );
 };
 
-const BOOKING_BADGE = {
-  pending: "bg-warning/10 text-warning",
-  accepted: "bg-success/10 text-success",
-  rejected: "bg-error/10 text-error",
-  cancelled: "bg-border text-text-secondary",
-};
-
+/* ── Owner Dashboard ──────────────────────────────────────────── */
 const OwnerDashboard = () => {
   const { user } = useSelector((s) => s.auth);
   const dispatch = useDispatch();
@@ -73,24 +108,15 @@ const OwnerDashboard = () => {
           listingService.getMyListings({ limit: 5 }),
           bookingService.getOwnerBookings({ limit: 5 }),
         ]);
-        /*
-          Backend returns { success, listings, pagination } for
-          getMyListings and { success, bookings, pagination } for getOwnerBookings.
-          The old code read res.data which is undefined on both.
-        */
         setListings(
-          Array.isArray(lRes.listings)
-            ? lRes.listings
-            : Array.isArray(lRes.data)
-              ? lRes.data
-              : [],
+          Array.isArray(lRes.listings) ? lRes.listings
+          : Array.isArray(lRes.data)   ? lRes.data
+          : [],
         );
         setBookings(
-          Array.isArray(bRes.bookings)
-            ? bRes.bookings
-            : Array.isArray(bRes.data)
-              ? bRes.data
-              : [],
+          Array.isArray(bRes.bookings) ? bRes.bookings
+          : Array.isArray(bRes.data)   ? bRes.data
+          : [],
         );
       } catch (e) {
         console.error(e);
@@ -102,103 +128,99 @@ const OwnerDashboard = () => {
   }, []);
 
   const handleLogout = async () => {
-    try {
-      await authService.logout();
-    } catch {
-      // Ignore logout API errors and clear client state anyway.
-    }
+    try { await authService.logout(); } catch { /* ignore */ }
     dispatch(logout());
     toast.success("Logged out.");
     navigate("/login");
   };
 
   const totalViews = listings.reduce((s, l) => s + (l.views || 0), 0);
-  const pendingBk = bookings.filter((b) => b.status === "pending").length;
-  const activeLst = listings.filter((l) => l.status === "active").length;
+  const pendingBk  = bookings.filter((b) => b.status === "pending").length;
+  const activeLst  = listings.filter((l) => l.status === "active").length;
 
   const NAV = [
-    { to: "/owner/dashboard", icon: RiDashboardLine, label: "Dashboard" },
-    { to: "/owner/listings", icon: RiHome4Line, label: "My Listings" },
-    { to: "/owner/listings/create", icon: RiAddLine, label: "Post Room" },
-    {
-      to: "/owner/bookings",
-      icon: RiCalendarCheckLine,
-      label: "Booking Requests",
-    },
-    { to: "/owner/messages", icon: RiMessageLine, label: "Messages" },
-    { to: "/owner/reports", icon: RiFlagLine, label: "My Reports" },
-    { to: "/owner/profile", icon: RiSettings3Line, label: "My Profile" },
+    { to: "/owner/dashboard",        icon: RiDashboardLine,    label: "Dashboard" },
+    { to: "/owner/listings",         icon: RiHome4Line,        label: "My Listings", end: true },
+    { to: "/owner/listings/create",  icon: RiAddLine,          label: "Post Room" },
+    { to: "/owner/bookings",         icon: RiCalendarCheckLine,label: "Booking Requests" },
+    { to: "/owner/messages",         icon: RiMessageLine,      label: "Messages" },
+    { to: "/owner/reports",          icon: RiFlagLine,         label: "My Reports" },
+    { to: "/owner/profile",          icon: RiSettings3Line,    label: "My Profile" },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/5 flex">
-      {/* Sidebar */}
+    <div className="min-h-screen flex" style={{ backgroundColor: CR }}>
+
+      {/* ── Sidebar ─────────────────────────────────────────────── */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 w-64 bg-primary flex flex-col shadow-2xl
-                         transition-transform duration-300
-                         ${sideOpen ? "translate-x-0" : "-translate-x-full"}`}
+        className={`fixed inset-y-0 left-0 z-40 w-60 flex flex-col shadow-xl
+                    transition-transform duration-300
+                    ${sideOpen ? "translate-x-0" : "-translate-x-full"}`}
+        style={{ backgroundColor: DK }}
       >
-        <div className="p-6 border-b border-white/10">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
-              <span className="text-primary text-sm font-bold">R</span>
-            </div>
-            <span className="text-white font-bold text-lg">
-              Room<span className="text-accent">Bridge</span>
-            </span>
-          </Link>
+        {/* Logo */}
+        <div className="px-5 pt-5 pb-4 flex items-center justify-between border-b border-white/10">
+          <Logo isDarkBg={true} onClick={() => setSideOpen(false)} />
+          <button
+            onClick={() => setSideOpen(false)}
+            aria-label="Close sidebar"
+            className="p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-colors"
+          >
+            <RiCloseLine className="text-lg" />
+          </button>
         </div>
 
-        <div className="p-4 border-b border-white/10">
+        {/* User */}
+        <div className="px-5 py-4 border-b border-white/10">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center overflow-hidden shrink-0">
+            <div
+              className="w-9 h-9 rounded-full flex items-center justify-center overflow-hidden shrink-0 font-bold text-sm"
+              style={{ backgroundColor: `${ACC}25`, color: ACC }}
+            >
               {user?.profilePhoto?.url ? (
-                <img
-                  src={user.profilePhoto.url}
-                  alt={user.name}
-                  className="w-10 h-10 rounded-full object-cover"
-                />
+                <img src={user.profilePhoto.url} alt={user.name} className="w-9 h-9 rounded-full object-cover" />
               ) : (
-                <span className="text-accent font-bold">
-                  {user?.name?.[0]?.toUpperCase()}
-                </span>
+                user?.name?.[0]?.toUpperCase()
               )}
             </div>
             <div className="min-w-0">
-              <p className="text-white text-sm font-semibold truncate">
-                {user?.name}
-              </p>
-              <p className="text-white/50 text-xs truncate">{user?.email}</p>
+              <p className="text-white text-sm font-semibold truncate leading-tight">{user?.name}</p>
+              <p className="text-xs mt-0.5 truncate" style={{ color: `${ACC}90` }}>Property Owner</p>
             </div>
           </div>
         </div>
 
-        <nav className="flex-1 p-4 space-y-1">
-          {NAV.map(({ to, icon: Icon, label }) => (
+        {/* Nav */}
+        <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+          {NAV.map(({ to, icon: Icon, label, end }) => (
             <NavLink
               key={to}
               to={to}
-              onClick={() => {
-                if (window.innerWidth < 1024) setSideOpen(false);
-              }}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
-                  isActive
-                    ? "bg-white/15 text-white"
-                    : "text-white/70 hover:text-white hover:bg-white/10"
-                }`
+              end={end}
+              onClick={() => { if (window.innerWidth < 1024) setSideOpen(false); }}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150"
+              style={({ isActive }) =>
+                isActive
+                  ? { backgroundColor: `${ACC}20`, color: ACC }
+                  : { color: "rgba(255,255,255,0.55)" }
               }
             >
-              <Icon className="text-base shrink-0" /> {label}
+              {({ isActive }) => (
+                <>
+                  <Icon className="text-base shrink-0" style={isActive ? { color: ACC } : {}} />
+                  <span>{label}</span>
+                </>
+              )}
             </NavLink>
           ))}
         </nav>
 
-        <div className="p-4 border-t border-white/10">
+        {/* Logout */}
+        <div className="px-3 pb-5 pt-2 border-t border-white/10">
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-sm font-medium
-                             text-white/70 hover:text-error hover:bg-red-500/10 transition-all duration-150"
+            className="flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-sm font-medium
+                       text-white/50 hover:text-red-400 hover:bg-red-500/10 transition-all duration-150"
           >
             <RiLogoutBoxLine className="text-base" /> Logout
           </button>
@@ -207,194 +229,178 @@ const OwnerDashboard = () => {
 
       {/* Overlay */}
       {sideOpen && (
-        <div
-          className="fixed inset-0 z-30 bg-black/40 lg:hidden"
-          onClick={() => setSideOpen(false)}
-        />
+        <div className="fixed inset-0 z-30 bg-black/40 lg:hidden" onClick={() => setSideOpen(false)} />
       )}
 
-      {/* Main */}
+      {/* Toggle when closed */}
+      {!sideOpen && (
+        <button
+          onClick={() => setSideOpen(true)}
+          aria-label="Open sidebar"
+          className="fixed top-4 left-3 z-50 w-9 h-9 rounded-xl flex items-center justify-center shadow-lg text-white"
+          style={{ backgroundColor: DK }}
+        >
+          <RiMenuLine className="text-lg" />
+        </button>
+      )}
+
+      {/* ── Main ────────────────────────────────────────────────── */}
       <div
         className={`flex-1 flex flex-col min-h-screen transition-[margin] duration-300 ${
-          sideOpen ? "lg:ml-64" : "lg:ml-0"
+          sideOpen ? "lg:ml-60" : "lg:ml-0"
         }`}
       >
-        <header className="sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-border px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setSideOpen((s) => !s)}
-              aria-label="Toggle sidebar"
-              className="p-2 rounded-lg text-text-secondary hover:bg-background transition-colors"
-            >
-              <RiMenuLine className="text-xl" />
-            </button>
-            <div>
-              <h1 className="font-bold text-primary text-base sm:text-lg">
-                Owner Dashboard
-              </h1>
-              <p className="text-text-secondary text-xs">
-                Welcome back, {user?.name?.split(" ")[0]}!
-              </p>
-            </div>
+        {/* Top bar */}
+        <header
+          className={`sticky top-0 z-20 bg-white border-b border-[#E8E2D9] py-3 flex items-center justify-between gap-3 ${
+            sideOpen ? "px-4 sm:px-6" : "pl-14 pr-4 sm:pr-6"
+          }`}
+        >
+          <div>
+            <p className="text-[11px] text-gray-400 font-medium">
+              {new Date().toLocaleDateString("en-PK", { weekday: "long", month: "long", day: "numeric" })}
+            </p>
           </div>
           <Link
             to="/owner/listings/create"
-            className="flex items-center gap-2 bg-primary text-white text-sm font-semibold
-                           px-3 sm:px-4 py-2 rounded-btn hover:bg-secondary transition-colors shadow-card"
+            className="flex items-center gap-2 text-white text-xs font-bold px-4 py-2 rounded-xl
+                       hover:opacity-90 active:scale-95 transition-all shadow-sm"
+            style={{ backgroundColor: BTN }}
           >
-            <RiAddLine /> Post Room
+            <RiAddLine className="text-sm" /> Post Room
           </Link>
         </header>
 
-        <main className="flex-1 p-3 sm:p-6">
+        {/* Content */}
+        <main className="flex-1 p-4 sm:p-6">
           {loading ? (
-            <div className="flex items-center justify-center py-20">
-              <div className="animate-spin w-10 h-10 border-4 border-primary border-t-transparent rounded-full" />
+            <div className="flex items-center justify-center py-32">
+              <div className="w-8 h-8 border-3 border-t-transparent rounded-full animate-spin" style={{ borderColor: DK, borderTopColor: "transparent" }} />
             </div>
           ) : (
-            <div className="max-w-[1400px] mx-auto">
-              {/* Stats */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2.5 sm:gap-3.5 mb-5 sm:mb-7">
-                <StatCard
-                  icon={RiHome4Line}
-                  label="Total Listings"
-                  value={listings.length}
-                  color="bg-primary"
-                />
-                <StatCard
-                  icon={RiCheckboxCircleLine}
-                  label="Active Listings"
-                  value={activeLst}
-                  color="bg-success"
-                />
-                <StatCard
-                  icon={RiCalendarCheckLine}
-                  label="Pending Requests"
-                  value={pendingBk}
-                  color="bg-warning"
-                />
-                <StatCard
-                  icon={RiEyeLine}
-                  label="Total Views"
-                  value={totalViews}
-                  color="bg-secondary"
-                />
+            <div className="max-w-[1200px] mx-auto">
+
+              {/* Greeting */}
+              <div className="mb-6">
+                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight" style={{ color: DK }}>
+                  {getGreeting()}, {user?.name?.split(" ")[0]} 👋
+                </h1>
+                <p className="text-gray-400 text-sm mt-1">
+                  Here's what's happening with your listings today.
+                </p>
               </div>
 
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 sm:gap-5">
-                {/* Recent Listings */}
-                <div className="bg-white rounded-card border border-border shadow-card">
-                  <div className="flex items-center justify-between p-4 sm:p-5 border-b border-border">
-                    <h2 className="font-semibold text-primary text-base sm:text-lg">My Listings</h2>
+              {/* Stats */}
+              <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 mb-6">
+                <StatCard icon={RiHome4Line}         label="Total Listings"   value={listings.length} iconBg="#E8F5E9" iconColor="#2E7D32" />
+                <StatCard icon={RiCheckboxCircleLine} label="Active Listings"  value={activeLst}       iconBg={`${ACC}20`} iconColor={BTN} />
+                <StatCard icon={RiCalendarCheckLine}  label="Pending Requests" value={pendingBk}       iconBg="#FEF3C7" iconColor="#92400E" />
+                <StatCard icon={RiEyeLine}            label="Total Views"      value={totalViews}      iconBg="#EDE9FE" iconColor="#7C3AED" />
+              </div>
+
+              {/* Two-column */}
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-5">
+
+                {/* My Listings */}
+                <div className="bg-white rounded-2xl border shadow-sm overflow-hidden" style={{ borderColor: "#E8E2D9" }}>
+                  <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: "#E8E2D9" }}>
+                    <h2 className="font-bold text-sm" style={{ color: DK }}>My Listings</h2>
                     <Link
                       to="/owner/listings"
-                      className="text-xs text-secondary hover:text-primary flex items-center gap-1"
+                      className="text-[11px] font-bold flex items-center gap-1 hover:opacity-75 transition-opacity"
+                      style={{ color: BTN }}
                     >
                       View all <RiArrowRightLine />
                     </Link>
                   </div>
-                  <div className="divide-y divide-border">
-                    {listings.length === 0 ? (
-                      <div className="p-6 text-center text-text-secondary text-sm">
-                        No listings yet.{" "}
-                        <Link
-                          to="/owner/listings/create"
-                          className="text-secondary font-medium hover:text-primary"
-                        >
-                          Post your first room →
-                        </Link>
-                      </div>
-                    ) : (
-                      listings.slice(0, 5).map((l) => (
-                        <div
-                          key={l._id}
-                          className="flex items-center gap-3 p-4"
-                        >
-                          <div className="w-10 h-10 rounded-lg bg-background flex items-center justify-center shrink-0 overflow-hidden">
+
+                  {listings.length === 0 ? (
+                    <div className="px-5 py-10 text-center">
+                      <RiHome4Line className="text-4xl mx-auto mb-3 text-gray-200" />
+                      <p className="text-sm text-gray-400">No listings yet.</p>
+                      <Link
+                        to="/owner/listings/create"
+                        className="inline-flex items-center gap-1.5 mt-3 text-xs font-bold px-4 py-2 rounded-xl text-white"
+                        style={{ backgroundColor: BTN }}
+                      >
+                        <RiAddLine /> Post First Room
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="divide-y" style={{ borderColor: "#F3EFE9" }}>
+                      {listings.slice(0, 5).map((l) => (
+                        <div key={l._id} className="flex items-center gap-3 px-5 py-3.5 hover:bg-[#F7F4EF] transition-colors">
+                          {/* Thumbnail */}
+                          <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 bg-gray-100">
                             {l.photos?.[0]?.url ? (
-                              <img
-                                src={l.photos[0].url}
-                                alt={l.title}
-                                className="w-10 h-10 rounded-lg object-cover"
-                              />
+                              <img src={l.photos[0].url} alt={l.title} className="w-10 h-10 object-cover" />
                             ) : (
-                              <RiHome4Line className="text-primary" />
+                              <div className="w-10 h-10 flex items-center justify-center">
+                                <RiHome4Line className="text-gray-300" />
+                              </div>
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-primary truncate">
-                              {l.title}
-                            </p>
-                            <p className="text-xs text-text-secondary">
+                            <p className="text-sm font-semibold truncate" style={{ color: DK }}>{l.title}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">
                               {l.city} · PKR {(l.rent || 0).toLocaleString()}/mo
                             </p>
                           </div>
-                          <span
-                            className={`text-xs font-medium px-2 py-0.5 rounded-full border capitalize
-                                          ${STATUS_BADGE[l.status] || STATUS_BADGE.inactive}`}
-                          >
-                            {l.status}
-                          </span>
+                          <Pill status={l.status || "inactive"} map={STATUS_COLOR} />
                         </div>
-                      ))
-                    )}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                {/* Recent Bookings */}
-                <div className="bg-white rounded-card border border-border shadow-card">
-                  <div className="flex items-center justify-between p-4 sm:p-5 border-b border-border">
-                    <h2 className="font-semibold text-primary text-base sm:text-lg">
-                      Booking Requests
-                    </h2>
+                {/* Booking Requests */}
+                <div className="bg-white rounded-2xl border shadow-sm overflow-hidden" style={{ borderColor: "#E8E2D9" }}>
+                  <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: "#E8E2D9" }}>
+                    <h2 className="font-bold text-sm" style={{ color: DK }}>Booking Requests</h2>
                     <Link
                       to="/owner/bookings"
-                      className="text-xs text-secondary hover:text-primary flex items-center gap-1"
+                      className="text-[11px] font-bold flex items-center gap-1 hover:opacity-75 transition-opacity"
+                      style={{ color: BTN }}
                     >
                       View all <RiArrowRightLine />
                     </Link>
                   </div>
-                  <div className="divide-y divide-border">
-                    {bookings.length === 0 ? (
-                      <div className="p-6 text-center text-text-secondary text-sm">
-                        No booking requests yet.
-                      </div>
-                    ) : (
-                      bookings.slice(0, 5).map((b) => (
-                        <div
-                          key={b._id}
-                          className="flex items-center gap-3 p-4"
-                        >
-                          <div className="w-10 h-10 rounded-full bg-background flex items-center justify-center shrink-0 overflow-hidden">
+
+                  {bookings.length === 0 ? (
+                    <div className="px-5 py-10 text-center">
+                      <RiCalendarCheckLine className="text-4xl mx-auto mb-3 text-gray-200" />
+                      <p className="text-sm text-gray-400">No booking requests yet.</p>
+                    </div>
+                  ) : (
+                    <div className="divide-y" style={{ borderColor: "#F3EFE9" }}>
+                      {bookings.slice(0, 5).map((b) => (
+                        <div key={b._id} className="flex items-center gap-3 px-5 py-3.5 hover:bg-[#F7F4EF] transition-colors">
+                          {/* Avatar */}
+                          <div
+                            className="w-9 h-9 rounded-full flex items-center justify-center overflow-hidden shrink-0 font-bold text-sm"
+                            style={{ backgroundColor: `${DK}15`, color: DK }}
+                          >
                             {b.seeker?.profilePhoto?.url ? (
-                              <img
-                                src={b.seeker.profilePhoto.url}
-                                alt=""
-                                className="w-10 h-10 rounded-full object-cover"
-                              />
+                              <img src={b.seeker.profilePhoto.url} alt="" className="w-9 h-9 rounded-full object-cover" />
                             ) : (
-                              <RiUserLine className="text-primary" />
+                              (b.seeker?.name?.[0] || "?").toUpperCase()
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-primary truncate">
+                            <p className="text-sm font-semibold truncate" style={{ color: DK }}>
                               {b.seeker?.name || "Seeker"}
                             </p>
-                            <p className="text-xs text-text-secondary truncate">
+                            <p className="text-xs text-gray-400 mt-0.5 truncate">
                               {b.listing?.title || "Listing"}
                             </p>
                           </div>
-                          <span
-                            className={`text-xs font-medium px-2.5 py-1 rounded-full capitalize
-                                          ${BOOKING_BADGE[b.status] || ""}`}
-                          >
-                            {b.status}
-                          </span>
+                          <Pill status={b.status} map={BOOKING_COLOR} />
                         </div>
-                      ))
-                    )}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
+
               </div>
             </div>
           )}

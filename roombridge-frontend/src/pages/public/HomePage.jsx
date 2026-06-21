@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   RiSearchLine,
@@ -12,6 +12,11 @@ import {
   RiCheckLine,
   RiArrowRightSLine,
   RiLoader4Line,
+  RiVerifiedBadgeLine,
+  RiTimeLine,
+  RiPhoneLine,
+  RiCoinsLine,
+  RiArrowDownSLine,
 } from "react-icons/ri";
 import { CITIES } from "../../utils/constants";
 import listingService from "../../services/listingService";
@@ -21,15 +26,27 @@ import islamabad from "../../assets/images/cities/islamabad.jpg";
 import rawalpindi from "../../assets/images/cities/rawalpindi.jpg";
 import peshawar from "../../assets/images/cities/peshawar.jpg";
 import multan from "../../assets/images/cities/multan.jpg";
+import pakistanMap from "../../assets/images/pakistan_map.png";
 
 document.title = "RoomBridge — Pakistan's #1 Room Rental Platform";
+
+/* ─── Design tokens (Figma) ──────────────────────────────────── */
+const C = {
+  darkGreen:   "#012D1D",
+  btnPrimary:  "#8E4E14",
+  btnDark:     "#783D01",
+  promise:     "#F0EDE9",
+  hostelBg:    "#FFAB69",
+  footerHead:  "#FBBF24",
+  white:       "#FFFFFF",
+};
 
 /* ── Static data ──────────────────────────────────────────────── */
 const STATS = [
   { value: "12,000+", label: "Rooms Listed" },
-  { value: "8,500+", label: "Happy Tenants" },
-  { value: "25+", label: "Cities Covered" },
-  { value: "4.8★", label: "Average Rating" },
+  { value: "8,500+",  label: "Happy Tenants" },
+  { value: "25+",     label: "Cities Covered" },
+  { value: "4.8★",   label: "Average Rating" },
 ];
 
 const HOW_IT_WORKS = [
@@ -60,36 +77,12 @@ const HOW_IT_WORKS = [
 ];
 
 const FEATURED_CITIES = [
-  {
-    name: "Karachi",
-    rooms: "3,240",
-    img: karachi,
-  },
-  {
-    name: "Lahore",
-    rooms: "2,890",
-    img: lahore,
-  },
-  {
-    name: "Islamabad",
-    rooms: "1,540",
-    img: islamabad,
-  },
-  {
-    name: "Rawalpindi",
-    rooms: "980",
-    img: rawalpindi,
-  },
-  {
-    name: "Peshawar",
-    rooms: "620",
-    img: peshawar,
-  },
-  {
-    name: "Multan",
-    rooms: "450",
-    img: multan,
-  },
+  { name: "Lahore",      rooms: "2,890", img: lahore },
+  { name: "Karachi",     rooms: "3,240", img: karachi },
+  { name: "Islamabad",   rooms: "1,540", img: islamabad },
+  { name: "Rawalpindi",  rooms: "980",   img: rawalpindi },
+  { name: "Peshawar",    rooms: "620",   img: peshawar },
+  { name: "Multan",      rooms: "450",   img: multan },
 ];
 
 const TESTIMONIALS = [
@@ -101,14 +94,14 @@ const TESTIMONIALS = [
     text: "Found my perfect room in 2 days! The roommate matching feature is genius.",
   },
   {
-    name: "Rashid Ali",
+    name: "Amna Raza",
     city: "Lahore",
     role: "Owner",
     rating: 5,
     text: "Listed my room and got 5 serious inquiries the same day. Amazing platform!",
   },
   {
-    name: "Rahid Ali",
+    name: "Bilal Khan",
     city: "Islamabad",
     role: "Seeker",
     rating: 5,
@@ -116,38 +109,56 @@ const TESTIMONIALS = [
   },
 ];
 
-/*
-  Budget range → minRent / maxRent query params.
-  HomePage was sending ?budget=0-10000 which the backend doesn't
-  understand. Backend expects minRent and maxRent as separate params.
-*/
 const BUDGET_OPTIONS = [
-  { value: "", label: "Any Budget", min: "", max: "" },
-  { value: "0-10000", label: "Under 10,000", min: "0", max: "10000" },
-  { value: "10000-20000", label: "10k – 20k", min: "10000", max: "20000" },
-  { value: "20000-35000", label: "20k – 35k", min: "20000", max: "35000" },
-  { value: "35000-50000", label: "35k – 50k", min: "35000", max: "50000" },
-  { value: "50000+", label: "Above 50k", min: "50000", max: "" },
+  { value: "",           label: "Any Budget", min: "", max: "" },
+  { value: "0-10000",    label: "Under 10,000",  min: "0",     max: "10000" },
+  { value: "10000-20000",label: "10k – 20k",     min: "10000", max: "20000" },
+  { value: "20000-35000",label: "20k – 35k",     min: "20000", max: "35000" },
+  { value: "35000-50000",label: "35k – 50k",     min: "35000", max: "50000" },
+  { value: "50000+",     label: "Above 50k",     min: "50000", max: "" },
 ];
 
-/* ── ListingCard for featured section ────────────────────────── */
+const PROMISE_ITEMS = [
+  {
+    icon: RiVerifiedBadgeLine,
+    title: "Verified Listings",
+    desc: "Every room is manually reviewed before it goes live on our platform.",
+  },
+  {
+    icon: RiShieldCheckLine,
+    title: "Safe & Secure",
+    desc: "Your personal data and transactions are protected end-to-end.",
+  },
+  {
+    icon: RiTimeLine,
+    title: "24/7 Support",
+    desc: "Our support team is always ready to help whenever you need us.",
+  },
+  {
+    icon: RiPhoneLine,
+    title: "Easy Communication",
+    desc: "Message owners directly inside the app — no middlemen, no hassle.",
+  },
+];
+
+/* ── Featured Listing Card ───────────────────────────────────── */
 const FeaturedListingCard = ({ listing }) => {
   const photo =
     listing.photos?.[0]?.url ||
     "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=500&q=80";
   const typeMap = {
-    single: "Single Room",
-    shared: "Shared Room",
+    single:    "Single Room",
+    shared:    "Shared Room",
     apartment: "Apartment",
   };
 
   return (
     <Link
-      to={`/listings/${listing._id}`}
-      className="group bg-white rounded-card border border-border shadow-card
-                     hover:shadow-hover transition-all duration-300 overflow-hidden flex flex-col"
+      to={`/explore/${listing._id}`}
+      className="group bg-white rounded-2xl overflow-hidden shadow-sm
+                 hover:shadow-xl transition-all duration-300 flex flex-col border border-gray-100"
     >
-      <div className="relative overflow-hidden">
+      <div className="relative overflow-hidden h-48">
         <img
           src={photo}
           alt={listing.title}
@@ -155,38 +166,39 @@ const FeaturedListingCard = ({ listing }) => {
             e.target.src =
               "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=500&q=80";
           }}
-          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
         <div
-          className="absolute top-3 left-3 bg-primary/90 text-white text-xs font-medium
-                         px-2.5 py-1 rounded-full backdrop-blur-sm"
+          className="absolute top-3 left-3 text-white text-xs font-semibold
+                     px-3 py-1 rounded-full"
+          style={{ backgroundColor: C.darkGreen }}
         >
           {typeMap[listing.roomType] || listing.roomType || "Room"}
         </div>
       </div>
       <div className="p-4 flex-1 flex flex-col">
-        <h3
-          className="font-semibold text-primary text-sm leading-snug line-clamp-2
-                       group-hover:text-secondary transition-colors mb-1"
-        >
+        <h3 className="font-semibold text-sm leading-snug line-clamp-2 mb-1"
+            style={{ color: C.darkGreen }}>
           {listing.title}
         </h3>
-        <p className="text-text-secondary text-xs flex items-center gap-1 mb-3">
-          <RiMapPin2Line className="text-accent shrink-0" />
-          {listing.address ? `${listing.address}, ` : ""}
-          {listing.city}
+        <p className="text-gray-500 text-xs flex items-center gap-1 mb-3">
+          <RiMapPin2Line className="shrink-0" style={{ color: C.btnPrimary }} />
+          {listing.address ? `${listing.address}, ` : ""}{listing.city}
         </p>
         <div className="mt-auto flex items-center justify-between">
           <div>
-            <span className="text-lg font-bold text-primary">
+            <span className="text-base font-bold" style={{ color: C.darkGreen }}>
               PKR {(listing.rent || 0).toLocaleString()}
             </span>
-            <span className="text-xs text-text-secondary">/month</span>
+            <span className="text-xs text-gray-400">/month</span>
           </div>
           <span
-            className="text-xs font-semibold text-secondary border border-secondary/30
-                           px-2.5 py-1 rounded-full group-hover:bg-secondary group-hover:text-white
-                           transition-all duration-200"
+            className="text-xs font-semibold px-3 py-1 rounded-full border
+                       group-hover:text-white transition-all duration-200"
+            style={{
+              borderColor: C.btnPrimary,
+              color: C.btnPrimary,
+            }}
           >
             View →
           </span>
@@ -196,198 +208,269 @@ const FeaturedListingCard = ({ listing }) => {
   );
 };
 
+/* ════════════════════════════════════════════════════════════
+   HOME PAGE
+════════════════════════════════════════════════════════════ */
 const HomePage = () => {
   const navigate = useNavigate();
-  const [search, setSearch] = useState({ city: "", roomType: "", budget: "" });
-
-  /* ── Featured listings from real API ────────────────────────── */
+  const [search, setSearch] = useState({ city: "", genderPreference: "", budget: "" });
   const [featuredListings, setFeaturedListings] = useState([]);
+  const [openDropdown, setOpenDropdown] = useState(null); // 'city' | 'gender' | 'budget' | null
+  const cityRef = useRef(null);
+  const genderRef = useRef(null);
+  const budgetRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        (cityRef.current && cityRef.current.contains(event.target)) ||
+        (genderRef.current && genderRef.current.contains(event.target)) ||
+        (budgetRef.current && budgetRef.current.contains(event.target))
+      ) {
+        return;
+      }
+      setOpenDropdown(null);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
   const [featuredLoading, setFeaturedLoading] = useState(true);
 
   const loadFeatured = useCallback(async () => {
     try {
       setFeaturedLoading(true);
-      const res = await listingService.getListings({
-        limit: 6,
-        sortBy: "newest",
-      });
-      /*
-        backend returns { success, listings, pagination }
-        not { data }. Read res.listings directly.
-      */
+      const res = await listingService.getListings({ limit: 4, sortBy: "newest" });
       setFeaturedListings(
-        Array.isArray(res.data) ? res.data : (res.listings ?? []),
+        Array.isArray(res.data) ? res.data : (res.listings ?? [])
       );
     } catch {
-      setFeaturedListings([]); // silently fail — page still works without featured
+      setFeaturedListings([]);
     } finally {
       setFeaturedLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    loadFeatured();
-  }, [loadFeatured]);
+  useEffect(() => { loadFeatured(); }, [loadFeatured]);
 
-  /* ── Hero search ─────────────────────────────────────────────── */
   const handleSearch = (e) => {
     e.preventDefault();
     const params = new URLSearchParams();
     if (search.city) params.set("city", search.city);
-    /*
-      was sending ?type= but backend filter param is roomType.
-      Now correctly sends roomType.
-    */
-    if (search.roomType) params.set("roomType", search.roomType);
-    /*
-      was sending ?budget=0-10000 (string range) — backend
-      doesn't understand that. Now we split the range into minRent/maxRent.
-    */
+    if (search.genderPreference) params.set("genderPreference", search.genderPreference);
     if (search.budget) {
       const opt = BUDGET_OPTIONS.find((o) => o.value === search.budget);
       if (opt?.min) params.set("minRent", opt.min);
       if (opt?.max) params.set("maxRent", opt.max);
     }
-    navigate(`/listings?${params.toString()}`);
+    navigate(`/explore?${params.toString()}`);
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen" style={{ backgroundColor: C.white }}>
+
       {/* ════════════════════════════════════════════════════════
           HERO SECTION
       ════════════════════════════════════════════════════════ */}
-      <section className="relative bg-primary overflow-hidden">
-        {/* Background decorative circles */}
+      <section
+        className="relative overflow-hidden bg-no-repeat bg-center bg-cover"
+        style={{
+          backgroundColor: C.darkGreen,
+          backgroundImage: `url(${pakistanMap})`,
+        }}
+      >
+        {/* Subtle decorative blobs */}
         <div
-          className="absolute -top-32 -right-32 w-96 h-96 bg-accent/10 rounded-full blur-3xl"
+          className="absolute -top-40 -right-40 w-[500px] h-[500px] rounded-full blur-3xl opacity-10"
+          style={{ backgroundColor: C.btnPrimary }}
           aria-hidden="true"
         />
         <div
-          className="absolute -bottom-20 -left-20 w-80 h-80 bg-secondary/20 rounded-full blur-3xl"
+          className="absolute -bottom-24 -left-24 w-80 h-80 rounded-full blur-3xl opacity-10"
+          style={{ backgroundColor: C.hostelBg }}
           aria-hidden="true"
         />
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 md:py-32">
-          <div className="max-w-3xl mx-auto text-center">
-            <div
-              className="inline-flex items-center gap-2 bg-white/10 text-accent px-4 py-1.5
-                            rounded-full text-xs sm:text-sm font-medium mb-4 sm:mb-6 border border-white/20"
-            >
-              <RiStarFill className="text-xs" /> Pakistan's #1 Room Rental
-              Platform
-            </div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28 lg:py-36">
+          <div className="max-w-4xl mx-auto text-center">
 
-            <h1 className="text-[2.15rem] sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-4 sm:mb-5">
-              Find Your <span className="text-accent">Perfect Room</span>
-              <br className="hidden sm:block" />
-              <span className="text-white/85">and the Right Roommate</span>
+            {/* Headline */}
+            <h1 className="text-4xl sm:text-5xl lg:text-[68px] font-black text-white font-serif leading-[1.1] mb-6">
+              Ghar se door,<br />magar mehfooz.
             </h1>
-            <p className="text-white/70 text-base sm:text-lg md:text-xl mb-7 sm:mb-10 max-w-xl sm:max-w-2xl mx-auto leading-relaxed">
-              Browse thousands of verified rooms across Pakistan. Smart roommate
-              matching based on your lifestyle, budget, and preferences.
+            <p className="text-white/90 text-sm sm:text-base lg:text-lg mb-12 max-w-3xl mx-auto font-medium leading-relaxed">
+              Find verified hostels near your university, anywhere in Pakistan. The curated sanctuary for your academic journey.
             </p>
 
-            {/* Search box */}
+            {/* Search Box */}
             <form
               onSubmit={handleSearch}
-              className="bg-white rounded-2xl shadow-hover p-2.5 sm:p-3
-                             flex flex-col sm:flex-row gap-2.5 sm:gap-2 max-w-2xl mx-auto"
+              className="bg-white rounded-[28px] shadow-2xl p-3.5 flex flex-col lg:flex-row gap-3.5 max-w-4xl mx-auto items-stretch lg:items-center"
             >
-              {/* City */}
-              <div className="flex-1 relative">
-                <RiMapPin2Line className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary pointer-events-none" />
-                <select
-                  value={search.city}
-                  aria-label="Select city"
-                  onChange={(e) =>
-                    setSearch((s) => ({ ...s, city: e.target.value }))
-                  }
-                  className="w-full min-h-11 pl-9 pr-3 py-3 sm:py-3 text-sm text-primary bg-transparent
-                             outline-none sm:border-r border-border appearance-none cursor-pointer"
+              {/* City Custom Dropdown */}
+              <div className="flex-1 relative" ref={cityRef}>
+                <button
+                  type="button"
+                  onClick={() => setOpenDropdown(openDropdown === "city" ? null : "city")}
+                  className="w-full flex items-center gap-2.5 px-4.5 py-3 bg-[#F5F2EB] rounded-[18px] min-h-[52px] text-left transition-all hover:bg-[#ebdcc8]/20"
                 >
-                  <option value="">All Cities</option>
-                  {CITIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
+                  <RiMapPin2Line className="text-[#012D1D] text-lg shrink-0" />
+                  <span className="text-xs font-bold text-[#012D1D] flex-1 truncate">
+                    {search.city || "City or University Area"}
+                  </span>
+                  <RiArrowDownSLine className={`text-gray-500 text-base transition-transform duration-200 ${openDropdown === "city" ? "rotate-180" : ""}`} />
+                </button>
+
+                {openDropdown === "city" && (
+                  <div className="absolute left-0 right-0 top-[calc(100%+8px)] bg-white rounded-[20px] shadow-2xl border border-gray-100/80 overflow-hidden z-50 p-2 space-y-0.5 max-h-60 overflow-y-auto">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearch((s) => ({ ...s, city: "" }));
+                        setOpenDropdown(null);
+                      }}
+                      className={`w-full text-left px-4 py-2.5 text-xs font-bold rounded-xl transition-colors ${
+                        !search.city
+                          ? "bg-[#012D1D] text-white"
+                          : "text-gray-700 hover:bg-[#F5F2EB] hover:text-[#012D1D]"
+                      }`}
+                    >
+                      City or University Area
+                    </button>
+                    {CITIES.map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => {
+                          setSearch((s) => ({ ...s, city: c }));
+                          setOpenDropdown(null);
+                        }}
+                        className={`w-full text-left px-4 py-2.5 text-xs font-bold rounded-xl transition-colors ${
+                          search.city === c
+                            ? "bg-[#012D1D] text-white"
+                            : "text-gray-700 hover:bg-[#F5F2EB] hover:text-[#012D1D]"
+                        }`}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              {/* Type — was binding to search.type, now search.roomType */}
-              <div className="flex-1 relative">
-                <RiBuilding4Line className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary pointer-events-none" />
-                <select
-                  value={search.roomType}
-                  aria-label="Select room type"
-                  onChange={(e) =>
-                    setSearch((s) => ({ ...s, roomType: e.target.value }))
-                  }
-                  className="w-full min-h-11 pl-9 pr-3 py-3 sm:py-3 text-sm text-primary bg-transparent
-                             outline-none sm:border-r border-border appearance-none cursor-pointer"
+              {/* Gender Custom Dropdown */}
+              <div className="flex-1 relative" ref={genderRef}>
+                <button
+                  type="button"
+                  onClick={() => setOpenDropdown(openDropdown === "gender" ? null : "gender")}
+                  className="w-full flex items-center gap-2.5 px-4.5 py-3 bg-[#F5F2EB] rounded-[18px] min-h-[52px] text-left transition-all hover:bg-[#ebdcc8]/20"
                 >
-                  <option value="">Any Type</option>
-                  {/* values now match backend Listing.model.js enum */}
-                  <option value="single">Single Room</option>
-                  <option value="shared">Shared Room</option>
-                  <option value="apartment">Full Apartment</option>
-                </select>
+                  <RiGroupLine className="text-[#012D1D] text-lg shrink-0" />
+                  <span className="text-xs font-bold text-[#012D1D] flex-1 truncate">
+                    {search.genderPreference === "male"
+                      ? "Boys"
+                      : search.genderPreference === "female"
+                      ? "Girls"
+                      : search.genderPreference === "any"
+                      ? "Mixed"
+                      : "Gender"}
+                  </span>
+                  <RiArrowDownSLine className={`text-gray-500 text-base transition-transform duration-200 ${openDropdown === "gender" ? "rotate-180" : ""}`} />
+                </button>
+
+                {openDropdown === "gender" && (
+                  <div className="absolute left-0 right-0 top-[calc(100%+8px)] bg-white rounded-[20px] shadow-2xl border border-gray-100 overflow-hidden z-50 p-2 space-y-0.5">
+                    {[
+                      { label: "Gender", value: "" },
+                      { label: "Boys", value: "male" },
+                      { label: "Girls", value: "female" },
+                      { label: "Mixed", value: "any" }
+                    ].map((g) => (
+                      <button
+                        key={g.value}
+                        type="button"
+                        onClick={() => {
+                          setSearch((s) => ({ ...s, genderPreference: g.value }));
+                          setOpenDropdown(null);
+                        }}
+                        className={`w-full text-left px-4 py-2.5 text-xs font-bold rounded-xl transition-colors ${
+                          search.genderPreference === g.value
+                            ? "bg-[#012D1D] text-white"
+                            : "text-gray-700 hover:bg-[#F5F2EB] hover:text-[#012D1D]"
+                        }`}
+                      >
+                        {g.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              {/* Budget — binds to search.budget (the range string).
-                  handleSearch splits it into minRent/maxRent before navigation. */}
-              <div className="flex-1 relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary text-xs font-bold">
-                  ₨
-                </span>
-                <select
-                  value={search.budget}
-                  aria-label="Select budget range"
-                  onChange={(e) =>
-                    setSearch((s) => ({ ...s, budget: e.target.value }))
-                  }
-                  className="w-full min-h-11 pl-9 pr-3 py-3 sm:py-3 text-sm text-primary bg-transparent
-                             outline-none appearance-none cursor-pointer"
+              {/* Budget Custom Dropdown */}
+              <div className="flex-1 relative" ref={budgetRef}>
+                <button
+                  type="button"
+                  onClick={() => setOpenDropdown(openDropdown === "budget" ? null : "budget")}
+                  className="w-full flex items-center gap-2.5 px-4.5 py-3 bg-[#F5F2EB] rounded-[18px] min-h-[52px] text-left transition-all hover:bg-[#ebdcc8]/20"
                 >
-                  {BUDGET_OPTIONS.map(({ value, label }) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
+                  <RiCoinsLine className="text-[#012D1D] text-lg shrink-0" />
+                  <span className="text-xs font-bold text-[#012D1D] flex-1 truncate">
+                    {BUDGET_OPTIONS.find((o) => o.value === search.budget)?.label || "Budget"}
+                  </span>
+                  <RiArrowDownSLine className={`text-gray-500 text-base transition-transform duration-200 ${openDropdown === "budget" ? "rotate-180" : ""}`} />
+                </button>
+
+                {openDropdown === "budget" && (
+                  <div className="absolute left-0 right-0 top-[calc(100%+8px)] bg-white rounded-[20px] shadow-2xl border border-gray-100 overflow-hidden z-50 p-2 space-y-0.5 max-h-60 overflow-y-auto">
+                    {[
+                      { label: "Budget", value: "" },
+                      ...BUDGET_OPTIONS.slice(1)
+                    ].map((b) => (
+                      <button
+                        key={b.value}
+                        type="button"
+                        onClick={() => {
+                          setSearch((s) => ({ ...s, budget: b.value }));
+                          setOpenDropdown(null);
+                        }}
+                        className={`w-full text-left px-4 py-2.5 text-xs font-bold rounded-xl transition-colors ${
+                          search.budget === b.value
+                            ? "bg-[#012D1D] text-white"
+                            : "text-gray-700 hover:bg-[#F5F2EB] hover:text-[#012D1D]"
+                        }`}
+                      >
+                        {b.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <button
                 type="submit"
-                className="flex items-center justify-center gap-2 bg-primary text-white
-                                 font-semibold text-sm px-6 py-3 min-h-11 sm:py-3 rounded-xl
-                                 hover:bg-secondary transition-all duration-200 shrink-0"
+                className="text-white font-bold text-sm px-8 py-3.5 min-h-[52px] rounded-[18px]
+                           hover:opacity-95 active:scale-95 transition-all duration-200 shrink-0
+                           flex items-center justify-center gap-2 shadow-md cursor-pointer"
+                style={{ backgroundColor: C.btnPrimary }}
               >
-                <RiSearchLine /> Search
+                <RiSearchLine /> Search Hostels
               </button>
             </form>
 
             {/* Quick city tags */}
-            <div className="mt-4 sm:mt-5 overflow-x-auto pb-1">
-              <div className="flex min-w-max sm:min-w-0 sm:flex-wrap sm:justify-center gap-2 px-1 sm:px-0">
-                {[
-                  "Karachi",
-                  "Lahore",
-                  "Islamabad",
-                  "Rawalpindi",
-                  "Peshawar",
-                ].map((c) => (
-                  <button
-                    key={c}
-                    onClick={() => navigate(`/listings?city=${c}`)}
-                    className="text-sm sm:text-xs font-medium text-white/75 border border-white/25
-                                   px-3.5 py-2 sm:px-3 sm:py-1.5 rounded-full hover:bg-white/10 hover:text-white
-                                   transition-all duration-200"
-                  >
-                    {c}
-                  </button>
-                ))}
-              </div>
+            <div className="mt-8 flex flex-wrap justify-center gap-2">
+              {["Karachi", "Lahore", "Islamabad", "Rawalpindi", "Peshawar"].map((c) => (
+                <button
+                  key={c}
+                  onClick={() => navigate(`/explore?city=${c}`)}
+                  className="text-xs font-medium text-white/65 border border-white/20
+                             px-3.5 py-1.5 rounded-full hover:text-white
+                             hover:border-white/50 transition-all duration-200 cursor-pointer"
+                >
+                  {c}
+                </button>
+              ))}
             </div>
           </div>
         </div>
@@ -396,37 +479,51 @@ const HomePage = () => {
       {/* ════════════════════════════════════════════════════════
           STATS BAR
       ════════════════════════════════════════════════════════ */}
-      <section className="bg-white border-b border-border">
+      <section className="bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-border">
+          <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-gray-100">
             {STATS.map(({ value, label }) => (
-              <div key={label} className="py-8 px-6 text-center">
-                <p className="text-3xl font-bold text-primary">{value}</p>
-                <p className="text-sm text-text-secondary mt-1">{label}</p>
+              <div key={label} className="py-8 px-6 text-center group">
+                <p
+                  className="text-3xl font-bold transition-colors duration-200"
+                  style={{ color: C.darkGreen }}
+                >
+                  {value}
+                </p>
+                <p className="text-sm text-gray-500 mt-1">{label}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
-
-      {/* ════════════════════════════════════════════════════════
-          FEATURED LISTINGS (from real API)
+         {/* ════════════════════════════════════════════════════════
+          HANDPICKED RECOMMENDATIONS (Featured Listings)
       ════════════════════════════════════════════════════════ */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-background">
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-end justify-between mb-10">
             <div>
-              <h2 className="text-3xl md:text-4xl font-bold text-primary mb-2">
-                Latest Listings
+              <p
+                className="text-xs font-bold uppercase tracking-widest mb-2"
+                style={{ color: C.btnPrimary }}
+              >
+                Featured
+              </p>
+              <h2
+                className="text-3xl md:text-4xl font-bold"
+                style={{ color: C.darkGreen }}
+              >
+                Handpicked Recommendations
               </h2>
-              <p className="text-text-secondary">
-                Freshly posted rooms across Pakistan
+              <p className="text-gray-500 mt-2">
+                Freshly posted, verified rooms across Pakistan
               </p>
             </div>
             <Link
-              to="/listings"
-              className="hidden sm:inline-flex items-center gap-1.5 text-secondary font-semibold
-                             hover:text-primary transition-colors text-sm shrink-0"
+              to="/explore"
+              className="hidden sm:inline-flex items-center gap-1.5 font-semibold
+                         hover:opacity-75 transition-opacity text-sm shrink-0"
+              style={{ color: C.btnPrimary }}
             >
               View all <RiArrowRightLine />
             </Link>
@@ -435,26 +532,28 @@ const HomePage = () => {
           {featuredLoading ? (
             <div className="flex items-center justify-center py-20">
               <RiLoader4Line
-                className="animate-spin text-4xl text-primary"
+                className="animate-spin text-4xl"
+                style={{ color: C.btnPrimary }}
                 aria-label="Loading listings"
               />
             </div>
           ) : featuredListings.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
               {featuredListings.map((l) => (
                 <FeaturedListingCard key={l._id} listing={l} />
               ))}
             </div>
           ) : (
-            /* Empty state — show static placeholder cards instead of blank */
             <div className="text-center py-16">
-              <RiHome4Line className="text-5xl text-border mx-auto mb-4" />
-              <p className="text-text-secondary">
+              <RiHome4Line className="text-5xl text-gray-200 mx-auto mb-4" />
+              <p className="text-gray-400">
                 No listings yet. Be the first to post!
               </p>
               <Link
                 to="/register"
-                className="btn-primary mt-4 inline-flex gap-2"
+                className="inline-flex items-center gap-2 text-white font-semibold
+                           px-6 py-2.5 rounded-lg mt-4 hover:opacity-90 transition-opacity"
+                style={{ backgroundColor: C.btnPrimary }}
               >
                 Post a Room
               </Link>
@@ -463,9 +562,10 @@ const HomePage = () => {
 
           <div className="text-center mt-8 sm:hidden">
             <Link
-              to="/listings"
-              className="inline-flex items-center gap-2 text-secondary font-semibold
-                             hover:text-primary transition-colors duration-200"
+              to="/explore"
+              className="inline-flex items-center gap-2 font-semibold
+                         hover:opacity-75 transition-opacity"
+              style={{ color: C.btnPrimary }}
             >
               View all rooms <RiArrowRightLine />
             </Link>
@@ -474,104 +574,66 @@ const HomePage = () => {
       </section>
 
       {/* ════════════════════════════════════════════════════════
-          BROWSE BY CITY
+          HOW IT WORKS — "Simple. Secure. Station First."
       ════════════════════════════════════════════════════════ */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-primary mb-3">
-              Browse by City
-            </h2>
-            <p className="text-text-secondary text-lg max-w-xl mx-auto">
-              Rooms available across all major cities of Pakistan
-            </p>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-            {FEATURED_CITIES.map(({ name, rooms, img }) => (
-              <Link
-                key={name}
-                to={`/listings?city=${name}`}
-                className="relative group overflow-hidden rounded-card shadow-card
-                               hover:shadow-hover transition-all duration-300"
-              >
-                <img
-                  src={img}
-                  alt={name}
-                  className="w-full h-44 object-cover group-hover:scale-105
-                                transition-transform duration-500"
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 bg-linear-to-t from-primary/90 via-primary/30 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-4">
-                  <p className="text-white font-bold text-lg leading-tight">
-                    {name}
-                  </p>
-                  <p className="text-accent text-sm">{rooms} rooms</p>
-                </div>
-                <div
-                  className="absolute top-3 right-3 bg-white/10 backdrop-blur-sm
-                                text-white text-xs px-2.5 py-1 rounded-full border border-white/20
-                                opacity-0 group-hover:opacity-100 transition-opacity duration-200
-                                flex items-center gap-1"
-                >
-                  View <RiArrowRightSLine />
-                </div>
-              </Link>
-            ))}
-          </div>
-          <div className="text-center mt-8">
-            <Link
-              to="/listings"
-              className="inline-flex items-center gap-2 text-secondary font-semibold
-                             hover:text-primary transition-colors duration-200"
-            >
-              View all cities <RiArrowRightLine />
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* ════════════════════════════════════════════════════════
-          HOW IT WORKS
-      ════════════════════════════════════════════════════════ */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-background">
-        <div className="max-w-7xl mx-auto">
           <div className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-bold text-primary mb-3">
-              How RoomBridge Works
+            <p
+              className="text-xs font-bold uppercase tracking-widest mb-3"
+              style={{ color: C.btnPrimary }}
+            >
+              The Process
+            </p>
+            <h2
+              className="text-3xl md:text-4xl font-bold mb-3"
+              style={{ color: C.darkGreen }}
+            >
+              Simple. Secure. Station First.
             </h2>
-            <p className="text-text-secondary text-lg">
-              Find your room in 4 simple steps
+            <p className="text-gray-500 text-lg max-w-xl mx-auto">
+              Find your room in 4 straightforward steps
             </p>
           </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {HOW_IT_WORKS.map(({ step, icon: Icon, title, desc }, i) => (
               <div key={step} className="relative text-center group">
-                {/* Connector line */}
+                {/* Connector */}
                 {i < HOW_IT_WORKS.length - 1 && (
                   <div
-                    className="hidden lg:block absolute top-8 left-1/2 w-full h-px
-                                  bg-linear-to-r from-accent to-transparent"
+                    className="hidden lg:block absolute top-8 left-1/2 w-full h-px opacity-20"
+                    style={{
+                      background: `linear-gradient(to right, ${C.btnPrimary}, transparent)`,
+                    }}
                     aria-hidden="true"
                   />
                 )}
                 <div className="relative inline-flex flex-col items-center">
+                  {/* Icon circle */}
                   <div
-                    className="w-16 h-16 rounded-2xl bg-primary/5 flex items-center justify-center mb-4
-                                  group-hover:bg-primary group-hover:text-white transition-all duration-300
-                                  border-2 border-transparent group-hover:border-primary"
+                    className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4
+                               transition-all duration-300 group-hover:scale-110"
+                    style={{ backgroundColor: `${C.btnPrimary}18`, border: `2px solid ${C.btnPrimary}30` }}
                   >
-                    <Icon className="text-2xl text-primary group-hover:text-white transition-colors" />
+                    <Icon
+                      className="text-2xl transition-colors"
+                      style={{ color: C.btnPrimary }}
+                    />
                   </div>
-                  <span className="text-xs font-bold text-accent tracking-widest mb-2">
+                  <span
+                    className="text-xs font-bold tracking-widest mb-2"
+                    style={{ color: C.btnPrimary }}
+                  >
                     {step}
                   </span>
-                  <h3 className="font-bold text-primary text-lg mb-2">
+                  <h3
+                    className="font-bold text-lg mb-2"
+                    style={{ color: C.darkGreen }}
+                  >
                     {title}
                   </h3>
-                  <p className="text-text-secondary text-sm leading-relaxed">
-                    {desc}
-                  </p>
+                  <p className="text-gray-500 text-sm leading-relaxed">{desc}</p>
                 </div>
               </div>
             ))}
@@ -579,99 +641,116 @@ const HomePage = () => {
         </div>
       </section>
 
+ 
+
+   
+
       {/* ════════════════════════════════════════════════════════
-          ROOMMATE MATCHING PROMO
+          DESIGNED FOR PEACE OF MIND  (beige bg)
       ════════════════════════════════════════════════════════ */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
+      <section
+        className="py-20 px-4 sm:px-6 lg:px-8"
+        style={{ backgroundColor: C.promise }}
+      >
         <div className="max-w-7xl mx-auto">
-          <div className="bg-primary rounded-2xl overflow-hidden relative">
-            <div
-              className="absolute -top-10 -right-10 w-64 h-64 bg-accent/10 rounded-full blur-2xl"
-              aria-hidden="true"
-            />
-            <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-0">
-              <div className="p-10 lg:p-14">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            {/* Left: image collage / illustration */}
+            <div className="relative">
+              <div
+                className="rounded-3xl overflow-hidden shadow-2xl"
+                style={{ backgroundColor: C.darkGreen }}
+              >
+                <img
+                  src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=700&q=80"
+                  alt="Happy roommates"
+                  className="w-full h-80 lg:h-96 object-cover opacity-80 mix-blend-luminosity"
+                  loading="lazy"
+                />
+                {/* Floating stat card */}
                 <div
-                  className="inline-flex items-center gap-2 bg-accent/20 text-accent
-                                px-3 py-1.5 rounded-full text-xs font-semibold mb-5 border border-accent/30"
+                  className="absolute -bottom-4 -right-4 bg-white rounded-2xl p-5 shadow-xl"
+                  style={{ minWidth: "160px" }}
                 >
-                  <RiGroupLine /> Smart Roommate Matching
-                </div>
-                <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 leading-tight">
-                  Find Roommates Who{" "}
-                  <span className="text-accent">Actually Match</span> Your
-                  Lifestyle
-                </h2>
-                <p className="text-white/70 text-base mb-8 leading-relaxed">
-                  Answer a few questions about your sleep schedule, cleanliness
-                  habits, and social preferences. Our AI engine will find your
-                  top matches — with a compatibility score.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <Link
-                    to="/register"
-                    className="inline-flex items-center justify-center gap-2 bg-accent text-primary
-                                   font-semibold px-6 py-3 rounded-btn hover:bg-white transition-all duration-200"
+                  <p
+                    className="text-3xl font-bold"
+                    style={{ color: C.darkGreen }}
                   >
-                    <RiGroupLine /> Find My Match
-                  </Link>
-                  <Link
-                    to="/about"
-                    className="inline-flex items-center justify-center gap-2 border border-white/30
-                                   text-white font-semibold px-6 py-3 rounded-btn
-                                   hover:bg-white/10 transition-all duration-200"
-                  >
-                    Learn More <RiArrowRightLine />
-                  </Link>
+                    8,500+
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">Happy Tenants</p>
+                  <div className="flex gap-0.5 mt-2">
+                    {[...Array(5)].map((_, i) => (
+                      <RiStarFill key={i} className="text-yellow-400 text-sm" />
+                    ))}
+                  </div>
                 </div>
               </div>
+            </div>
 
-              {/* Right: compatibility score visual */}
-              <div className="relative hidden lg:flex items-center justify-center p-10">
-                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 w-72 border border-white/20">
-                  <p className="text-white/70 text-sm mb-3">
-                    Compatibility Score
-                  </p>
-                  <div className="flex items-end gap-2 mb-4">
-                    <span className="text-5xl font-bold text-white">87</span>
-                    <span className="text-accent text-xl font-semibold mb-1">
-                      / 100
-                    </span>
-                  </div>
-                  <div className="w-full h-2 bg-white/20 rounded-full mb-5">
+            {/* Right: content */}
+            <div>
+              <p
+                className="text-xs font-bold uppercase tracking-widest mb-3"
+                style={{ color: C.btnPrimary }}
+              >
+                Our Promise
+              </p>
+              <h2
+                className="text-3xl md:text-4xl font-bold mb-4 leading-tight"
+                style={{ color: C.darkGreen }}
+              >
+                Designed for{" "}
+                <span style={{ color: C.btnPrimary }}>Peace of Mind</span>
+              </h2>
+              <p className="text-gray-600 text-base mb-8 leading-relaxed">
+                We know how stressful it is to find a room away from home.
+                RoomBridge is built from the ground up to make your search
+                safe, simple, and stress-free.
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                {PROMISE_ITEMS.map(({ icon: Icon, title, desc }) => (
+                  <div
+                    key={title}
+                    className="bg-white rounded-2xl p-5 shadow-sm
+                               hover:shadow-md transition-shadow duration-200"
+                  >
                     <div
-                      className="h-2 bg-accent rounded-full"
-                      style={{ width: "87%" }}
-                    />
-                  </div>
-                  {[
-                    { label: "Sleep Schedule", pct: 90 },
-                    { label: "Cleanliness", pct: 85 },
-                    { label: "Social Habits", pct: 80 },
-                    { label: "Budget Range", pct: 95 },
-                  ].map(({ label, pct }) => (
-                    <div key={label} className="flex items-center gap-3 mb-2.5">
-                      <p className="text-white/65 text-xs w-28 shrink-0">
-                        {label}
-                      </p>
-                      <div className="flex-1 h-1.5 bg-white/20 rounded-full">
-                        <div
-                          className="h-1.5 bg-accent/70 rounded-full"
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                      <span className="text-white/65 text-xs w-7 text-right">
-                        {pct}%
-                      </span>
+                      className="w-10 h-10 rounded-xl flex items-center justify-center mb-3"
+                      style={{ backgroundColor: `${C.btnPrimary}18` }}
+                    >
+                      <Icon style={{ color: C.btnPrimary }} className="text-lg" />
                     </div>
-                  ))}
-                  <div className="mt-4 flex items-center gap-2 bg-success/20 rounded-lg px-3 py-2">
-                    <RiCheckLine className="text-success shrink-0" />
-                    <p className="text-success text-xs font-semibold">
-                      Excellent Match!
-                    </p>
+                    <h3
+                      className="font-bold text-sm mb-1"
+                      style={{ color: C.darkGreen }}
+                    >
+                      {title}
+                    </h3>
+                    <p className="text-gray-500 text-xs leading-relaxed">{desc}</p>
                   </div>
-                </div>
+                ))}
+              </div>
+
+              <div className="mt-8 flex flex-col sm:flex-row gap-3">
+                <Link
+                  to="/explore"
+                  className="inline-flex items-center justify-center gap-2 text-white
+                             font-semibold px-6 py-3 rounded-xl
+                             hover:opacity-90 active:scale-95 transition-all duration-200"
+                  style={{ backgroundColor: C.btnPrimary }}
+                >
+                  <RiSearchLine /> Browse Rooms
+                </Link>
+                <Link
+                  to="/about"
+                  className="inline-flex items-center justify-center gap-2 font-semibold
+                             px-6 py-3 rounded-xl border-2 hover:bg-white
+                             transition-all duration-200"
+                  style={{ borderColor: C.btnPrimary, color: C.btnPrimary }}
+                >
+                  Learn More <RiArrowRightLine />
+                </Link>
               </div>
             </div>
           </div>
@@ -681,47 +760,56 @@ const HomePage = () => {
       {/* ════════════════════════════════════════════════════════
           TESTIMONIALS
       ════════════════════════════════════════════════════════ */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-background">
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-primary mb-3">
+            <p
+              className="text-xs font-bold uppercase tracking-widest mb-3"
+              style={{ color: C.btnPrimary }}
+            >
+              Reviews
+            </p>
+            <h2
+              className="text-3xl md:text-4xl font-bold mb-3"
+              style={{ color: C.darkGreen }}
+            >
               Loved by Thousands
             </h2>
-            <p className="text-text-secondary text-lg">
+            <p className="text-gray-500 text-lg">
               What our members say about RoomBridge
             </p>
           </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {TESTIMONIALS.map(({ name, city, role, rating, text }, index) => (
               <div
-                key={`${name}-${city}-${role}-${index}`}
-                className="bg-white rounded-card p-6 border border-border
-                              hover:shadow-hover transition-shadow duration-300"
+                key={`${name}-${city}-${index}`}
+                className="bg-gray-50 rounded-2xl p-6 border border-gray-100
+                           hover:shadow-lg transition-shadow duration-300"
               >
-                <div
-                  className="flex mb-3"
-                  aria-label={`${rating} out of 5 stars`}
-                >
+                <div className="flex mb-4" aria-label={`${rating} out of 5 stars`}>
                   {[...Array(rating)].map((_, i) => (
-                    <RiStarFill
-                      key={i}
-                      className="text-warning text-sm"
-                      aria-hidden="true"
-                    />
+                    <RiStarFill key={i} className="text-yellow-400 text-sm" />
                   ))}
                 </div>
-                <p className="text-text-secondary text-sm leading-relaxed mb-5 italic">
+                <p className="text-gray-600 text-sm leading-relaxed mb-5 italic">
                   "{text}"
                 </p>
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shrink-0">
-                    <span className="text-white text-sm font-bold">
-                      {name[0]}
-                    </span>
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                    style={{ backgroundColor: C.darkGreen }}
+                  >
+                    <span className="text-white text-sm font-bold">{name[0]}</span>
                   </div>
                   <div>
-                    <p className="font-semibold text-primary text-sm">{name}</p>
-                    <p className="text-text-secondary text-xs">
+                    <p
+                      className="font-semibold text-sm"
+                      style={{ color: C.darkGreen }}
+                    >
+                      {name}
+                    </p>
+                    <p className="text-gray-400 text-xs">
                       {role} · {city}
                     </p>
                   </div>
@@ -732,39 +820,7 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* ════════════════════════════════════════════════════════
-          FINAL CTA
-      ════════════════════════════════════════════════════════ */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-primary">
-        <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-            Ready to Find Your{" "}
-            <span className="text-accent">Perfect Room?</span>
-          </h2>
-          <p className="text-white/70 text-lg mb-8">
-            Join over 8,500 happy tenants who found their home through
-            RoomBridge.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link
-              to="/listings"
-              className="inline-flex items-center justify-center gap-2 bg-accent text-primary
-                             font-semibold px-8 py-3.5 rounded-btn hover:bg-white
-                             transition-all duration-200 shadow-card hover:shadow-hover"
-            >
-              <RiSearchLine /> Browse Rooms
-            </Link>
-            <Link
-              to="/register"
-              className="inline-flex items-center justify-center gap-2 border border-white/30
-                             text-white font-semibold px-8 py-3.5 rounded-btn
-                             hover:bg-white/10 transition-all duration-200"
-            >
-              <RiHome4Line /> List Your Room
-            </Link>
-          </div>
-        </div>
-      </section>
+
     </div>
   );
 };

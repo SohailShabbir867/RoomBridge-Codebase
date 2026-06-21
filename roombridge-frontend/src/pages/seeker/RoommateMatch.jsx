@@ -11,32 +11,50 @@ import {
   RiMapPin2Line,
   RiCheckLine,
   RiHeart3Line,
-  RiHome4Line,
   RiArrowRightLine,
+  RiUserLine,
+  RiRefreshLine,
+  RiSparklingLine,
 } from "react-icons/ri";
 import { CITIES } from "../../utils/constants";
 
 document.title = "Roommate Match — RoomBridge";
 
-/* ── Compatibility circle color ────────────────────────────────
-  Green  ≥ 70%
-  Yellow 40–69%
-  Red    < 40%
+/* ─── Design tokens (matches website) ─────────────────────── */
+const C = {
+  darkGreen: "#012D1D",
+  btnPrimary: "#8E4E14",
+  btnDark: "#783D01",
+  promise: "#F0EDE9",
+  white: "#FFFFFF",
+};
+
+/* ── Compatibility score colour ──────────────────────────────
+   Green  ≥ 70%
+   Yellow 40–69%
+   Red    < 40%
 */
 const getScoreColor = (score) => {
   if (score >= 70)
     return {
-      ring: "stroke-success",
-      text: "text-success",
-      bg: "bg-success/10",
+      ring: "#22c55e",
+      text: "#16a34a",
+      bg: "rgba(34,197,94,0.1)",
+      label: "Excellent Match",
     };
   if (score >= 40)
     return {
-      ring: "stroke-warning",
-      text: "text-warning",
-      bg: "bg-warning/10",
+      ring: "#f59e0b",
+      text: "#d97706",
+      bg: "rgba(245,158,11,0.1)",
+      label: "Good Match",
     };
-  return { ring: "stroke-error", text: "text-error", bg: "bg-error/10" };
+  return {
+    ring: "#ef4444",
+    text: "#dc2626",
+    bg: "rgba(239,68,68,0.1)",
+    label: "Low Match",
+  };
 };
 
 /* ── SVG Circular progress ──────────────────────────────────── */
@@ -47,15 +65,14 @@ const ScoreCircle = ({ score }) => {
   const dash = (score / 100) * circ;
 
   return (
-    <div className="relative w-24 h-24 flex items-center justify-center">
+    <div className="relative w-24 h-24 flex items-center justify-center shrink-0">
       <svg className="w-24 h-24 -rotate-90" viewBox="0 0 100 100">
         <circle
           cx="50"
           cy="50"
           r={r}
           fill="none"
-          stroke="currentColor"
-          className="text-border"
+          stroke="#e5e7eb"
           strokeWidth="8"
         />
         <circle
@@ -63,7 +80,7 @@ const ScoreCircle = ({ score }) => {
           cy="50"
           r={r}
           fill="none"
-          className={ring}
+          stroke={ring}
           strokeWidth="8"
           strokeLinecap="round"
           strokeDasharray={circ}
@@ -72,16 +89,16 @@ const ScoreCircle = ({ score }) => {
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className={`text-lg font-bold leading-none ${text}`}>
+        <span className="text-lg font-bold leading-none" style={{ color: text }}>
           {score}
         </span>
-        <span className="text-[10px] text-text-secondary">/ 100</span>
+        <span className="text-[10px] text-gray-400">/ 100</span>
       </div>
     </div>
   );
 };
 
-/* ── Preference form fields ──────────────────────────────────── 
+/* ── Preference form data ─────────────────────────────────────
    MUST match Preference.model.js enums exactly:
      sleepSchedule: early | late | flexible
      occupation:    student | professional
@@ -96,11 +113,10 @@ const OCCUPATION_OPTIONS = ["student", "professional"];
 const GENDER_OPTIONS = ["male", "female"];
 const GENDER_PREF_OPTIONS = ["any", "male", "female"];
 const MATCHING_STEPS = [
-  "Fill in your lifestyle preferences",
-  "Our algorithm finds seekers with similar habits",
-  "Compatibility scored 0–100",
-  "Green ≥70 · Yellow 40–69 · Red <40",
-  "Message matches directly from their profile",
+  { step: "01", title: "Fill Preferences", desc: "Share your lifestyle habits and budget." },
+  { step: "02", title: "Smart Matching", desc: "Our algorithm finds seekers with similar habits." },
+  { step: "03", title: "Scored Results", desc: "Compatibility scored 0–100 per profile." },
+  { step: "04", title: "Connect", desc: "Message matches directly from their profile." },
 ];
 
 const formatLabel = (val) => {
@@ -188,10 +204,6 @@ const RoommateMatch = () => {
     }
     try {
       setPrefSaving(true);
-      /*
-        Backend route: POST /preferences (upsert with findOneAndUpdate + upsert:true).
-        On success returns { success, preference }.
-      */
       const res = await api.post("/preferences", form);
       const saved = res.data?.preference || res.data?.data;
       setPref(saved);
@@ -210,10 +222,6 @@ const RoommateMatch = () => {
     try {
       setMatchLoading(true);
       setMatchError("");
-      /*
-        Backend route: GET /preferences/matches
-        Returns { success, matches: [{ user, compatibilityScore, breakdown }] }
-      */
       const res = await api.get("/preferences/matches");
       setMatches(extractMatches(res.data));
     } catch (err) {
@@ -233,50 +241,130 @@ const RoommateMatch = () => {
   const handleFieldChange = (name, value) =>
     setForm((f) => ({ ...f, [name]: f[name] === value ? "" : value }));
 
-  /* ── Option selector buttons ─────────────────────────────── */
-  const OptionRow = ({ label, name, options }) => (
+  /* ── Option chip selector ─────────────────────────────────── */
+  const OptionRow = ({ label, name, options, required }) => (
     <div>
-      <p className="label mb-2">{label}</p>
+      <p className="text-sm font-semibold mb-2" style={{ color: C.darkGreen }}>
+        {label}
+        {required && <span style={{ color: C.btnPrimary }}> *</span>}
+      </p>
       <div className="flex flex-wrap gap-2">
-        {options.map((opt) => (
-          <button
-            key={opt}
-            type="button"
-            onClick={() => handleFieldChange(name, opt)}
-            className={`px-3.5 py-1.5 rounded-full text-sm font-medium border transition-all duration-150
-                              ${
-                                form[name] === opt
-                                  ? "bg-primary text-white border-primary shadow-card"
-                                  : "bg-white border-border text-text-secondary hover:border-primary hover:text-primary"
-                              }`}
-          >
-            {formatLabel(opt)}
-          </button>
-        ))}
+        {options.map((opt) => {
+          const active = form[name] === opt;
+          return (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => handleFieldChange(name, opt)}
+              className="px-4 py-2 rounded-full text-sm font-semibold border-2 transition-all duration-200"
+              style={
+                active
+                  ? { backgroundColor: C.darkGreen, color: C.white, borderColor: C.darkGreen }
+                  : { backgroundColor: "transparent", color: "#6b7280", borderColor: "#e5e7eb" }
+              }
+              onMouseEnter={(e) => {
+                if (!active) {
+                  e.currentTarget.style.borderColor = C.btnPrimary;
+                  e.currentTarget.style.color = C.btnPrimary;
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!active) {
+                  e.currentTarget.style.borderColor = "#e5e7eb";
+                  e.currentTarget.style.color = "#6b7280";
+                }
+              }}
+            >
+              {formatLabel(opt)}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-20 bg-white border-b border-border px-6 py-4 flex items-center gap-4">
-        <Link
-          to="/seeker/dashboard"
-          className="p-2 rounded-lg hover:bg-background text-text-secondary hover:text-primary transition-colors"
-        >
-          <RiArrowLeftLine className="text-xl" />
-        </Link>
-        <div>
-          <h1 className="font-bold text-primary">Roommate Match</h1>
-          <p className="text-text-secondary text-xs">
-            Find compatible roommates based on your lifestyle
-          </p>
+    <div className="min-h-screen" style={{ backgroundColor: "#f9fafb" }}>
+      {/* ── Header ─────────────────────────────────────────── */}
+      <header
+        className="sticky top-0 z-20 border-b"
+        style={{ backgroundColor: C.darkGreen }}
+      >
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-4">
+          <Link
+            to="/seeker/dashboard"
+            className="p-2 rounded-xl transition-all duration-200"
+            style={{ backgroundColor: "rgba(255,255,255,0.1)", color: C.white }}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.2)")}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.1)")}
+          >
+            <RiArrowLeftLine className="text-xl" />
+          </Link>
+          <div className="flex-1">
+            <h1 className="font-bold text-white text-lg">Roommate Match</h1>
+            <p className="text-white/60 text-xs">
+              Find compatible roommates based on your lifestyle
+            </p>
+          </div>
+          {pref && (
+            <button
+              onClick={() => { setTab("matches"); loadMatches(); }}
+              className="hidden sm:flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl transition-all duration-200"
+              style={{ backgroundColor: C.btnPrimary, color: C.white }}
+            >
+              <RiGroupLine /> View Matches
+              {matches.length > 0 && (
+                <span className="ml-1 bg-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold" style={{ color: C.btnPrimary }}>
+                  {matches.length}
+                </span>
+              )}
+            </button>
+          )}
         </div>
       </header>
 
-      {/* Tabs */}
-      <div className="bg-white border-b border-border">
-        <div className="max-w-4xl mx-auto px-4">
+      {/* ── How It Works Banner ─────────────────────────────── */}
+      <div style={{ backgroundColor: C.promise }}>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
+          <div className="text-center mb-8">
+            <p className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: C.btnPrimary }}>
+              AI-Powered
+            </p>
+            <h2 className="text-2xl md:text-3xl font-bold" style={{ color: C.darkGreen }}>
+              How Roommate Matching Works
+            </h2>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+            {MATCHING_STEPS.map(({ step, title, desc }, i) => (
+              <div key={step} className="relative text-center group">
+                {i < MATCHING_STEPS.length - 1 && (
+                  <div
+                    className="hidden lg:block absolute top-6 left-1/2 w-full h-px opacity-20"
+                    style={{ background: `linear-gradient(to right, ${C.btnPrimary}, transparent)` }}
+                    aria-hidden="true"
+                  />
+                )}
+                <div className="relative inline-flex flex-col items-center">
+                  <div
+                    className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3 font-black text-lg transition-transform duration-300 group-hover:scale-110"
+                    style={{ backgroundColor: C.darkGreen, color: C.white }}
+                  >
+                    {step}
+                  </div>
+                  <h3 className="font-bold text-sm mb-1" style={{ color: C.darkGreen }}>
+                    {title}
+                  </h3>
+                  <p className="text-gray-500 text-xs leading-relaxed">{desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Tabs ────────────────────────────────────────────── */}
+      <div className="bg-white border-b border-gray-100 sticky top-[73px] z-10">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="flex">
             {[
               { key: "preferences", label: "My Preferences" },
@@ -288,12 +376,12 @@ const RoommateMatch = () => {
               <button
                 key={key}
                 onClick={() => setTab(key)}
-                className={`px-6 py-4 text-sm font-semibold border-b-2 transition-all
-                                  ${
-                                    tab === key
-                                      ? "border-primary text-primary"
-                                      : "border-transparent text-text-secondary hover:text-primary"
-                                  }`}
+                className="px-6 py-4 text-sm font-semibold border-b-2 transition-all duration-200"
+                style={
+                  tab === key
+                    ? { borderBottomColor: C.btnPrimary, color: C.darkGreen }
+                    : { borderBottomColor: "transparent", color: "#9ca3af" }
+                }
               >
                 {label}
               </button>
@@ -302,74 +390,50 @@ const RoommateMatch = () => {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="mb-6 bg-primary/5 rounded-card border border-primary/20 p-5">
-          <h3 className="font-semibold text-primary mb-2 text-sm">
-            How It Works
-          </h3>
-          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-text-secondary">
-            {MATCHING_STEPS.map((step, i) => (
-              <li key={i} className="flex items-start gap-2">
-                <RiCheckLine className="text-primary shrink-0 mt-0.5" />
-                {step}
-              </li>
-            ))}
-          </ul>
-        </div>
+      {/* ── Page Content ────────────────────────────────────── */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
 
-        {/* ══════ PREFERENCES TAB ════════════════════════════ */}
+        {/* ════ PREFERENCES TAB ══════════════════════════════ */}
         {tab === "preferences" &&
           (prefLoading ? (
-            <div className="flex justify-center py-20">
-              <RiLoader4Line className="animate-spin text-4xl text-primary" />
+            <div className="flex justify-center py-24">
+              <RiLoader4Line className="animate-spin text-4xl" style={{ color: C.btnPrimary }} />
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Form */}
+              {/* ── Form ──────────────────────────────────── */}
               <div className="lg:col-span-2">
-                <div className="bg-white rounded-card border border-border shadow-card p-6">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
-                      <RiGroupLine className="text-primary text-xl" />
+                <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8">
+                  <div className="flex items-center gap-4 mb-8">
+                    <div
+                      className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: `${C.btnPrimary}18` }}
+                    >
+                      <RiGroupLine className="text-xl" style={{ color: C.btnPrimary }} />
                     </div>
                     <div>
-                      <h2 className="font-semibold text-primary">
+                      <h2 className="font-bold text-lg" style={{ color: C.darkGreen }}>
                         Lifestyle Preferences
                       </h2>
-                      <p className="text-xs text-text-secondary">
+                      <p className="text-gray-500 text-xs mt-0.5">
                         {pref
                           ? "Update your preferences to refresh matches."
-                          : "Complete your profile to find matches."}
+                          : "Complete your profile to find compatible roommates."}
                       </p>
                     </div>
                   </div>
 
-                  <form onSubmit={handleSave} className="space-y-5">
-                    <OptionRow
-                      label="Sleep Schedule *"
-                      name="sleepSchedule"
-                      options={SLEEP_OPTIONS}
-                    />
-                    <OptionRow
-                      label="Occupation *"
-                      name="occupation"
-                      options={OCCUPATION_OPTIONS}
-                    />
-                    <OptionRow
-                      label="Your Gender *"
-                      name="gender"
-                      options={GENDER_OPTIONS}
-                    />
-                    <OptionRow
-                      label="Roommate Gender"
-                      name="genderPreference"
-                      options={GENDER_PREF_OPTIONS}
-                    />
+                  <form onSubmit={handleSave} className="space-y-6">
+                    <OptionRow label="Sleep Schedule" name="sleepSchedule" options={SLEEP_OPTIONS} required />
+                    <OptionRow label="Occupation" name="occupation" options={OCCUPATION_OPTIONS} required />
+                    <OptionRow label="Your Gender" name="gender" options={GENDER_OPTIONS} required />
+                    <OptionRow label="Preferred Roommate Gender" name="genderPreference" options={GENDER_PREF_OPTIONS} />
 
                     {/* Cleanliness slider */}
                     <div>
-                      <p className="label mb-2">
-                        Cleanliness Level * ({form.cleanliness}/5)
+                      <p className="text-sm font-semibold mb-3" style={{ color: C.darkGreen }}>
+                        Cleanliness Level{" "}
+                        <span className="font-normal text-gray-400">({form.cleanliness}/5)</span>
                       </p>
                       <input
                         type="range"
@@ -378,83 +442,93 @@ const RoommateMatch = () => {
                         step={1}
                         value={form.cleanliness}
                         onChange={(e) =>
-                          setForm((f) => ({
-                            ...f,
-                            cleanliness: parseInt(e.target.value),
-                          }))
+                          setForm((f) => ({ ...f, cleanliness: parseInt(e.target.value) }))
                         }
-                        className="w-full accent-primary"
+                        className="w-full h-2 rounded-full appearance-none cursor-pointer"
+                        style={{ accentColor: C.darkGreen }}
                       />
-                      <div className="flex justify-between text-xs text-text-secondary mt-1">
+                      <div className="flex justify-between text-xs text-gray-400 mt-2">
                         <span>Relaxed</span>
                         <span>Average</span>
                         <span>Very Clean</span>
                       </div>
                     </div>
 
-                    {/* Smoker / Pets checkboxes */}
-                    <label className="flex items-center gap-3 p-3 bg-background rounded-input border border-border cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={form.smoker}
-                        onChange={(e) =>
-                          setForm((f) => ({ ...f, smoker: e.target.checked }))
-                        }
-                        className="accent-primary w-4 h-4"
-                      />
-                      <span className="text-sm text-primary">
-                        I smoke / smoking is OK
-                      </span>
-                    </label>
-                    <label className="flex items-center gap-3 p-3 bg-background rounded-input border border-border cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={form.pets}
-                        onChange={(e) =>
-                          setForm((f) => ({ ...f, pets: e.target.checked }))
-                        }
-                        className="accent-primary w-4 h-4"
-                      />
-                      <span className="text-sm text-primary">
-                        I have pets / pets are OK
-                      </span>
-                    </label>
+                    {/* Smoker / Pets */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {[
+                        { field: "smoker", label: "🚬  Smoking is OK" },
+                        { field: "pets", label: "🐾  Pets are OK" },
+                      ].map(({ field, label }) => (
+                        <label
+                          key={field}
+                          className="flex items-center gap-3 p-4 rounded-2xl border-2 cursor-pointer transition-all duration-200"
+                          style={
+                            form[field]
+                              ? { borderColor: C.darkGreen, backgroundColor: `${C.darkGreen}08` }
+                              : { borderColor: "#e5e7eb", backgroundColor: "transparent" }
+                          }
+                        >
+                          <input
+                            type="checkbox"
+                            checked={form[field]}
+                            onChange={(e) =>
+                              setForm((f) => ({ ...f, [field]: e.target.checked }))
+                            }
+                            className="w-4 h-4 rounded"
+                            style={{ accentColor: C.darkGreen }}
+                          />
+                          <span className="text-sm font-medium" style={{ color: C.darkGreen }}>
+                            {label}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
 
                     {/* Budget */}
                     <div>
-                      <label className="label" htmlFor="rm-budget">
-                        Monthly Budget (PKR)
+                      <label
+                        className="text-sm font-semibold block mb-2"
+                        style={{ color: C.darkGreen }}
+                        htmlFor="rm-budget"
+                      >
+                        Monthly Budget <span className="font-normal text-gray-400">(PKR)</span>
                       </label>
                       <input
                         id="rm-budget"
                         type="number"
                         min={1000}
-                        placeholder="e.g. 15000"
+                        placeholder="e.g. 15,000"
                         value={form.budget}
-                        onChange={(e) =>
-                          setForm((f) => ({ ...f, budget: e.target.value }))
-                        }
-                        className="input"
+                        onChange={(e) => setForm((f) => ({ ...f, budget: e.target.value }))}
+                        className="w-full px-4 py-3 rounded-2xl border-2 border-gray-100 outline-none text-sm transition-all duration-200"
+                        style={{ color: C.darkGreen }}
+                        onFocus={(e) => (e.target.style.borderColor = C.btnPrimary)}
+                        onBlur={(e) => (e.target.style.borderColor = "#e5e7eb")}
                       />
                     </div>
 
                     {/* City */}
                     <div>
-                      <label className="label" htmlFor="rm-city">
+                      <label
+                        className="text-sm font-semibold block mb-2"
+                        style={{ color: C.darkGreen }}
+                        htmlFor="rm-city"
+                      >
                         Preferred City
                       </label>
                       <select
                         id="rm-city"
                         value={form.preferredCity}
                         onChange={(e) =>
-                          setForm((f) => ({
-                            ...f,
-                            preferredCity: e.target.value,
-                          }))
+                          setForm((f) => ({ ...f, preferredCity: e.target.value }))
                         }
-                        className="input"
+                        className="w-full px-4 py-3 rounded-2xl border-2 border-gray-100 outline-none text-sm transition-all duration-200"
+                        style={{ color: C.darkGreen }}
+                        onFocus={(e) => (e.target.style.borderColor = C.btnPrimary)}
+                        onBlur={(e) => (e.target.style.borderColor = "#e5e7eb")}
                       >
-                        <option value="">Any city</option>
+                        <option value="">Any City</option>
                         {CITIES.map((c) => (
                           <option key={c} value={c}>
                             {c}
@@ -465,26 +539,31 @@ const RoommateMatch = () => {
 
                     {/* Bio */}
                     <div>
-                      <label className="label" htmlFor="rm-bio">
+                      <label
+                        className="text-sm font-semibold block mb-2"
+                        style={{ color: C.darkGreen }}
+                        htmlFor="rm-bio"
+                      >
                         About Me
                       </label>
                       <textarea
                         id="rm-bio"
                         value={form.bio}
-                        onChange={(e) =>
-                          setForm((f) => ({ ...f, bio: e.target.value }))
-                        }
+                        onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
                         rows={3}
                         placeholder="Tell potential roommates a bit about yourself…"
-                        className="input resize-none"
+                        className="w-full px-4 py-3 rounded-2xl border-2 border-gray-100 outline-none text-sm resize-none transition-all duration-200"
+                        style={{ color: C.darkGreen }}
+                        onFocus={(e) => (e.target.style.borderColor = C.btnPrimary)}
+                        onBlur={(e) => (e.target.style.borderColor = "#e5e7eb")}
                       />
                     </div>
 
                     <button
                       type="submit"
                       disabled={prefSaving}
-                      className="w-full btn-primary justify-center gap-2"
-                      aria-busy={prefSaving}
+                      className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl text-white font-bold text-sm transition-all duration-200 hover:opacity-90 active:scale-95"
+                      style={{ backgroundColor: C.btnPrimary }}
                     >
                       {prefSaving ? (
                         <>
@@ -492,10 +571,8 @@ const RoommateMatch = () => {
                         </>
                       ) : (
                         <>
-                          <RiSaveLine />{" "}
-                          {pref
-                            ? "Update Preferences & Refresh Matches"
-                            : "Save & Find Matches"}
+                          <RiSaveLine />
+                          {pref ? "Update Preferences & Refresh Matches" : "Save & Find Matches"}
                         </>
                       )}
                     </button>
@@ -503,60 +580,71 @@ const RoommateMatch = () => {
                 </div>
               </div>
 
-              {/* Side info */}
-              <div className="space-y-4">
+              {/* ── Sidebar ────────────────────────────────── */}
+              <div className="space-y-5">
                 {pref && (
-                  <div className="bg-white rounded-card border border-border shadow-card p-5">
-                    <h3 className="font-semibold text-primary mb-3 text-sm">
-                      Your Current Profile
-                    </h3>
-                    <div className="space-y-2">
+                  <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div
+                        className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: `${C.darkGreen}12` }}
+                      >
+                        <RiUserLine className="text-base" style={{ color: C.darkGreen }} />
+                      </div>
+                      <h3 className="font-bold text-sm" style={{ color: C.darkGreen }}>
+                        Your Current Profile
+                      </h3>
+                    </div>
+                    <div className="space-y-2.5">
                       {[
                         { label: "Sleep", val: pref.sleepSchedule },
-                        { label: "Clean", val: pref.cleanliness },
+                        { label: "Cleanliness", val: pref.cleanliness },
                         { label: "Occupation", val: pref.occupation },
                         { label: "Gender", val: pref.gender },
                         { label: "Smoker", val: pref.smoker },
                         { label: "City", val: pref.preferredCity },
                       ]
-                        .filter(
-                          (x) =>
-                            x.val !== undefined &&
-                            x.val !== null &&
-                            x.val !== "",
-                        )
+                        .filter((x) => x.val !== undefined && x.val !== null && x.val !== "")
                         .map(({ label, val }) => (
-                          <div
-                            key={label}
-                            className="flex items-center justify-between text-sm"
-                          >
-                            <span className="text-text-secondary">{label}</span>
-                            <span className="text-primary font-medium capitalize">
+                          <div key={label} className="flex items-center justify-between text-sm">
+                            <span className="text-gray-400">{label}</span>
+                            <span className="font-semibold capitalize" style={{ color: C.darkGreen }}>
                               {formatLabel(val)}
                             </span>
                           </div>
                         ))}
                     </div>
                     <button
-                      onClick={() => {
-                        setTab("matches");
-                        loadMatches();
-                      }}
-                      className="w-full mt-4 btn-secondary text-sm justify-center gap-2"
+                      onClick={() => { setTab("matches"); loadMatches(); }}
+                      className="w-full mt-5 flex items-center justify-center gap-2 py-3 rounded-2xl border-2 font-semibold text-sm transition-all duration-200 hover:opacity-80"
+                      style={{ borderColor: C.darkGreen, color: C.darkGreen }}
                     >
-                      <RiGroupLine /> View Matches
+                      <RiGroupLine /> View My Matches
                     </button>
                   </div>
                 )}
-                <div className="bg-primary/5 rounded-card border border-primary/20 p-5">
-                  <h3 className="font-semibold text-primary mb-2 text-sm">
-                    How Matching Works
-                  </h3>
-                  <ul className="space-y-1.5 text-xs text-text-secondary">
-                    {MATCHING_STEPS.map((t, i) => (
-                      <li key={i} className="flex items-start gap-2">
-                        <RiCheckLine className="text-primary shrink-0 mt-0.5" />
-                        {t}
+
+                {/* Tips card */}
+                <div
+                  className="rounded-3xl p-6"
+                  style={{ backgroundColor: C.promise }}
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <RiSparklingLine style={{ color: C.btnPrimary }} />
+                    <h3 className="font-bold text-sm" style={{ color: C.darkGreen }}>
+                      Tips for Better Matches
+                    </h3>
+                  </div>
+                  <ul className="space-y-2">
+                    {[
+                      "Complete all required fields for a higher match rate.",
+                      "Add a bio — it increases profile views by 3×.",
+                      "Set a realistic budget to get compatible matches.",
+                      "Update preferences whenever your habits change.",
+                    ].map((tip, i) => (
+                      <li key={i} className="flex items-start gap-2 text-xs text-gray-500">
+                        <RiCheckLine className="mt-0.5 shrink-0" style={{ color: C.btnPrimary }} />
+                        {tip}
                       </li>
                     ))}
                   </ul>
@@ -565,79 +653,97 @@ const RoommateMatch = () => {
             </div>
           ))}
 
-        {/* ══════ MATCHES TAB ════════════════════════════════ */}
+        {/* ════ MATCHES TAB ═══════════════════════════════════ */}
         {tab === "matches" &&
           (!pref ? (
-            <div className="text-center py-20 bg-white rounded-card border border-border shadow-card">
-              <RiGroupLine className="text-5xl text-border mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-primary mb-2">
+            <div className="text-center py-24 bg-white rounded-3xl border border-gray-100 shadow-sm">
+              <div
+                className="w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-5"
+                style={{ backgroundColor: `${C.btnPrimary}12` }}
+              >
+                <RiGroupLine className="text-4xl" style={{ color: C.btnPrimary }} />
+              </div>
+              <h3 className="text-xl font-bold mb-2" style={{ color: C.darkGreen }}>
                 Set Up Your Preferences First
               </h3>
-              <p className="text-text-secondary text-sm mb-5">
-                Fill in your lifestyle preferences to see compatible roommate
-                matches.
+              <p className="text-gray-500 text-sm mb-6 max-w-sm mx-auto">
+                Fill in your lifestyle preferences to see compatible roommate matches.
               </p>
               <button
                 onClick={() => setTab("preferences")}
-                className="btn-primary"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl text-white font-bold text-sm transition-all duration-200 hover:opacity-90"
+                style={{ backgroundColor: C.btnPrimary }}
               >
-                Set Preferences
+                Set Preferences <RiArrowRightLine />
               </button>
             </div>
           ) : matchLoading ? (
-            <div className="flex items-center justify-center py-20">
+            <div className="flex items-center justify-center py-24">
               <div className="text-center">
-                <RiLoader4Line className="animate-spin text-4xl text-primary mx-auto mb-3" />
-                <p className="text-text-secondary text-sm">
-                  Finding your best matches…
-                </p>
+                <RiLoader4Line
+                  className="animate-spin text-5xl mx-auto mb-4"
+                  style={{ color: C.btnPrimary }}
+                />
+                <p className="text-gray-500 text-sm">Finding your best matches…</p>
               </div>
             </div>
           ) : matchError ? (
-            <div className="text-center py-20 bg-white rounded-card border border-border shadow-card">
-              <p className="text-error text-sm mb-4">{matchError}</p>
-              <button onClick={loadMatches} className="btn-secondary">
-                Try Again
+            <div className="text-center py-24 bg-white rounded-3xl border border-gray-100 shadow-sm">
+              <p className="text-red-500 text-sm mb-5">{matchError}</p>
+              <button
+                onClick={loadMatches}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl border-2 font-bold text-sm transition-all duration-200"
+                style={{ borderColor: C.darkGreen, color: C.darkGreen }}
+              >
+                <RiRefreshLine /> Try Again
               </button>
             </div>
           ) : matches.length === 0 ? (
-            <div className="text-center py-20 bg-white rounded-card border border-border shadow-card">
-              <RiGroupLine className="text-5xl text-border mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-primary mb-2">
+            <div className="text-center py-24 bg-white rounded-3xl border border-gray-100 shadow-sm">
+              <div
+                className="w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-5"
+                style={{ backgroundColor: `${C.darkGreen}10` }}
+              >
+                <RiGroupLine className="text-4xl" style={{ color: C.darkGreen }} />
+              </div>
+              <h3 className="text-xl font-bold mb-2" style={{ color: C.darkGreen }}>
                 No Matches Yet
               </h3>
-              <p className="text-text-secondary text-sm mb-5">
-                No other seekers have set up preferences yet. Check back soon,
-                or update yours.
+              <p className="text-gray-500 text-sm mb-6 max-w-sm mx-auto">
+                No other seekers have set up preferences yet. Check back soon, or update yours.
               </p>
               <button
                 onClick={() => setTab("preferences")}
-                className="btn-secondary"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl border-2 font-bold text-sm transition-all duration-200"
+                style={{ borderColor: C.btnPrimary, color: C.btnPrimary }}
               >
                 Update Preferences
               </button>
             </div>
           ) : (
             <>
-              <div className="flex items-center justify-between mb-6">
+              {/* ── Header row ──────────────────────────── */}
+              <div className="flex items-center justify-between mb-8">
                 <div>
-                  <h2 className="text-xl font-bold text-primary">
-                    {matches.length} Potential Match
-                    {matches.length !== 1 ? "es" : ""}
-                  </h2>
-                  <p className="text-text-secondary text-sm">
-                    Sorted by compatibility score
+                  <p className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: C.btnPrimary }}>
+                    Results
                   </p>
+                  <h2 className="text-2xl font-bold" style={{ color: C.darkGreen }}>
+                    {matches.length} Potential Match{matches.length !== 1 ? "es" : ""}
+                  </h2>
+                  <p className="text-gray-500 text-sm mt-0.5">Sorted by compatibility score</p>
                 </div>
                 <button
                   onClick={loadMatches}
-                  className="btn-secondary text-sm flex items-center gap-2"
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl border-2 font-semibold text-sm transition-all duration-200 hover:opacity-75"
+                  style={{ borderColor: C.darkGreen, color: C.darkGreen }}
                 >
-                  <RiGroupLine /> Refresh
+                  <RiRefreshLine /> Refresh
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {/* ── Match Cards Grid ─────────────────────── */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {matches.map((match, idx) => {
                   const seeker = match.user || match.seeker;
                   const score = Math.round(
@@ -646,134 +752,131 @@ const RoommateMatch = () => {
                       match.score ||
                       0,
                   );
-                  const { bg } = getScoreColor(score);
+                  const { bg, text: scoreText, label: scoreLabel } = getScoreColor(score);
 
                   return (
                     <div
                       key={seeker?._id || idx}
-                      className="bg-white rounded-card border border-border shadow-card
-                                    hover:shadow-hover transition-all duration-300 p-5"
+                      className="bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden"
                     >
-                      <div className="flex items-start gap-4 mb-4">
-                        {/* Avatar */}
-                        <div className="shrink-0">
-                          {seeker?.profilePhoto?.url ? (
-                            <img
-                              src={seeker.profilePhoto.url}
-                              alt={seeker.name}
-                              className="w-14 h-14 rounded-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center">
-                              <span className="text-xl font-bold text-white">
-                                {(seeker?.name || "?")[0].toUpperCase()}
-                              </span>
-                            </div>
-                          )}
-                        </div>
+                      {/* Card top accent */}
+                      <div className="h-1" style={{ backgroundColor: C.darkGreen }} />
 
-                        {/* Name + city */}
-                        <div className="flex-1 min-w-0">
-                          <p className="font-bold text-primary text-base">
-                            {seeker?.name || "Seeker"}
-                          </p>
-                          {seeker?.city && (
-                            <p className="text-xs text-text-secondary flex items-center gap-1 mt-0.5">
-                              <RiMapPin2Line className="text-accent" />{" "}
-                              {seeker.city}
-                            </p>
-                          )}
-                          {/* Badge for score */}
-                          <div
-                            className={`inline-flex items-center gap-1.5 mt-2 px-2.5 py-0.5
-                                          rounded-full text-xs font-semibold ${bg} ${getScoreColor(score).text}`}
-                          >
-                            <RiHeart3Line className="text-xs" />
-                            {score >= 70
-                              ? "Excellent Match"
-                              : score >= 40
-                                ? "Good Match"
-                                : "Low Match"}
+                      <div className="p-6">
+                        {/* ── Profile row ─────────────────── */}
+                        <div className="flex items-start gap-4 mb-5">
+                          {/* Avatar */}
+                          <div className="shrink-0">
+                            {seeker?.profilePhoto?.url ? (
+                              <img
+                                src={seeker.profilePhoto.url}
+                                alt={seeker.name}
+                                className="w-16 h-16 rounded-2xl object-cover"
+                              />
+                            ) : (
+                              <div
+                                className="w-16 h-16 rounded-2xl flex items-center justify-center"
+                                style={{ backgroundColor: C.darkGreen }}
+                              >
+                                <span className="text-2xl font-black text-white">
+                                  {(seeker?.name || "?")[0].toUpperCase()}
+                                </span>
+                              </div>
+                            )}
                           </div>
-                        </div>
 
-                        {/* Score circle */}
-                        <ScoreCircle score={score} />
-                      </div>
-
-                      {/* Breakdown */}
-                      {(match.compatibility?.breakdown || match.breakdown) &&
-                        Object.keys(
-                          match.compatibility?.breakdown ||
-                            match.breakdown ||
-                            {},
-                        ).length > 0 && (
-                          <div className="border-t border-border pt-4 mb-4">
-                            <p className="text-xs font-semibold text-text-secondary mb-2">
-                              Score Breakdown
+                          {/* Name + city + badge */}
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-base" style={{ color: C.darkGreen }}>
+                              {seeker?.name || "Seeker"}
                             </p>
-                            <div className="space-y-1.5">
-                              {Object.entries(
-                                match.compatibility?.breakdown ||
-                                  match.breakdown ||
-                                  {},
-                              )
-                                .slice(0, 4)
-                                .map(([key, val]) => (
-                                  <div
-                                    key={key}
-                                    className="flex items-center gap-2"
-                                  >
-                                    <span className="text-xs text-text-secondary w-28 shrink-0 capitalize">
-                                      {key.replace(/([A-Z])/g, " $1").trim()}
-                                    </span>
-                                    <div className="flex-1 h-1.5 bg-border rounded-full">
-                                      <div
-                                        className={`h-1.5 rounded-full transition-all duration-500 ${getScoreColor(val).ring.replace("stroke-", "bg-")}`}
-                                        style={{
-                                          width: `${Math.min(100, val)}%`,
-                                        }}
-                                      />
-                                    </div>
-                                    <span
-                                      className={`text-xs font-medium w-8 text-right ${getScoreColor(val).text}`}
-                                    >
-                                      {Math.round(val)}
-                                    </span>
-                                  </div>
-                                ))}
-                            </div>
-                          </div>
-                        )}
-
-                      {/* Interest tags from preference */}
-                      <div className="flex flex-wrap gap-1.5 mb-4">
-                        {[
-                          match.preference?.sleepSchedule,
-                          match.preference?.occupation,
-                          match.preference?.gender,
-                        ]
-                          .filter(Boolean)
-                          .map((tag) => (
-                            <span
-                              key={tag}
-                              className="text-xs px-2 py-0.5 bg-background border border-border
-                                                        rounded-full text-text-secondary capitalize"
+                            {seeker?.city && (
+                              <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+                                <RiMapPin2Line style={{ color: C.btnPrimary }} />
+                                {seeker.city}
+                              </p>
+                            )}
+                            <div
+                              className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 rounded-full text-xs font-semibold"
+                              style={{ backgroundColor: bg, color: scoreText }}
                             >
-                              {formatLabel(tag)}
-                            </span>
-                          ))}
-                      </div>
+                              <RiHeart3Line className="text-xs" />
+                              {scoreLabel}
+                            </div>
+                          </div>
 
-                      {/* Message button */}
-                      <Link
-                        to={`/seeker/messages?user=${seeker?._id || ""}&name=${encodeURIComponent(seeker?.name || "Matched Seeker")}&city=${encodeURIComponent(seeker?.city || "")}`}
-                        className="w-full flex items-center justify-center gap-2 py-2 rounded-btn
-                                   bg-primary/5 border border-primary/20 text-primary text-sm font-medium
-                                   hover:bg-primary hover:text-white transition-all duration-200"
-                      >
-                        <RiArrowRightLine /> Say Hello
-                      </Link>
+                          {/* Score circle */}
+                          <ScoreCircle score={score} />
+                        </div>
+
+                        {/* ── Score Breakdown ──────────────── */}
+                        {(match.compatibility?.breakdown || match.breakdown) &&
+                          Object.keys(match.compatibility?.breakdown || match.breakdown || {}).length > 0 && (
+                            <div className="border-t border-gray-100 pt-4 mb-4">
+                              <p className="text-xs font-bold text-gray-400 mb-3 uppercase tracking-wider">
+                                Score Breakdown
+                              </p>
+                              <div className="space-y-2">
+                                {Object.entries(match.compatibility?.breakdown || match.breakdown || {})
+                                  .slice(0, 4)
+                                  .map(([key, val]) => {
+                                    const { ring } = getScoreColor(val);
+                                    return (
+                                      <div key={key} className="flex items-center gap-2">
+                                        <span className="text-xs text-gray-400 w-28 shrink-0 capitalize">
+                                          {key.replace(/([A-Z])/g, " $1").trim()}
+                                        </span>
+                                        <div className="flex-1 h-1.5 bg-gray-100 rounded-full">
+                                          <div
+                                            className="h-1.5 rounded-full transition-all duration-500"
+                                            style={{
+                                              width: `${Math.min(100, val)}%`,
+                                              backgroundColor: ring,
+                                            }}
+                                          />
+                                        </div>
+                                        <span className="text-xs font-semibold w-7 text-right" style={{ color: ring }}>
+                                          {Math.round(val)}
+                                        </span>
+                                      </div>
+                                    );
+                                  })}
+                              </div>
+                            </div>
+                          )}
+
+                        {/* ── Preference Tags ───────────────── */}
+                        <div className="flex flex-wrap gap-1.5 mb-5">
+                          {[
+                            match.preference?.sleepSchedule,
+                            match.preference?.occupation,
+                            match.preference?.gender,
+                          ]
+                            .filter(Boolean)
+                            .map((tag) => (
+                              <span
+                                key={tag}
+                                className="text-xs px-2.5 py-1 rounded-full font-medium capitalize"
+                                style={{
+                                  backgroundColor: `${C.darkGreen}0a`,
+                                  color: C.darkGreen,
+                                  border: `1px solid ${C.darkGreen}20`,
+                                }}
+                              >
+                                {formatLabel(tag)}
+                              </span>
+                            ))}
+                        </div>
+
+                        {/* ── Message button ────────────────── */}
+                        <Link
+                          to={`/seeker/messages?user=${seeker?._id || ""}&name=${encodeURIComponent(seeker?.name || "Matched Seeker")}&city=${encodeURIComponent(seeker?.city || "")}`}
+                          className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-semibold text-sm transition-all duration-200 hover:opacity-90 active:scale-95"
+                          style={{ backgroundColor: C.btnPrimary, color: C.white }}
+                        >
+                          Say Hello <RiArrowRightLine />
+                        </Link>
+                      </div>
                     </div>
                   );
                 })}

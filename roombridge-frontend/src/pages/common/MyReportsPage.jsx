@@ -9,14 +9,17 @@ import {
   RiTimeLine,
   RiHome4Line,
   RiUserLine,
+  RiCheckboxCircleLine,
+  RiFileTextLine,
+  RiFeedbackLine,
 } from "react-icons/ri";
 import toast from "react-hot-toast";
 
 const STATUS_BADGE = {
-  pending: "bg-warning/10 text-warning border-warning/20",
-  reviewed: "bg-primary/10 text-primary border-primary/20",
-  resolved: "bg-success/10 text-success border-success/20",
-  dismissed: "bg-border text-text-secondary border-border",
+  pending: "bg-amber-50 text-amber-700 border-amber-200/60",
+  reviewed: "bg-indigo-50 text-indigo-700 border-indigo-200/60",
+  resolved: "bg-emerald-50 text-emerald-700 border-emerald-200/60",
+  dismissed: "bg-gray-50 text-gray-500 border-gray-200/60",
 };
 
 const REASON_LABEL = {
@@ -62,7 +65,7 @@ const MyReportsPage = () => {
         setLoading(false);
       }
     },
-    [page, statusFilter],
+    [page, statusFilter]
   );
 
   useEffect(() => {
@@ -79,14 +82,16 @@ const MyReportsPage = () => {
       headerAction={
         <button
           onClick={() => fetchReports()}
-          className="flex items-center gap-2 text-sm text-secondary border border-secondary/30 px-3 py-1.5 rounded-btn hover:bg-secondary hover:text-white transition-colors"
+          className="flex items-center gap-1.5 text-xs font-bold text-[#012D1D] bg-[#F9F7F2] border border-gray-200 px-4 py-2 rounded-2xl hover:border-[#012D1D] hover:bg-white transition-all active:scale-95"
         >
           <RiRefreshLine className={loading ? "animate-spin" : ""} /> Refresh
         </button>
       }
     >
-      <div className="max-w-5xl mx-auto">
-        <div className="flex gap-2 mb-5 flex-wrap">
+      <div className="max-w-5xl mx-auto space-y-6">
+        
+        {/* Status Filter Pills */}
+        <div className="flex gap-2 pb-2 overflow-x-auto no-scrollbar scroll-smooth">
           {["", "pending", "reviewed", "resolved", "dismissed"].map((s) => (
             <button
               key={s}
@@ -94,10 +99,10 @@ const MyReportsPage = () => {
                 setStatusFilter(s);
                 fetchReports({ page: 1, status: s });
               }}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium capitalize transition-all ${
+              className={`px-4 py-2 rounded-full text-xs font-extrabold capitalize transition-all border whitespace-nowrap active:scale-95 cursor-pointer ${
                 statusFilter === s
-                  ? "bg-primary text-white shadow-card"
-                  : "bg-white border border-border text-text-secondary hover:text-primary"
+                  ? "bg-[#012D1D] text-white border-[#012D1D] shadow-[0_4px_12px_rgba(1,45,29,0.15)]"
+                  : "bg-white border-gray-200 text-gray-400 hover:text-[#012D1D] hover:border-[#012D1D]/30"
               }`}
             >
               {s || "All"}
@@ -106,76 +111,96 @@ const MyReportsPage = () => {
         </div>
 
         {loading && reports.length === 0 ? (
-          <div className="flex justify-center py-20">
-            <RiLoader4Line className="animate-spin text-4xl text-primary" />
+          /* Loading State */
+          <div className="flex flex-col items-center justify-center py-24 bg-white rounded-[32px] border border-gray-100 shadow-[0_10px_30px_rgba(0,0,0,0.01)]">
+            <RiLoader4Line className="animate-spin text-4xl text-[#012D1D] mb-3" />
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Loading reports…</p>
           </div>
         ) : reports.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-card border border-border shadow-card">
-            <RiFlagLine className="text-5xl text-border mx-auto mb-4" />
-            <p className="text-primary font-semibold text-lg">No reports yet</p>
-            <p className="text-text-secondary text-sm mt-1">
-              When you report a listing or user, it will appear here.
+          /* Empty State */
+          <div className="text-center py-20 bg-white rounded-[32px] border border-gray-100 shadow-[0_10px_30px_rgba(0,0,0,0.01)]">
+            <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-5">
+              <RiFlagLine className="text-3xl text-gray-300" />
+            </div>
+            <h3 className="font-serif text-xl font-bold text-[#012D1D]">No Reports Found</h3>
+            <p className="text-xs text-gray-500 font-semibold max-w-xs mx-auto mt-2 leading-relaxed">
+              When you report a listing or user, it will appear here with the administrator's review updates.
             </p>
           </div>
         ) : (
+          /* Report List */
           <div className="space-y-4">
             {reports.map((r) => (
               <div
                 key={r._id}
-                className="bg-white rounded-card border border-border shadow-card p-5"
+                className="bg-white rounded-[24px] border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.01)] p-6 hover:shadow-[0_8px_30px_rgba(0,0,0,0.03)] transition-all duration-300 space-y-5"
               >
-                <div className="flex items-start justify-between gap-3 mb-3">
+                {/* Card Header */}
+                <div className="flex items-start justify-between gap-3 border-b border-gray-50 pb-4">
                   <div>
-                    <p className="text-sm font-semibold text-primary">
+                    <h3 className="text-sm font-extrabold text-[#012D1D]">
                       {REASON_LABEL[r.reason] || r.reason}
-                    </p>
-                    <p className="text-xs text-text-secondary mt-1 flex items-center gap-1">
-                      <RiTimeLine /> {new Date(r.createdAt).toLocaleString()}
+                    </h3>
+                    <p className="text-[11px] text-gray-400 font-bold uppercase tracking-wider mt-1.5 flex items-center gap-1.5">
+                      <RiTimeLine className="text-sm" /> {new Date(r.createdAt).toLocaleString()}
                     </p>
                   </div>
                   <span
-                    className={`text-xs font-medium px-2.5 py-1 rounded-full border capitalize ${STATUS_BADGE[r.status] || ""}`}
+                    className={`text-[10px] font-extrabold px-3 py-1 rounded-full border uppercase tracking-wider ${STATUS_BADGE[r.status] || ""}`}
                   >
                     {r.status}
                   </span>
                 </div>
 
-                <div className="mb-3">
-                  <p className="text-xs font-semibold text-text-secondary uppercase mb-1">
-                    Reported Target
-                  </p>
-                  {r.reportedListing ? (
-                    <p className="text-sm text-primary flex items-center gap-1.5">
-                      <RiHome4Line className="text-secondary" />
-                      {r.reportedListing.title} ({r.reportedListing.city})
+                {/* Target Information */}
+                <div className="bg-[#F9F7F2]/60 rounded-2xl p-4 border border-gray-50/50 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <span className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5">
+                      Reported Target
+                    </span>
+                    {r.reportedListing ? (
+                      <p className="text-xs font-bold text-[#012D1D] flex items-center gap-2">
+                        <RiHome4Line className="text-base text-[#8E4E14]" />
+                        <span className="truncate">{r.reportedListing.title} ({r.reportedListing.city})</span>
+                      </p>
+                    ) : r.reportedUser ? (
+                      <p className="text-xs font-bold text-[#012D1D] flex items-center gap-2">
+                        <RiUserLine className="text-base text-[#8E4E14]" />
+                        <span className="truncate">{r.reportedUser.name} ({r.reportedUser.email})</span>
+                      </p>
+                    ) : (
+                      <p className="text-xs text-gray-400 italic">Target has been removed.</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <span className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5">
+                      Report Category
+                    </span>
+                    <p className="text-xs font-bold text-[#012D1D] flex items-center gap-2">
+                      <RiFileTextLine className="text-base text-[#8E4E14]" />
+                      <span className="capitalize">{r.targetType || "Listing"} Report</span>
                     </p>
-                  ) : r.reportedUser ? (
-                    <p className="text-sm text-primary flex items-center gap-1.5">
-                      <RiUserLine className="text-secondary" />
-                      {r.reportedUser.name} ({r.reportedUser.email})
-                    </p>
-                  ) : (
-                    <p className="text-sm text-text-secondary italic">
-                      Target removed.
-                    </p>
-                  )}
+                  </div>
                 </div>
 
-                <div className="mb-3">
-                  <p className="text-xs font-semibold text-text-secondary uppercase mb-1">
-                    Description
-                  </p>
-                  <p className="text-sm text-primary bg-background border border-border rounded-input p-3">
+                {/* Description */}
+                <div className="space-y-1.5">
+                  <span className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-widest">
+                    Your Description
+                  </span>
+                  <p className="text-xs font-semibold text-gray-600 bg-gray-50 border border-gray-100 rounded-2xl p-4 leading-relaxed">
                     {r.description}
                   </p>
                 </div>
 
+                {/* Admin Response Note */}
                 {r.adminNote && (
-                  <div>
-                    <p className="text-xs font-semibold text-text-secondary uppercase mb-1">
-                      Admin Note
-                    </p>
-                    <p className="text-sm text-primary bg-primary/5 border border-primary/20 rounded-input p-3">
+                  <div className="bg-emerald-50/40 border border-emerald-100/70 rounded-2xl p-4 space-y-1.5">
+                    <span className="flex items-center gap-1 text-[10px] font-extrabold text-emerald-800 uppercase tracking-widest">
+                      <RiFeedbackLine className="text-sm" /> Admin Feedback
+                    </span>
+                    <p className="text-xs font-bold text-emerald-900 leading-relaxed">
                       {r.adminNote}
                     </p>
                   </div>
@@ -183,23 +208,24 @@ const MyReportsPage = () => {
               </div>
             ))}
 
+            {/* Pagination Controls */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between pt-2">
-                <p className="text-xs text-text-secondary">
+              <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                <p className="text-xs font-extrabold text-gray-400 uppercase tracking-wider">
                   Page {page} of {totalPages}
                 </p>
                 <div className="flex gap-2">
                   <button
                     onClick={() => fetchReports({ page: page - 1 })}
                     disabled={page <= 1 || loading}
-                    className="px-3 py-1.5 rounded-btn text-sm border border-border text-text-secondary hover:text-primary disabled:opacity-40"
+                    className="px-4 py-2 rounded-2xl text-xs font-extrabold border border-gray-200 bg-white text-[#012D1D] hover:border-[#012D1D] active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     ← Prev
                   </button>
                   <button
                     onClick={() => fetchReports({ page: page + 1 })}
                     disabled={page >= totalPages || loading}
-                    className="px-3 py-1.5 rounded-btn text-sm border border-border text-text-secondary hover:text-primary disabled:opacity-40"
+                    className="px-4 py-2 rounded-2xl text-xs font-extrabold border border-gray-200 bg-white text-[#012D1D] hover:border-[#012D1D] active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     Next →
                   </button>

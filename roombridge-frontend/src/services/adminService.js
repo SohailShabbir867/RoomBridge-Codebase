@@ -37,6 +37,16 @@ const adminService = {
   // Bookings
   getAllBookings: async (params = {}) =>
     (await api.get("/admin/bookings", { params })).data,
+
+  // Notifications
+  getRecipientCount: async (type) =>
+    (await api.get("/admin/notifications/recipient-count", { params: { type } })).data,
+  sendNotification: async (data) =>
+    (await api.post("/admin/notifications/send", data)).data,
+  sendMaintenanceNotification: async (data) =>
+    (await api.post("/admin/notifications/maintenance", data)).data,
+  sendErrorAlert: async (data) =>
+    (await api.post("/admin/notifications/error-alert", data)).data,
 };
 
 export default adminService;

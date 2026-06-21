@@ -3,8 +3,8 @@
    Tailwind v4 — uses @import "tailwindcss" + @config directive
 ───────────────────────────────────────────────────────────────── */
 
-/* Google Fonts — Inter */
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap");
+/* Google Fonts — Inter & Playfair Display */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap");
 
 /* Tailwind v4 core import */
 @import "tailwindcss";

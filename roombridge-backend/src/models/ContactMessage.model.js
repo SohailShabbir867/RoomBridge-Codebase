@@ -34,6 +34,21 @@ const contactMessageSchema = new mongoose.Schema(
       minlength: [10, "Message must be at least 10 characters"],
       maxlength: [2000, "Message cannot exceed 2000 characters"],
     },
+    phone: {
+      type: String,
+      trim: true,
+      maxlength: [20, "Phone number cannot exceed 20 characters"],
+      default: "",
+    },
+    role: {
+      type: String,
+      trim: true,
+      enum: {
+        values: ["Student", "Owner", "Other", ""],
+        message: "Role must be Student, Owner, or Other",
+      },
+      default: "",
+    },
     status: {
       type: String,
       default: "new",

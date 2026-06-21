@@ -1,4 +1,5 @@
 const crypto = require("crypto");
+const compression = require("./utils/compression");
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
@@ -15,6 +16,7 @@ const messageRoutes = require("./routes/message.routes");
 const preferenceRoutes = require("./routes/preference.routes");
 const adminRoutes = require("./routes/admin.routes");
 const reportRoutes = require("./routes/report.routes");
+const communityRoutes = require("./routes/community.routes");
 
 /* ── Middleware imports ────────────────────────────────── */
 const { errorHandler, notFound } = require("./middleware/error.middleware");
@@ -46,6 +48,34 @@ app.use(
     crossOriginResourcePolicy: { policy: "cross-origin" },
   }),
 );
+
+/* ── Gzip compression ──────────────────────────────────────
+   Compresses all JSON/text responses before sending them to
+   the client. Reduces payload size ~70% for API responses.
+   Threshold: only compress responses > 1kb (no-op for tiny errors). */
+app.use(compression({ threshold: 1024 }));
+
+/* ── Cache-Control for public read-only endpoints ──────────
+   Tells browsers and CDNs to cache responses for 60 seconds.
+   Applied only to safe GET/HEAD methods — never to mutations. */
+app.use((req, res, next) => {
+  if (
+    (req.method === "GET" || req.method === "HEAD") &&
+    req.path.startsWith("/api/v1/listings") &&
+    !req.path.includes("/owner/") &&
+    !req.path.includes("/seeker/")
+  ) {
+    // public listing endpoints: short public cache + stale-while-revalidate
+    res.setHeader(
+      "Cache-Control",
+      "public, max-age=60, stale-while-revalidate=30",
+    );
+  } else if (req.method === "GET" || req.method === "HEAD") {
+    // all other GETs: private (authenticated), no CDN caching
+    res.setHeader("Cache-Control", "private, no-cache");
+  }
+  next();
+});
 
 /* ── CORS ──────────────────────────────────────────────── */
 app.use(
@@ -139,6 +169,7 @@ app.use("/api/v1/messages", messageRoutes);
 app.use("/api/v1/preferences", preferenceRoutes);
 app.use("/api/v1/admin", adminRoutes);
 app.use("/api/v1/reports", reportRoutes);
+app.use("/api/v1/communities", communityRoutes);
 
 /* ── Error handling (must be last) ─────────────────────── */
 app.use(notFound);

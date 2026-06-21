@@ -51,6 +51,16 @@ const TYPE_LABELS = {
   apartment: "Full Apartment",
 };
 
+/* ─── Design tokens (match Figma) ──────────────────────────── */
+const C = {
+  darkGreen: "#012D1D",
+  btnBrown:  "#8E4E14",
+  accent:    "#FFAB69",
+  cream:     "#F7F4EF",
+  promise:   "#F0EDE9",
+  white:     "#FFFFFF",
+};
+
 /* ── Booking form component ─────────────────────────────────── */
 const BookingForm = ({ listing, onSuccess }) => {
   const { user, isAuthenticated } = useSelector((s) => s.auth);
@@ -61,7 +71,6 @@ const BookingForm = ({ listing, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
 
-  /* Rule: seekers only, and not the owner of this very listing */
   const isOwner = user?._id === (listing.owner?._id || listing.owner);
   const isSeeker = user?.role === "seeker";
   const canBook = isAuthenticated && isSeeker && !isOwner;
@@ -84,14 +93,14 @@ const BookingForm = ({ listing, onSuccess }) => {
     e.preventDefault();
     if (!isAuthenticated) {
       toast.error("Please log in to send a booking request.");
-      navigate("/login", { state: { from: `/listings/${listing._id}` } });
+      navigate("/login", { state: { from: `/explore/${listing._id}` } });
       return;
     }
     if (!canBook) {
       toast.error(
         isOwner
           ? "You can't book your own listing."
-          : "Only seekers can send booking requests.",
+          : "Only seekers can send booking requests."
       );
       return;
     }
@@ -112,7 +121,7 @@ const BookingForm = ({ listing, onSuccess }) => {
         err.response?.data?.message || "Failed to send booking request.";
       toast.error(msg);
       if (msg.toLowerCase().includes("already")) {
-        setSent(true); // treat duplicate as "already sent"
+        setSent(true);
       }
     } finally {
       setLoading(false);
@@ -121,14 +130,15 @@ const BookingForm = ({ listing, onSuccess }) => {
 
   if (!isAuthenticated) {
     return (
-      <div className="border border-border rounded-input p-4 text-center">
-        <p className="text-text-secondary text-sm mb-3">
-          Sign in to send a booking request
+      <div className="border border-gray-100 rounded-2xl p-5 text-center bg-gray-50/50">
+        <p className="text-gray-400 text-xs mb-3 font-semibold uppercase tracking-wider">
+          Sign in to request booking
         </p>
         <Link
           to="/login"
-          state={{ from: `/listings/${listing._id}` }}
-          className="btn-primary w-full justify-center gap-2 text-sm"
+          state={{ from: `/explore/${listing._id}` }}
+          className="w-full text-white font-bold py-3.5 px-6 rounded-xl hover:opacity-95 active:scale-[0.98] transition-all duration-200 text-xs uppercase tracking-wider shadow-md cursor-pointer flex justify-center items-center"
+          style={{ backgroundColor: C.darkGreen }}
         >
           Log In to Book
         </Link>
@@ -138,18 +148,18 @@ const BookingForm = ({ listing, onSuccess }) => {
 
   if (isOwner) {
     return (
-      <div className="border border-warning/30 bg-warning/5 rounded-input p-4 text-center">
-        <RiAlertLine className="text-warning text-2xl mx-auto mb-2" />
-        <p className="text-text-secondary text-sm">This is your own listing.</p>
+      <div className="border border-[#FFF3E0] bg-[#FFF3E0]/20 rounded-2xl p-5 text-center">
+        <RiAlertLine className="text-[#EF6C00] text-2xl mx-auto mb-2" />
+        <p className="text-[#EF6C00] text-xs font-bold uppercase tracking-wider">This is your listing</p>
       </div>
     );
   }
 
   if (user?.role !== "seeker") {
     return (
-      <div className="border border-border rounded-input p-4 text-center">
-        <p className="text-text-secondary text-sm">
-          Only seekers can book rooms.
+      <div className="border border-gray-150 rounded-2xl p-5 text-center bg-gray-50/50">
+        <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider">
+          Only seekers can book rooms
         </p>
       </div>
     );
@@ -157,26 +167,24 @@ const BookingForm = ({ listing, onSuccess }) => {
 
   if (sent) {
     return (
-      <div className="bg-success/10 border border-success/30 rounded-input p-4 text-center">
-        <RiCheckLine className="text-success text-2xl mx-auto mb-1" />
-        <p className="text-success text-sm font-medium">
-          Booking request sent!
-        </p>
-        <p className="text-text-secondary text-xs mt-1">
-          The owner will respond within 24 hours.
+      <div className="bg-[#E8F5E9]/50 border border-[#E8F5E9] rounded-2xl p-5 text-center">
+        <RiCheckLine className="text-[#2E7D32] text-2xl mx-auto mb-1" />
+        <p className="text-[#2E7D32] text-sm font-bold">Booking Request Sent!</p>
+        <p className="text-gray-400 text-[10px] uppercase tracking-wider mt-1 font-semibold">
+          The owner will respond soon.
         </p>
       </div>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="label" htmlFor="move-in-date">
+        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">
           Move-in Date
         </label>
         <div className="relative">
-          <RiCalendarLine className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary pointer-events-none" />
+          <RiCalendarLine className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-base" />
           <input
             id="move-in-date"
             type="date"
@@ -185,14 +193,19 @@ const BookingForm = ({ listing, onSuccess }) => {
               setBooking((b) => ({ ...b, moveInDate: e.target.value }));
               setErrors({});
             }}
-            min={new Date(Date.now() + 86400000).toISOString().split("T")[0]} // tomorrow
-            className={`input pl-9 text-sm ${errors.moveInDate ? "input-error" : ""}`}
+            min={new Date(Date.now() + 86400000).toISOString().split("T")[0]}
+            className={`w-full bg-[#F5F2EB] border-0 rounded-xl py-3.5 pl-10 pr-4 text-xs font-semibold focus:ring-1 focus:ring-[#8E4E14] outline-none text-gray-800 ${
+              errors.moveInDate ? "ring-1 ring-red-500" : ""
+            }`}
           />
         </div>
-        {errors.moveInDate && <p className="error-msg">{errors.moveInDate}</p>}
+        {errors.moveInDate && (
+          <p className="text-red-500 text-[10px] mt-1 font-bold">{errors.moveInDate}</p>
+        )}
       </div>
+
       <div>
-        <label className="label" htmlFor="booking-message">
+        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">
           Message to Owner
         </label>
         <textarea
@@ -203,25 +216,33 @@ const BookingForm = ({ listing, onSuccess }) => {
             setErrors((er) => ({ ...er, message: undefined }));
           }}
           rows={3}
-          placeholder="Introduce yourself and ask any questions… (min 10 characters)"
-          className={`input text-sm resize-none ${errors.message ? "input-error" : ""}`}
+          placeholder="Introduce yourself and ask any questions..."
+          className={`w-full bg-[#F5F2EB] border-0 rounded-xl p-4 text-xs font-semibold focus:ring-1 focus:ring-[#8E4E14] outline-none text-gray-800 placeholder-gray-400 resize-none ${
+            errors.message ? "ring-1 ring-red-500" : ""
+          }`}
         />
-        {errors.message && <p className="error-msg">{errors.message}</p>}
+        {errors.message && (
+          <p className="text-red-500 text-[10px] mt-1 font-bold">{errors.message}</p>
+        )}
       </div>
+
       <button
         type="submit"
         disabled={loading}
-        className="w-full btn-primary btn-lg justify-center gap-2"
+        className="w-full text-white font-bold py-4 px-6 rounded-xl hover:opacity-95
+                   active:scale-[0.98] transition-all duration-200 text-xs uppercase tracking-wider shadow-md
+                   disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
+        style={{ backgroundColor: C.darkGreen }}
         aria-busy={loading}
       >
         {loading ? (
           <>
-            <RiLoader4Line className="animate-spin h-4 w-4" />
-            Sending…
+            <RiLoader4Line className="animate-spin text-base" />
+            Sending...
           </>
         ) : (
           <>
-            <RiCalendarLine /> Send Booking Request
+            <RiCalendarLine className="text-base" /> Send Booking Request
           </>
         )}
       </button>
@@ -247,21 +268,15 @@ const ListingDetailPage = () => {
   const [reportTarget, setReportTarget] = useState(null);
   const [reportSubmitting, setReportSubmitting] = useState(false);
 
-  /* ── Load listing from real API ─────────────────────────────── */
   const loadListing = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
       const res = await listingService.getListingById(id);
-      /*
-        was using hardcoded MOCK data — never called the API.
-        Backend returns { success, listing } (single object, not array).
-      */
       const data = res.data?.listing || res.listing || res.data;
       setListing(data);
       setSaved(data?.isSaved || false);
       document.title = `${data?.title || "Room"} — RoomBridge`;
-      /* Increment view count (backend only increments on explicit call) */
       listingService.incrementViews(id).catch(() => {});
     } catch (err) {
       const status = err.response?.status;
@@ -279,18 +294,16 @@ const ListingDetailPage = () => {
     loadListing();
   }, [loadListing]);
 
-  /* ── Photo navigation ─────────────────────────────────────── */
   const photos = listing?.photos?.map((p) => p.url) || [];
   const prevImg = () =>
     setActiveImg((i) => (i === 0 ? photos.length - 1 : i - 1));
   const nextImg = () =>
     setActiveImg((i) => (i === photos.length - 1 ? 0 : i + 1));
 
-  /* ── Save/Unsave ─────────────────────────────────────────────- */
   const handleSave = async () => {
     if (!isAuthenticated) {
       toast.error("Please log in to save listings.");
-      navigate("/login", { state: { from: `/listings/${id}` } });
+      navigate("/login", { state: { from: `/explore/${id}` } });
       return;
     }
     try {
@@ -308,21 +321,20 @@ const ListingDetailPage = () => {
       }
     } catch (err) {
       toast.error(
-        err.response?.data?.message || "Failed to update saved listings.",
+        err.response?.data?.message || "Failed to update saved listings."
       );
     } finally {
       setSaveLoading(false);
     }
   };
 
-  /* ── Share ───────────────────────────────────────────────────── */
   const handleShare = async () => {
     const url = window.location.href;
     if (navigator.share) {
       try {
         await navigator.share({ title: listing?.title, url });
       } catch {
-        // User dismissed the native share sheet.
+        // user dismiss
       }
     } else {
       await navigator.clipboard.writeText(url);
@@ -333,7 +345,7 @@ const ListingDetailPage = () => {
   const openReportModal = ({ type, id: targetId, label }) => {
     if (!isAuthenticated) {
       toast.error("Please log in to submit a report.");
-      navigate("/login", { state: { from: `/listings/${id}` } });
+      navigate("/login", { state: { from: `/explore/${id}` } });
       return;
     }
     setReportTarget({ type, id: targetId, label });
@@ -341,7 +353,6 @@ const ListingDetailPage = () => {
 
   const handleSubmitReport = async ({ reason, description }) => {
     if (!reportTarget) return;
-
     try {
       setReportSubmitting(true);
       const payload = {
@@ -351,7 +362,6 @@ const ListingDetailPage = () => {
           ? { reportedListing: reportTarget.id }
           : { reportedUser: reportTarget.id }),
       };
-
       await reportService.submitReport(payload);
       toast.success("Report submitted. Admin team will review it.");
       setReportTarget(null);
@@ -362,49 +372,44 @@ const ListingDetailPage = () => {
     }
   };
 
-  /* ── Loading state ───────────────────────────────────────────── */
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: C.cream }}>
         <div className="text-center">
-          <RiLoader4Line className="animate-spin text-4xl text-primary mx-auto mb-3" />
-          <p className="text-text-secondary text-sm">Loading listing…</p>
+          <RiLoader4Line className="animate-spin text-4xl mx-auto mb-3" style={{ color: C.darkGreen }} />
+          <p className="text-gray-400 text-sm font-semibold uppercase tracking-wider">Loading listing...</p>
         </div>
       </div>
     );
   }
 
-  /* ── Error state ─────────────────────────────────────────────── */
   if (error || !listing) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4">
-        <div className="text-center max-w-md">
-          <RiAlertLine className="text-5xl text-error mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-primary mb-2">
+      <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: C.cream }}>
+        <div className="text-center max-w-md bg-white p-10 rounded-[32px] border border-gray-100 shadow-sm">
+          <RiAlertLine className="text-5xl text-red-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold font-serif mb-2" style={{ color: C.darkGreen }}>
             Listing Not Found
           </h2>
-          <p className="text-text-secondary mb-6">
+          <p className="text-gray-500 text-xs mb-8 leading-relaxed font-light">
             {error || "This listing is no longer available."}
           </p>
           <Link
-            to="/listings"
-            className="btn-primary inline-flex items-center gap-2"
+            to="/explore"
+            className="inline-flex items-center justify-center text-white font-bold py-3.5 px-8 rounded-xl hover:opacity-90 active:scale-95 transition-all text-xs uppercase tracking-wider shadow-md cursor-pointer"
+            style={{ backgroundColor: C.darkGreen }}
           >
-            <RiArrowRightLine className="rotate-180" /> Browse Listings
+            Browse Listings
           </Link>
         </div>
       </div>
     );
   }
 
-  /* ── Helpers ─────────────────────────────────────────────────── */
   const amenities = Array.isArray(listing.amenities) ? listing.amenities : [];
   const rules = Array.isArray(listing.houseRules) ? listing.houseRules : [];
   const reviewList = Array.isArray(listing.reviews) ? listing.reviews : [];
-  /*
-    listing.price doesn't exist on the model — the field is 'rent'.
-    listing.type doesn't exist on the model — the field is 'roomType'.
-  */
+
   const rent = listing.rent || 0;
   const typeLabel = TYPE_LABELS[listing.roomType] || listing.roomType || "Room";
   const ownerName = listing.owner?.name || "Owner";
@@ -415,78 +420,87 @@ const ListingDetailPage = () => {
     isAuthenticated && user?._id && ownerId && user._id !== ownerId.toString();
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Breadcrumb */}
-      <div className="bg-white border-b border-border">
-        <div
-          className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3
-                        flex items-center gap-2 text-sm text-text-secondary"
-        >
-          <Link to="/" className="hover:text-primary transition-colors">
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: C.cream }}>
+      
+      {/* ── Breadcrumb ── */}
+      <div className="bg-white border-b border-gray-100 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-widest">
+          <Link to="/" className="hover:text-[#8E4E14] transition-colors">
             Home
           </Link>
-          <RiArrowRightSLine aria-hidden="true" />
-          <Link to="/listings" className="hover:text-primary transition-colors">
+          <RiArrowRightSLine className="text-sm" />
+          <Link to="/explore" className="hover:text-[#8E4E14] transition-colors">
             Listings
           </Link>
-          <RiArrowRightSLine aria-hidden="true" />
-          <span className="text-primary font-medium truncate max-w-[200px]">
+          <RiArrowRightSLine className="text-sm" />
+          <span className="text-[#012D1D] truncate max-w-[200px]">
             {listing.city}
           </span>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* ── Header ── */}
-        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-6">
+        
+        {/* ── Header details row ── */}
+        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-8">
           <div>
-            <div className="flex flex-wrap items-center gap-2 mb-1">
-              <span className="text-xs font-semibold text-white bg-primary px-2.5 py-1 rounded-full">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <span
+                className="text-[9px] font-bold text-white px-3 py-1 rounded-full uppercase tracking-wider"
+                style={{ backgroundColor: C.darkGreen }}
+              >
                 {typeLabel}
               </span>
-              <span className="text-xs font-semibold text-success bg-success/10 px-2.5 py-1 rounded-full">
-                {listing.status === "active"
-                  ? "Available"
-                  : listing.status || "Available"}
+              <span className="text-[9px] font-bold text-[#2E7D32] bg-[#E8F5E9] px-3 py-1 rounded-full uppercase tracking-wider">
+                {listing.status === "active" ? "Available" : listing.status || "Available"}
               </span>
             </div>
-            <h1 className="text-2xl md:text-3xl font-bold text-primary leading-tight mb-1">
+            
+            <h1
+              className="text-2xl sm:text-3xl lg:text-4xl font-extrabold font-serif leading-tight mt-1 mb-2.5"
+              style={{ color: C.darkGreen }}
+            >
               {listing.title}
             </h1>
-            <p className="text-text-secondary flex items-center gap-1.5">
-              <RiMapPin2Line className="text-accent" />
+            
+            <p className="text-gray-400 text-xs flex items-center gap-1.5 font-light">
+              <RiMapPin2Line className="text-[#8E4E14]" />
               {listing.address ? `${listing.address}, ` : ""}
               {listing.city}
             </p>
           </div>
-          <div className="flex items-center gap-3 shrink-0">
+
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0 self-start lg:self-center">
+            
+            {/* Save */}
             <button
               onClick={handleSave}
               disabled={saveLoading}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-btn border text-sm font-medium
-                          transition-all duration-200 disabled:opacity-60
-                          ${
-                            saved
-                              ? "border-error text-error bg-red-50"
-                              : "border-border text-text-secondary hover:border-error hover:text-error"
-                          }`}
+              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl border text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer ${
+                saved
+                  ? "border-red-200 text-red-500 bg-red-50/50"
+                  : "border-gray-200 bg-white text-gray-700 hover:border-red-400 hover:text-red-500"
+              }`}
             >
               {saveLoading ? (
-                <RiLoader4Line className="animate-spin" />
+                <RiLoader4Line className="animate-spin text-sm" />
               ) : saved ? (
-                <RiHeart3Fill />
+                <RiHeart3Fill className="text-sm" />
               ) : (
-                <RiHeart3Line />
+                <RiHeart3Line className="text-sm" />
               )}
               {saved ? "Saved" : "Save"}
             </button>
+
+            {/* Share */}
             <button
               onClick={handleShare}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-btn border border-border
-                         text-sm font-medium text-text-secondary hover:border-primary hover:text-primary transition-all"
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-xs font-bold text-gray-700 hover:border-gray-400 transition-all shadow-sm active:scale-95 cursor-pointer"
             >
-              <RiShareLine /> Share
+              <RiShareLine className="text-sm" /> Share
             </button>
+
+            {/* Report */}
             <button
               onClick={() =>
                 openReportModal({
@@ -495,7 +509,7 @@ const ListingDetailPage = () => {
                   label: listing.title,
                 })
               }
-              className="flex items-center gap-1.5 px-4 py-2 rounded-btn border border-error/30 text-sm font-medium text-error hover:bg-error hover:text-white transition-all"
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-red-200/50 bg-white text-xs font-bold text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-sm active:scale-95 cursor-pointer"
               disabled={isAuthenticated && !canReportListing}
               title={
                 isAuthenticated && !canReportListing
@@ -503,153 +517,240 @@ const ListingDetailPage = () => {
                   : "Report this listing"
               }
             >
-              <RiFlagLine /> Report
+              <RiFlagLine className="text-sm" /> Report
             </button>
+
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* ── Left: Photos + Details ── */}
+        {/* ── Main content grid ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+          
+          {/* Left Panel: Photos, details, amenities */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Photo gallery */}
-            {photos.length > 0 ? (
-              <>
-                <div className="relative bg-black rounded-card overflow-hidden">
-                  <img
-                    src={photos[activeImg]}
-                    alt={`${listing.title} — photo ${activeImg + 1}`}
-                    className="w-full h-72 md:h-96 object-cover"
-                  />
+            
+            {/* Gallery card */}
+            <div className="bg-white rounded-[32px] p-4 shadow-sm border border-gray-150/40">
+              {photos.length > 0 ? (
+                <div className="space-y-4">
+                  <div className="relative aspect-[16/10] sm:aspect-[16/9] w-full rounded-[24px] overflow-hidden shadow-sm bg-black">
+                    <img
+                      src={photos[activeImg]}
+                      alt={`${listing.title} — ${activeImg + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                    
+                    {photos.length > 1 && (
+                      <>
+                        <button
+                          onClick={prevImg}
+                          aria-label="Previous photo"
+                          className="absolute left-4 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/20 hover:bg-white/40 text-[#012D1D] flex items-center justify-center transition-all backdrop-blur-md border border-white/25 cursor-pointer active:scale-90"
+                        >
+                          <RiArrowLeftSLine className="text-lg" />
+                        </button>
+                        
+                        <button
+                          onClick={nextImg}
+                          aria-label="Next photo"
+                          className="absolute right-4 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/20 hover:bg-white/40 text-[#012D1D] flex items-center justify-center transition-all backdrop-blur-md border border-white/25 cursor-pointer active:scale-90"
+                        >
+                          <RiArrowRightSLine className="text-lg" />
+                        </button>
+                        
+                        <div className="absolute bottom-4 right-4 bg-black/55 text-white text-[9px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full backdrop-blur-md">
+                          {activeImg + 1} / {photos.length}
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Thumbnail Strip */}
                   {photos.length > 1 && (
-                    <>
-                      <button
-                        onClick={prevImg}
-                        aria-label="Previous photo"
-                        className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full
-                                   bg-black/50 text-white flex items-center justify-center
-                                   hover:bg-black/70 transition-colors backdrop-blur-sm"
-                      >
-                        <RiArrowLeftSLine />
-                      </button>
-                      <button
-                        onClick={nextImg}
-                        aria-label="Next photo"
-                        className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full
-                                   bg-black/50 text-white flex items-center justify-center
-                                   hover:bg-black/70 transition-colors backdrop-blur-sm"
-                      >
-                        <RiArrowRightSLine />
-                      </button>
-                      <div
-                        className="absolute bottom-3 right-3 bg-black/60 text-white text-xs
-                                      px-2.5 py-1 rounded-full backdrop-blur-sm"
-                      >
-                        {activeImg + 1} / {photos.length}
-                      </div>
-                    </>
+                    <div className="flex gap-2.5 overflow-x-auto pb-1.5 scrollbar-thin">
+                      {photos.map((img, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setActiveImg(i)}
+                          aria-label={`Photo ${i + 1}`}
+                          aria-current={activeImg === i ? "true" : undefined}
+                          className={`shrink-0 w-20 h-14 rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
+                            activeImg === i
+                              ? "border-[#8E4E14] scale-95 shadow-sm"
+                              : "border-transparent opacity-60 hover:opacity-100"
+                          }`}
+                        >
+                          <img src={img} alt="" className="w-full h-full object-cover" />
+                        </button>
+                      ))}
+                    </div>
                   )}
                 </div>
-                {/* Thumbnails */}
-                {photos.length > 1 && (
-                  <div className="flex gap-2 overflow-x-auto pb-1">
-                    {photos.map((img, i) => (
-                      <button
-                        key={i}
-                        onClick={() => setActiveImg(i)}
-                        aria-label={`Photo ${i + 1}`}
-                        aria-current={activeImg === i ? "true" : undefined}
-                        className={`shrink-0 w-20 h-14 rounded-lg overflow-hidden border-2 transition-all
-                                    ${
-                                      activeImg === i
-                                        ? "border-primary shadow-card"
-                                        : "border-transparent opacity-60 hover:opacity-100"
-                                    }`}
-                      >
-                        <img
-                          src={img}
-                          alt=""
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </>
-            ) : (
-              /* No photos placeholder */
-              <div
-                className="w-full h-72 bg-background rounded-card border border-border
-                              flex items-center justify-center"
-              >
-                <p className="text-text-secondary text-sm">
-                  No photos available
+              ) : (
+                <div className="w-full h-72 bg-[#F5F2EB] rounded-[24px] flex items-center justify-center border border-dashed border-gray-200">
+                  <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider">No photos available</p>
+                </div>
+              )}
+            </div>
+
+            {/* About / Description */}
+            <div className="bg-white rounded-[32px] p-8 shadow-sm border border-gray-150/40 space-y-6">
+              <div>
+                <h2 className="text-xl font-extrabold font-serif mb-3 text-[#012D1D]">About this Room</h2>
+                <p className="text-gray-500 text-sm leading-relaxed whitespace-pre-line font-light">
+                  {listing.description || "No description provided."}
                 </p>
               </div>
-            )}
 
-            {/* Description */}
-            <div className="bg-white rounded-card border border-border p-6">
-              <h2 className="text-lg font-bold text-primary mb-3">
-                About this Room
-              </h2>
-              <p className="text-text-secondary text-sm leading-relaxed whitespace-pre-line">
-                {listing.description || "No description provided."}
-              </p>
-              {/* Key details */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-5 pt-5 border-t border-border">
+              {/* Grid properties */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4 pt-6 border-t border-gray-100">
                 {[
                   { label: "Room Type", value: typeLabel },
                   { label: "City", value: listing.city },
+                  listing.area && { label: "Area / Sector", value: listing.area },
+                  { label: "Furnished", value: listing.furnished ? "Fully Furnished" : "Unfurnished" },
                   listing.genderPreference && {
-                    label: "Preferred",
+                    label: "Preferred Seeker",
                     value:
                       listing.genderPreference === "any"
-                        ? "Any gender"
-                        : `${listing.genderPreference} only`,
+                        ? "Any Gender"
+                        : listing.genderPreference === "male"
+                        ? "Boys Only"
+                        : "Girls Only",
                   },
                   listing.availableFrom && {
                     label: "Available From",
-                    value: new Date(listing.availableFrom).toLocaleDateString(
-                      "en-PK",
-                      { month: "short", day: "numeric", year: "numeric" },
-                    ),
+                    value: new Date(listing.availableFrom).toLocaleDateString("en-PK", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    }),
                   },
                 ]
                   .filter(Boolean)
                   .map(({ label, value }) => (
-                    <div key={label} className="bg-background rounded-lg p-3">
-                      <p className="text-xs text-text-secondary font-medium mb-0.5">
+                    <div key={label} className="bg-[#F5F2EB] rounded-2xl p-4 flex flex-col justify-between">
+                      <span className="text-[9px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5 block">
                         {label}
-                      </p>
-                      <p className="text-sm font-semibold text-primary">
+                      </span>
+                      <span className="text-xs font-extrabold text-[#012D1D] leading-snug">
                         {value}
-                      </p>
+                      </span>
                     </div>
                   ))}
               </div>
             </div>
 
-            {/* Amenities */}
+            {/* Roommate Preferences Section */}
+            {listing.roommatePreferences && (Object.values(listing.roommatePreferences).some(val => val !== undefined && val !== null && val !== "")) && (
+              <div className="bg-white rounded-[32px] p-8 shadow-sm border border-gray-150/40">
+                <h2 className="text-xl font-extrabold font-serif mb-5 text-[#012D1D]">Roommate Preferences</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {listing.roommatePreferences.sleepSchedule && (
+                    <div className="bg-[#F5F2EB] rounded-2xl p-4 flex flex-col justify-between">
+                      <span className="text-[9px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5 block">
+                        Sleep Schedule
+                      </span>
+                      <span className="text-xs font-extrabold text-[#012D1D] capitalize leading-snug">
+                        {listing.roommatePreferences.sleepSchedule}
+                      </span>
+                    </div>
+                  )}
+                  {listing.roommatePreferences.occupation && (
+                    <div className="bg-[#F5F2EB] rounded-2xl p-4 flex flex-col justify-between">
+                      <span className="text-[9px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5 block">
+                        Occupation
+                      </span>
+                      <span className="text-xs font-extrabold text-[#012D1D] capitalize leading-snug">
+                        {listing.roommatePreferences.occupation}
+                      </span>
+                    </div>
+                  )}
+                  {listing.roommatePreferences.gender && (
+                    <div className="bg-[#F5F2EB] rounded-2xl p-4 flex flex-col justify-between">
+                      <span className="text-[9px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5 block">
+                        Gender Preference
+                      </span>
+                      <span className="text-xs font-extrabold text-[#012D1D] capitalize leading-snug">
+                        {listing.roommatePreferences.gender}
+                      </span>
+                    </div>
+                  )}
+                  {listing.roommatePreferences.smoker !== undefined && (
+                    <div className="bg-[#F5F2EB] rounded-2xl p-4 flex flex-col justify-between">
+                      <span className="text-[9px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5 block">
+                        Smoking Allowed
+                      </span>
+                      <span className="text-xs font-extrabold text-[#012D1D] leading-snug">
+                        {listing.roommatePreferences.smoker ? "Yes" : "No"}
+                      </span>
+                    </div>
+                  )}
+                  {listing.roommatePreferences.pets !== undefined && (
+                    <div className="bg-[#F5F2EB] rounded-2xl p-4 flex flex-col justify-between">
+                      <span className="text-[9px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5 block">
+                        Pets Allowed
+                      </span>
+                      <span className="text-xs font-extrabold text-[#012D1D] leading-snug">
+                        {listing.roommatePreferences.pets ? "Yes" : "No"}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Nearby Places Section */}
+            {listing.nearbyPlaces && listing.nearbyPlaces.length > 0 && (
+              <div className="bg-white rounded-[32px] p-8 shadow-sm border border-gray-150/40">
+                <h2 className="text-xl font-extrabold font-serif mb-5 text-[#012D1D]">Nearby Places</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {listing.nearbyPlaces.map((place, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between p-4 bg-[#F5F2EB] rounded-2xl border border-transparent hover:border-gray-200/55 transition-all"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center shrink-0 text-[#012D1D]">
+                          <RiMapPin2Line />
+                        </div>
+                        <div className="min-w-0">
+                          <span className="text-xs font-bold text-[#012D1D] block truncate">{place.name}</span>
+                          {place.type && (
+                            <span className="text-[9px] font-extrabold text-gray-400 uppercase tracking-wider block mt-0.5">
+                              {place.type}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {place.distance && (
+                        <span className="text-xs font-extrabold text-[#8E4E14] shrink-0">
+                          {place.distance}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Amenities Section */}
             {amenities.length > 0 && (
-              <div className="bg-white rounded-card border border-border p-6">
-                <h2 className="text-lg font-bold text-primary mb-4">
-                  Amenities
-                </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="bg-white rounded-[32px] p-8 shadow-sm border border-gray-150/40">
+                <h2 className="text-xl font-extrabold font-serif mb-6 text-[#012D1D]">Amenities</h2>
+                
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                   {amenities.map((a) => {
                     const Icon = AMENITY_ICONS[a] || AMENITY_ICONS.default;
                     return (
                       <div
                         key={a}
-                        className="flex items-center gap-2.5 p-3 bg-background rounded-lg"
+                        className="flex items-center gap-3 p-3.5 bg-[#F5F2EB] rounded-2xl"
                       >
-                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                          <Icon className="text-primary text-sm" />
+                        <div className="w-9 h-9 rounded-xl bg-white shadow-sm flex items-center justify-center shrink-0 text-[#012D1D] text-lg">
+                          <Icon />
                         </div>
-                        <span className="text-sm font-medium text-primary">
-                          {a}
-                        </span>
+                        <span className="text-xs font-bold text-[#012D1D] truncate">{a}</span>
                       </div>
                     );
                   })}
@@ -659,164 +760,178 @@ const ListingDetailPage = () => {
 
             {/* House Rules */}
             {rules.length > 0 && (
-              <div className="bg-white rounded-card border border-border p-6">
-                <h2 className="text-lg font-bold text-primary mb-4">
-                  House Rules
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="bg-white rounded-[32px] p-8 shadow-sm border border-gray-150/40">
+                <h2 className="text-xl font-extrabold font-serif mb-5 text-[#012D1D]">House Rules</h2>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   {rules.map((rule) => (
                     <div
                       key={rule}
-                      className="flex items-center gap-2 text-sm text-text-secondary"
+                      className="flex items-center gap-2.5 text-xs font-semibold text-gray-500 leading-normal"
                     >
-                      <RiCheckLine className="text-success shrink-0" /> {rule}
+                      <div className="w-5 h-5 rounded-full bg-[#E8F5E9] flex items-center justify-center text-[#2E7D32] shrink-0 text-2xs font-bold">
+                        ✓
+                      </div>
+                      <span>{rule}</span>
                     </div>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Reviews */}
-            <div className="bg-white rounded-card border border-border p-6">
-              <div className="flex items-center justify-between mb-5">
-                <h2 className="text-lg font-bold text-primary">
+            {/* Reviews Section */}
+            <div className="bg-white rounded-[32px] p-8 shadow-sm border border-gray-150/40 space-y-6">
+              <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+                <h2 className="text-xl font-extrabold font-serif text-[#012D1D]">
                   Reviews
-                  <span className="text-text-secondary text-sm font-normal ml-2">
+                  <span className="text-gray-400 text-xs font-normal ml-2 tracking-wide font-sans">
                     ({listing.reviewCount || reviewList.length})
                   </span>
                 </h2>
                 {listing.averageRating > 0 && (
-                  <div className="flex items-center gap-1.5">
-                    <RiStarFill className="text-warning" />
-                    <span className="font-bold text-primary">
-                      {Number(listing.averageRating).toFixed(1)}
-                    </span>
+                  <div className="flex items-center gap-1 bg-[#FFF3E8] py-1 px-3 rounded-lg text-xs font-extrabold text-[#8E4E14]">
+                    <RiStarFill className="text-[#8E4E14]" />
+                    <span>{Number(listing.averageRating).toFixed(1)}</span>
                   </div>
                 )}
               </div>
 
               {reviewList.length > 0 ? (
-                <div className="space-y-4">
+                <div className="space-y-6">
                   {reviewList.map((r, idx) => (
                     <div
                       key={r._id || idx}
-                      className="pb-4 border-b border-border last:border-0 last:pb-0"
+                      className="pb-5 border-b border-gray-50 last:border-b-0 last:pb-0"
                     >
-                      <div className="flex items-center justify-between mb-1.5">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                            <span className="text-white text-xs font-bold">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 shadow-sm"
+                            style={{ backgroundColor: C.darkGreen }}
+                          >
+                            <span className="text-white text-xs font-extrabold">
                               {(r.user?.name || r.user || "U")[0].toUpperCase()}
                             </span>
                           </div>
-                          <span className="font-semibold text-primary text-sm">
-                            {r.user?.name || "Anonymous"}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <StarRating
-                            rating={r.rating}
-                            size="sm"
-                            showValue={false}
-                          />
-                          {r.createdAt && (
-                            <span className="text-xs text-text-secondary">
-                              {new Date(r.createdAt).toLocaleDateString(
-                                "en-PK",
-                                { month: "short", year: "numeric" },
-                              )}
+                          <div>
+                            <span className="font-extrabold text-[#012D1D] text-xs block leading-tight">
+                              {r.user?.name || "Anonymous"}
                             </span>
-                          )}
+                            {r.createdAt && (
+                              <span className="text-[10px] text-gray-400 font-light block mt-0.5">
+                                {new Date(r.createdAt).toLocaleDateString("en-PK", {
+                                  month: "short",
+                                  year: "numeric",
+                                })}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="shrink-0">
+                          <StarRating rating={r.rating} size="sm" showValue={false} />
                         </div>
                       </div>
-                      <p className="text-text-secondary text-sm ml-10">
+                      <p className="text-gray-500 text-xs ml-12 leading-relaxed font-light">
                         {r.comment || r.text}
                       </p>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-text-secondary text-sm text-center py-6">
-                  No reviews yet. Be the first to review after your stay!
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* ── Right: Price + Booking sidebar ── */}
-          <div className="space-y-4">
-            {/* Price card */}
-            <div className="bg-white rounded-card border border-border p-6 sticky top-36">
-              <div className="flex items-end gap-2 mb-1">
-                {/* was listing.price — correct field is listing.rent */}
-                <span className="text-3xl font-bold text-primary">
-                  PKR {rent.toLocaleString()}
-                </span>
-                <span className="text-text-secondary text-sm mb-1">/month</span>
-              </div>
-              {listing.averageRating > 0 && (
-                <div className="flex items-center gap-1.5 mb-5">
-                  <StarRating rating={listing.averageRating} size="sm" />
-                  <span className="text-xs text-text-secondary">
-                    ({listing.reviewCount || 0} reviews)
-                  </span>
+                <div className="text-center py-10 bg-gray-50/50 rounded-2xl border border-dashed border-gray-100">
+                  <p className="text-gray-400 text-xs font-medium leading-relaxed max-w-xs mx-auto">
+                    No reviews yet. Be the first to write a review after your stay!
+                  </p>
                 </div>
               )}
+            </div>
 
-              {/* Booking form — now connected to real API */}
+          </div>
+
+          {/* Right Panel: Sticky Booking, Prices, Owner Card */}
+          <div className="space-y-6">
+            
+            {/* Booking & Price Card */}
+            <div className="bg-white rounded-[32px] p-8 shadow-sm border border-gray-150/40 space-y-6">
+              
+              {/* Rent & rating */}
+              <div className="border-b border-gray-100 pb-5">
+                <div className="flex items-baseline gap-1 mb-1">
+                  <span className="text-3xl font-extrabold font-serif text-[#8E4E14]">
+                    PKR {rent.toLocaleString()}
+                  </span>
+                  <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">/month</span>
+                </div>
+                
+                {listing.averageRating > 0 && (
+                  <div className="flex items-center gap-1.5 mt-2">
+                    <StarRating rating={listing.averageRating} size="sm" />
+                    <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">
+                      ({listing.reviewCount || 0} reviews)
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Booking Request Form */}
               <BookingForm listing={listing} />
 
-              <div className="border-t border-border mt-4 pt-4 space-y-2">
-                {/* Message owner */}
+              {/* Message owner */}
+              <div className="pt-2">
                 <Link
                   to={
                     isAuthenticated
                       ? `/seeker/messages?owner=${listing.owner?._id || ""}&listing=${listing._id || id || ""}`
                       : "/login"
                   }
-                  state={
-                    !isAuthenticated ? { from: `/listings/${id}` } : undefined
-                  }
-                  className="w-full flex items-center justify-center gap-2
-                             text-sm font-medium text-primary border border-primary
-                             py-2.5 rounded-btn hover:bg-primary hover:text-white
-                             transition-all duration-200"
+                  state={!isAuthenticated ? { from: `/explore/${id}` } : undefined}
+                  className="w-full flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider py-3.5 rounded-xl border transition-all active:scale-[0.97] cursor-pointer"
+                  style={{
+                    borderColor: C.darkGreen,
+                    color: C.darkGreen,
+                  }}
                 >
-                  <RiMessage3Line /> Message Owner
+                  <RiMessage3Line className="text-sm" /> Message Owner
                 </Link>
               </div>
             </div>
 
-            {/* Owner card */}
-            <div className="bg-white rounded-card border border-border p-5">
-              <h3 className="font-semibold text-primary mb-3 text-sm">
-                About the Owner
-              </h3>
-              <div className="flex items-center gap-3 mb-4">
+            {/* Owner Details Card */}
+            <div className="bg-white rounded-[32px] p-6 shadow-sm border border-gray-150/40 space-y-6">
+              
+              <div className="flex items-center gap-4">
                 {listing.owner?.profilePhoto?.url ? (
                   <img
                     src={listing.owner.profilePhoto.url}
                     alt={ownerName}
-                    className="w-12 h-12 rounded-full object-cover shrink-0"
+                    className="w-14 h-14 rounded-full object-cover shrink-0 shadow-sm"
                   />
                 ) : (
-                  <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shrink-0">
-                    <span className="text-white font-bold">{ownerName[0]}</span>
+                  <div
+                    className="w-14 h-14 rounded-full flex items-center justify-center shrink-0 shadow-sm"
+                    style={{ backgroundColor: C.darkGreen }}
+                  >
+                    <span className="text-white text-lg font-extrabold">
+                      {ownerName[0]?.toUpperCase()}
+                    </span>
                   </div>
                 )}
+
                 <div>
-                  <p className="font-semibold text-primary text-sm">
+                  <h3 className="font-extrabold text-sm text-[#012D1D] leading-tight">
                     {ownerName}
-                  </p>
+                  </h3>
                   {listing.owner?.createdAt && (
-                    <p className="text-xs text-text-secondary">
-                      Member since{" "}
-                      {new Date(listing.owner.createdAt).getFullYear()}
-                    </p>
+                    <span className="text-[10px] text-gray-400 font-light block mt-1">
+                      Member since {new Date(listing.owner.createdAt).getFullYear()}
+                    </span>
                   )}
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+
+              {/* Owner Stats */}
+              <div className="grid grid-cols-2 gap-3 pt-2">
                 {[
                   {
                     label: "Listings",
@@ -831,13 +946,15 @@ const ListingDetailPage = () => {
                 ].map(({ label, value }) => (
                   <div
                     key={label}
-                    className="text-center bg-background rounded-lg p-3"
+                    className="text-center bg-[#F5F2EB] rounded-2xl p-4 flex flex-col justify-between"
                   >
-                    <p className="font-bold text-primary">{value}</p>
-                    <p className="text-xs text-text-secondary">{label}</p>
+                    <span className="text-sm font-extrabold text-[#012D1D] leading-none">{value}</span>
+                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-2 block">{label}</span>
                   </div>
                 ))}
               </div>
+
+              {/* Report Owner */}
               <button
                 onClick={() =>
                   openReportModal({
@@ -846,7 +963,7 @@ const ListingDetailPage = () => {
                     label: ownerName,
                   })
                 }
-                className="w-full mt-4 flex items-center justify-center gap-2 text-sm font-medium text-error border border-error/30 py-2.5 rounded-btn hover:bg-error hover:text-white transition-all"
+                className="w-full flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-wider text-red-500 border border-red-100 py-3 rounded-xl hover:bg-red-50 transition-all cursor-pointer active:scale-95"
                 disabled={isAuthenticated && !canReportOwner}
                 title={
                   isAuthenticated && !canReportOwner
@@ -854,10 +971,12 @@ const ListingDetailPage = () => {
                     : "Report this owner"
                 }
               >
-                <RiFlagLine /> Report Owner
+                <RiFlagLine className="text-sm" /> Report Owner
               </button>
             </div>
+
           </div>
+
         </div>
       </div>
 

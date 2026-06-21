@@ -53,6 +53,7 @@ const EditListing = () => {
           city: l.city || "",
           address: l.address || "",
           area: l.area || "",
+          nearbyUniversity: l.nearbyUniversity || "",
           roomType: l.roomType || "",
           genderPreference: l.genderPreference || "any",
           availableFrom: l.availableFrom ? l.availableFrom.split("T")[0] : "",
@@ -147,6 +148,7 @@ const EditListing = () => {
         "city",
         "address",
         "area",
+        "nearbyUniversity",
         "roomType",
         "genderPreference",
         "availableFrom",
@@ -432,6 +434,19 @@ const EditListing = () => {
                 className={`input ${errors.address ? "input-error" : ""}`}
               />
               {errors.address && <p className="error-msg">{errors.address}</p>}
+            </div>
+            <div>
+              <label className="label">Nearby University</label>
+              <input
+                name="nearbyUniversity"
+                value={form.nearbyUniversity}
+                onChange={handleChange}
+                placeholder="e.g. FAST NUCES, UET Lahore"
+                className="input"
+              />
+              <p className="text-xs text-text-secondary mt-1">
+                Optional — helps students find accommodation near their campus.
+              </p>
             </div>
           </div>
 

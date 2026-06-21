@@ -9,21 +9,27 @@ import {
   RiTimeLine,
   RiHome4Line,
   RiCloseCircleLine,
+  RiMapPin2Line,
 } from "react-icons/ri";
 
 document.title = "My Booking Requests — RoomBridge";
 
-const BADGE = {
-  pending: "bg-warning/10 text-warning border-warning/20",
-  accepted: "bg-success/10 text-success border-success/20",
-  rejected: "bg-error/10 text-error border-error/20",
-  cancelled: "bg-border text-text-secondary border-border",
+/* ── Design tokens ──────────────────────────────────────────── */
+const DK  = "#012D1D";
+const BTN = "#8E4E14";
+const ACC = "#FFAB69";
+
+const STATUS_COLOR = {
+  pending:   { bg: "#FEF3C7", text: "#92400E" },
+  accepted:  { bg: "#D1FAE5", text: "#065F46" },
+  rejected:  { bg: "#FEE2E2", text: "#991B1B" },
+  cancelled: { bg: "#F3F4F6", text: "#6B7280" },
 };
 
 const MyRequests = () => {
-  const [bookings, setBookings] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("all");
+  const [bookings, setBookings]   = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [filter, setFilter]       = useState("all");
   const [cancelling, setCancelling] = useState(null);
 
   const loadBookings = async (showLoader = true) => {
@@ -31,25 +37,18 @@ const MyRequests = () => {
     try {
       const res = await bookingService.getMyBookings();
       setBookings(
-        Array.isArray(res.bookings)
-          ? res.bookings
-          : Array.isArray(res.data)
-            ? res.data
-            : [],
+        Array.isArray(res.bookings) ? res.bookings
+        : Array.isArray(res.data)   ? res.data : [],
       );
     } catch (err) {
       console.error(err);
-      if (showLoader) {
-        toast.error("Failed to load booking requests.");
-      }
+      if (showLoader) toast.error("Failed to load booking requests.");
     } finally {
       if (showLoader) setLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadBookings();
-  }, []);
+  useEffect(() => { loadBookings(); }, []);
 
   useEffect(() => {
     if (filter !== "all" && bookings.length > 0) {
@@ -59,17 +58,13 @@ const MyRequests = () => {
   }, [bookings, filter]);
 
   useEffect(() => {
-    // Keep data fresh when returning to this tab/page.
     const onFocus = () => loadBookings(false);
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
   }, []);
 
   const handleCancel = async (id) => {
-    if (!id) {
-      toast.error("Invalid booking — please refresh the page.");
-      return;
-    }
+    if (!id) { toast.error("Invalid booking — please refresh the page."); return; }
     if (!window.confirm("Cancel and remove this booking request?")) return;
     try {
       setCancelling(id);
@@ -77,15 +72,14 @@ const MyRequests = () => {
       await loadBookings(false);
       toast.success("Booking request removed.");
     } catch (err) {
-      /* err.message undefined on axios errors */
       toast.error(err.response?.data?.message || "Failed to cancel booking.");
     } finally {
       setCancelling(null);
     }
   };
 
-  const filtered =
-    filter === "all" ? bookings : bookings.filter((b) => b.status === filter);
+  const FILTERS = ["all", "pending", "accepted", "rejected", "cancelled"];
+  const filtered = filter === "all" ? bookings : bookings.filter((b) => b.status === filter);
 
   return (
     <RoleDashboardLayout
@@ -94,136 +88,147 @@ const MyRequests = () => {
       subtitle={`${bookings.length} total request${bookings.length !== 1 ? "s" : ""}`}
     >
       <div className="max-w-3xl mx-auto">
+
+        {/* Filter tabs */}
         <div className="flex gap-2 mb-6 flex-wrap">
-          {["all", "pending", "accepted", "rejected", "cancelled"].map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium capitalize transition-all
-                                ${
-                                  filter === f
-                                    ? "bg-primary text-white shadow-card"
-                                    : "bg-white border border-border text-text-secondary hover:text-primary"
-                                }`}
-            >
-              {f}
-              {f !== "all" && (
-                <span className="ml-1 text-xs opacity-70">
-                  ({bookings.filter((b) => b.status === f).length})
-                </span>
-              )}
-            </button>
-          ))}
+          {FILTERS.map((f) => {
+            const isActive = filter === f;
+            return (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className="px-4 py-1.5 rounded-full text-xs font-bold capitalize transition-all border"
+                style={{
+                  backgroundColor: isActive ? DK : "#FFFFFF",
+                  color:           isActive ? "#FFFFFF" : "#6B7280",
+                  borderColor:     isActive ? DK : "#E8E2D9",
+                }}
+              >
+                {f}
+                {f !== "all" && (
+                  <span className="ml-1 opacity-60">
+                    ({bookings.filter((b) => b.status === f).length})
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-20">
-            <RiLoader4Line className="animate-spin text-4xl text-primary" />
+          <div className="flex justify-center py-24">
+            <RiLoader4Line className="animate-spin text-4xl" style={{ color: DK }} />
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-card border border-border shadow-card">
-            <RiCalendarLine className="text-5xl text-border mx-auto mb-4" />
-            <p className="text-primary font-semibold text-lg mb-1">
-              No requests found
-            </p>
-            <p className="text-text-secondary text-sm mb-5">
+          <div
+            className="text-center py-20 bg-white rounded-2xl border shadow-sm"
+            style={{ borderColor: "#E8E2D9" }}
+          >
+            <RiCalendarLine className="text-5xl mx-auto mb-4 text-gray-200" />
+            <p className="font-bold text-base mb-1" style={{ color: DK }}>No requests found</p>
+            <p className="text-gray-400 text-sm mb-6">
               {filter === "all"
                 ? "You haven't made any booking requests yet."
                 : `No ${filter} requests.`}
             </p>
             <Link
-              to="/listings"
-              className="btn-primary inline-flex items-center gap-2"
+              to="/explore"
+              className="inline-flex items-center gap-2 text-white text-sm font-bold px-5 py-2.5 rounded-xl"
+              style={{ backgroundColor: BTN }}
             >
               <RiHome4Line /> Browse Rooms
             </Link>
           </div>
         ) : (
-          <div className="space-y-4">
-            {filtered.map((b) => (
-              <div
-                key={b._id}
-                className="bg-white rounded-card border border-border shadow-card p-5"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <Link
-                      to={`/listings/${b.listing?._id}`}
-                      className="font-semibold text-primary hover:text-secondary transition-colors line-clamp-1"
-                    >
-                      {b.listing?.title || "Listing"}
-                    </Link>
-                    <div className="flex flex-wrap gap-3 mt-1.5 text-xs text-text-secondary">
-                      {b.listing?.city && (
-                        <span className="flex items-center gap-1">
-                          <RiHome4Line className="text-secondary" />
-                          {b.listing.city}
-                        </span>
-                      )}
-                      {b.moveInDate && (
-                        <span className="flex items-center gap-1">
-                          <RiTimeLine className="text-secondary" />
-                          Move-in: {new Date(b.moveInDate).toLocaleDateString()}
-                        </span>
-                      )}
-                      <span className="flex items-center gap-1">
-                        <RiCalendarLine className="text-secondary" />
-                        {new Date(b.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                    {/*
-                      Was literally: "{b.message}" — curly braces inside
-                      the string were rendered as text. Now properly wrapped in JSX.
-                    */}
-                    {b.message && (
-                      <p
-                        className="mt-2 text-sm text-text-secondary italic bg-background
-                                    rounded-input p-2 border border-border line-clamp-2"
+          <div className="space-y-3">
+            {filtered.map((b) => {
+              const sc = STATUS_COLOR[b.status] || STATUS_COLOR.cancelled;
+              return (
+                <div
+                  key={b._id}
+                  className="bg-white rounded-2xl border shadow-sm p-5"
+                  style={{ borderColor: "#E8E2D9" }}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <Link
+                        to={`/explore/${b.listing?._id}`}
+                        className="font-bold text-sm line-clamp-1 hover:opacity-80 transition-opacity"
+                        style={{ color: DK }}
                       >
-                        "{b.message}"
-                      </p>
-                    )}
-                    {b.ownerNote && (
-                      <div
-                        className={`mt-2 text-sm p-2 rounded-input border
-                                       ${
-                                         b.status === "accepted"
-                                           ? "bg-success/5 border-success/20 text-success"
-                                           : "bg-error/5 border-error/20 text-error"
-                                       }`}
-                      >
-                        <span className="font-medium">Owner note:</span>{" "}
-                        {b.ownerNote}
+                        {b.listing?.title || "Listing"}
+                      </Link>
+                      <div className="flex flex-wrap gap-3 mt-1.5 text-xs text-gray-400">
+                        {b.listing?.city && (
+                          <span className="flex items-center gap-1">
+                            <RiMapPin2Line style={{ color: ACC }} /> {b.listing.city}
+                          </span>
+                        )}
+                        {b.moveInDate && (
+                          <span className="flex items-center gap-1">
+                            <RiTimeLine style={{ color: ACC }} />
+                            Move-in: {new Date(b.moveInDate).toLocaleDateString()}
+                          </span>
+                        )}
+                        <span className="flex items-center gap-1">
+                          <RiCalendarLine style={{ color: ACC }} />
+                          {new Date(b.createdAt).toLocaleDateString()}
+                        </span>
                       </div>
-                    )}
-                  </div>
-                  <span
-                    className={`text-xs font-medium px-2.5 py-1 rounded-full border shrink-0 capitalize
-                                    ${BADGE[b.status] || ""}`}
-                  >
-                    {b.status}
-                  </span>
-                </div>
 
-                {b.status === "pending" && (
-                  <div className="mt-4 pt-4 border-t border-border flex justify-end">
-                    <button
-                      onClick={() => handleCancel(b._id)}
-                      disabled={cancelling === b._id}
-                      className="flex items-center gap-1.5 text-sm text-error border border-error/30
-                                       px-3 py-1.5 rounded-btn hover:bg-error/5 disabled:opacity-60 transition-colors"
-                    >
-                      {cancelling === b._id ? (
-                        <RiLoader4Line className="animate-spin" />
-                      ) : (
-                        <RiCloseCircleLine />
+                      {b.message && (
+                        <p
+                          className="mt-2 text-xs text-gray-500 italic rounded-xl px-3 py-2 border line-clamp-2"
+                          style={{ backgroundColor: "#F7F4EF", borderColor: "#E8E2D9" }}
+                        >
+                          "{b.message}"
+                        </p>
                       )}
-                      Cancel Request
-                    </button>
+
+                      {b.ownerNote && (
+                        <div
+                          className="mt-2 text-xs p-2.5 rounded-xl border font-medium"
+                          style={
+                            b.status === "accepted"
+                              ? { backgroundColor: "#D1FAE5", borderColor: "#A7F3D0", color: "#065F46" }
+                              : { backgroundColor: "#FEE2E2", borderColor: "#FECACA", color: "#991B1B" }
+                          }
+                        >
+                          <span className="font-bold">Owner note: </span>
+                          {b.ownerNote}
+                        </div>
+                      )}
+                    </div>
+
+                    <span
+                      className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full capitalize shrink-0"
+                      style={{ backgroundColor: sc.bg, color: sc.text }}
+                    >
+                      {b.status}
+                    </span>
                   </div>
-                )}
-              </div>
-            ))}
+
+                  {b.status === "pending" && (
+                    <div className="mt-4 pt-4 border-t flex justify-end" style={{ borderColor: "#F3EFE9" }}>
+                      <button
+                        onClick={() => handleCancel(b._id)}
+                        disabled={cancelling === b._id}
+                        className="flex items-center gap-1.5 text-xs font-semibold text-red-500 border
+                                   px-3 py-1.5 rounded-xl hover:bg-red-50 disabled:opacity-60 transition-all"
+                        style={{ borderColor: "#FECACA" }}
+                      >
+                        {cancelling === b._id ? (
+                          <RiLoader4Line className="animate-spin" />
+                        ) : (
+                          <RiCloseCircleLine />
+                        )}
+                        Cancel Request
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

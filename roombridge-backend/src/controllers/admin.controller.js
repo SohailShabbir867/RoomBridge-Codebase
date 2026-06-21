@@ -5,13 +5,19 @@ const Message = require("../models/Message.model");
 const Report = require("../models/Report.model");
 const ContactMessage = require("../models/ContactMessage.model");
 const Preference = require("../models/Preference.model");
+const { statsCache } = require("../utils/cache");
 const { deleteFromCloudinary } = require("../config/cloudinary");
 const {
   successResponse,
   errorResponse,
   paginatedResponse,
 } = require("../utils/apiResponse");
-const { sendEmail } = require("../utils/sendEmail");
+const {
+  sendEmail,
+  adminNotificationEmail,
+  maintenanceEmail,
+  errorAlertEmail,
+} = require("../utils/sendEmail");
 
 /* ── Fire-and-forget email helper ────────────────────────── */
 const sendEmailSafe = (opts, label = "admin email") =>
@@ -58,6 +64,11 @@ const parseOptionalBoolean = (value) => {
 ══════════════════════════════════════════════════════════ */
 const getDashboardStats = async (req, res, next) => {
   try {
+    const cached = statsCache.get("admin:stats");
+    if (cached) {
+      return successResponse(res, 200, "Dashboard stats retrieved.", cached);
+    }
+
     const now = new Date();
     const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
 
@@ -73,89 +84,104 @@ const getDashboardStats = async (req, res, next) => {
       });
     }
 
-    /* All counts fetched in ONE parallel Promise.all — no sequential awaits */
-    const [
-      totalUsers,
-      seekerCount,
-      ownerCount,
-      adminCount,
-      totalListings,
-      activeListings,
-      pendingListings,
-      rejectedListings,
-      inactiveListings,
-      totalBookings,
-      pendingBookings,
-      acceptedBookings,
-      rejectedBookings,
-      cancelledBookings,
-      totalMessages,
-      totalContactMessages,
-      newContactMessages,
-      totalReports,
-      pendingReports,
-      newUsersLast7,
-      newListingsLast7,
-      monthlyUserGrowth,
-      monthlyListingGrowth,
-    ] = await Promise.all([
-      /* Users */
-      User.countDocuments(),
-      User.countDocuments({ role: "seeker" }),
-      User.countDocuments({ role: "owner" }),
-      User.countDocuments({ role: "admin" }),
-      /* Listings */
-      Listing.countDocuments(),
-      Listing.countDocuments({ status: "active" }),
-      Listing.countDocuments({ status: "pending" }),
-      Listing.countDocuments({ status: "rejected" }),
-      Listing.countDocuments({ status: "inactive" }),
-      /* Bookings */
-      Booking.countDocuments(),
-      Booking.countDocuments({ status: "pending" }),
-      Booking.countDocuments({ status: "accepted" }),
-      Booking.countDocuments({ status: "rejected" }),
-      Booking.countDocuments({ status: "cancelled" }),
-      /* Messages */
-      Message.countDocuments(),
-      /* Contact messages */
-      ContactMessage.countDocuments(),
-      ContactMessage.countDocuments({ status: "new" }),
-      /* Reports */
-      Report.countDocuments(),
-      Report.countDocuments({ status: "pending" }),
-      /* Recent activity */
-      User.countDocuments({ createdAt: { $gte: sevenDaysAgo } }),
-      Listing.countDocuments({ createdAt: { $gte: sevenDaysAgo } }),
-      /* Monthly growth aggregations */
+    const [userResult, listingResult, bookingResult, reportsResult, contactResult, totalMessages] = await Promise.all([
+      /* Users Facet Aggregation */
       User.aggregate([
-        { $match: { createdAt: { $gte: months[0].start } } },
         {
-          $group: {
-            _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
-            count: { $sum: 1 },
-          },
-        },
-        { $sort: { _id: 1 } },
+          $facet: {
+            total: [ { $count: "count" } ],
+            seekers: [ { $match: { role: "seeker" } }, { $count: "count" } ],
+            owners: [ { $match: { role: "owner" } }, { $count: "count" } ],
+            admins: [ { $match: { role: "admin" } }, { $count: "count" } ],
+            recent: [ { $match: { createdAt: { $gte: sevenDaysAgo } } }, { $count: "count" } ],
+            growth: [
+              { $match: { createdAt: { $gte: months[0].start } } },
+              {
+                $group: {
+                  _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
+                  count: { $sum: 1 },
+                },
+              },
+              { $sort: { _id: 1 } }
+            ]
+          }
+        }
       ]),
+
+      /* Listings Facet Aggregation */
       Listing.aggregate([
-        { $match: { createdAt: { $gte: months[0].start } } },
         {
-          $group: {
-            _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
-            count: { $sum: 1 },
-          },
-        },
-        { $sort: { _id: 1 } },
+          $facet: {
+            total: [ { $count: "count" } ],
+            active: [ { $match: { status: "active" } }, { $count: "count" } ],
+            pending: [ { $match: { status: "pending" } }, { $count: "count" } ],
+            rejected: [ { $match: { status: "rejected" } }, { $count: "count" } ],
+            inactive: [ { $match: { status: "inactive" } }, { $count: "count" } ],
+            recent: [ { $match: { createdAt: { $gte: sevenDaysAgo } } }, { $count: "count" } ],
+            growth: [
+              { $match: { createdAt: { $gte: months[0].start } } },
+              {
+                $group: {
+                  _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
+                  count: { $sum: 1 },
+                },
+              },
+              { $sort: { _id: 1 } }
+            ]
+          }
+        }
       ]),
+
+      /* Bookings Facet Aggregation */
+      Booking.aggregate([
+        {
+          $facet: {
+            total: [ { $count: "count" } ],
+            pending: [ { $match: { status: "pending" } }, { $count: "count" } ],
+            accepted: [ { $match: { status: "accepted" } }, { $count: "count" } ],
+            rejected: [ { $match: { status: "rejected" } }, { $count: "count" } ],
+            cancelled: [ { $match: { status: "cancelled" } }, { $count: "count" } ]
+          }
+        }
+      ]),
+
+      /* Reports Facet Aggregation */
+      Report.aggregate([
+        {
+          $facet: {
+            total: [ { $count: "count" } ],
+            pending: [ { $match: { status: "pending" } }, { $count: "count" } ]
+          }
+        }
+      ]),
+
+      /* Contact Messages Facet Aggregation */
+      ContactMessage.aggregate([
+        {
+          $facet: {
+            total: [ { $count: "count" } ],
+            new: [ { $match: { status: "new" } }, { $count: "count" } ]
+          }
+        }
+      ]),
+
+      /* Messages countDocuments */
+      Message.countDocuments()
     ]);
+
+    // Helpers to safely parse count results
+    const getCount = (resArray, key) => resArray?.[0]?.[key]?.[0]?.count || 0;
+    const getGrowth = (resArray, key) => resArray?.[0]?.[key] || [];
+
+    const monthlyUserGrowth = getGrowth(userResult, "growth");
+    const monthlyListingGrowth = getGrowth(listingResult, "growth");
 
     /* Map aggregation results to chart-friendly arrays */
     const userGrowthMap = Object.fromEntries(
-      monthlyUserGrowth.map((m) => [m._id, m.count]),
+      monthlyUserGrowth.map((m) => [m._id, m.count])
     );
     const listingGrowthMap = Object.fromEntries(
-      monthlyListingGrowth.map((m) => [m._id, m.count]),
+      monthlyListingGrowth.map((m) => [m._id, m.count])
     );
 
     const monthlyUsers = months.map((m) => ({
@@ -167,36 +193,46 @@ const getDashboardStats = async (req, res, next) => {
       count: listingGrowthMap[m.key] || 0,
     }));
 
-    return successResponse(res, 200, "Dashboard stats retrieved.", {
+    const statsData = {
       users: {
-        total: totalUsers,
-        seekers: seekerCount,
-        owners: ownerCount,
-        admins: adminCount,
+        total: getCount(userResult, "total"),
+        seekers: getCount(userResult, "seekers"),
+        owners: getCount(userResult, "owners"),
+        admins: getCount(userResult, "admins"),
       },
       listings: {
-        total: totalListings,
-        active: activeListings,
-        pending: pendingListings,
-        rejected: rejectedListings,
-        inactive: inactiveListings,
+        total: getCount(listingResult, "total"),
+        active: getCount(listingResult, "active"),
+        pending: getCount(listingResult, "pending"),
+        rejected: getCount(listingResult, "rejected"),
+        inactive: getCount(listingResult, "inactive"),
       },
       bookings: {
-        total: totalBookings,
-        pending: pendingBookings,
-        accepted: acceptedBookings,
-        rejected: rejectedBookings,
-        cancelled: cancelledBookings,
+        total: getCount(bookingResult, "total"),
+        pending: getCount(bookingResult, "pending"),
+        accepted: getCount(bookingResult, "accepted"),
+        rejected: getCount(bookingResult, "rejected"),
+        cancelled: getCount(bookingResult, "cancelled"),
       },
       messages: { total: totalMessages },
       contactMessages: {
-        total: totalContactMessages,
-        new: newContactMessages,
+        total: getCount(contactResult, "total"),
+        new: getCount(contactResult, "new"),
       },
-      reports: { total: totalReports, pending: pendingReports },
-      recent: { newUsersLast7, newListingsLast7 },
+      reports: {
+        total: getCount(reportsResult, "total"),
+        pending: getCount(reportsResult, "pending"),
+      },
+      recent: {
+        newUsersLast7: getCount(userResult, "recent"),
+        newListingsLast7: getCount(listingResult, "recent"),
+      },
       growth: { monthlyUsers, monthlyListings },
-    });
+    };
+
+    statsCache.set("admin:stats", statsData);
+
+    return successResponse(res, 200, "Dashboard stats retrieved.", statsData);
   } catch (err) {
     next(err);
   }
@@ -853,6 +889,195 @@ const getAllBookings = async (req, res, next) => {
   }
 };
 
+/* ══════════════════════════════════════════════════════════
+   GET RECIPIENT COUNT
+   GET /api/v1/admin/notifications/recipient-count
+══════════════════════════════════════════════════════════ */
+const getRecipientCount = async (req, res, next) => {
+  try {
+    const { type } = req.query;
+    const VALID_TYPES = ["all", "users", "owners", "admins", "single"];
+    if (!VALID_TYPES.includes(type)) {
+      return errorResponse(res, 400, "Invalid recipient type.");
+    }
+
+    let count = 0;
+    if (type === "all") {
+      count = await User.countDocuments({ isActive: true, isBanned: false });
+    } else if (type === "users") {
+      count = await User.countDocuments({ role: "seeker", isActive: true, isBanned: false });
+    } else if (type === "owners") {
+      count = await User.countDocuments({ role: "owner", isActive: true, isBanned: false });
+    } else if (type === "admins") {
+      count = await User.countDocuments({ role: "admin", isActive: true });
+    } else if (type === "single") {
+      count = 1;
+    }
+
+    return successResponse(res, 200, "Recipient count retrieved.", { count });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/* ══════════════════════════════════════════════════════════
+   SEND GENERAL NOTIFICATION (email broadcast)
+   POST /api/v1/admin/notifications/send
+══════════════════════════════════════════════════════════ */
+const sendNotification = async (req, res, next) => {
+  try {
+    const { subject, message, recipientType, specificUserId } = req.body;
+
+    if (!subject?.trim() || !message?.trim()) {
+      return errorResponse(res, 400, "Subject and message are required.");
+    }
+
+    const VALID_TYPES = ["all", "users", "owners", "admins", "single"];
+    if (!VALID_TYPES.includes(recipientType)) {
+      return errorResponse(res, 400, "Invalid recipientType.");
+    }
+
+    let recipients = [];
+
+    if (recipientType === "single") {
+      if (!specificUserId) return errorResponse(res, 400, "Specify a userId for single recipient.");
+      const u = await User.findById(specificUserId).select("name email").lean();
+      if (!u) return errorResponse(res, 404, "Target user not found.");
+      recipients = [u];
+    } else {
+      const filter = { isActive: true, isBanned: false };
+      if (recipientType === "users")   filter.role = "seeker";
+      if (recipientType === "owners")  filter.role = "owner";
+      if (recipientType === "admins") { delete filter.isBanned; filter.role = "admin"; }
+      recipients = await User.find(filter).select("name email").lean();
+    }
+
+    if (recipients.length === 0) {
+      return successResponse(res, 200, "No recipients found.", { sent: 0, failed: 0 });
+    }
+
+    /* Send emails concurrently (non-fatal — collect results) */
+    const results = await Promise.allSettled(
+      recipients.map((u) =>
+        sendEmail({
+          to: u.email,
+          subject: subject.trim(),
+          html: adminNotificationEmail(u.name, subject.trim(), message.trim()),
+        }),
+      ),
+    );
+
+    const sent   = results.filter((r) => r.status === "fulfilled").length;
+    const failed = results.filter((r) => r.status === "rejected").length;
+
+    console.log(`[Admin Notification] Sent: ${sent}, Failed: ${failed}`);
+
+    return successResponse(res, 200, `Notification sent to ${sent} recipient(s).`, {
+      sent, failed, total: recipients.length,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/* ══════════════════════════════════════════════════════════
+   SEND MAINTENANCE NOTIFICATION
+   POST /api/v1/admin/notifications/maintenance
+══════════════════════════════════════════════════════════ */
+const sendMaintenanceNotification = async (req, res, next) => {
+  try {
+    const { startTime, endTime, reason, affectedServices } = req.body;
+
+    if (!startTime || !reason?.trim()) {
+      return errorResponse(res, 400, "startTime and reason are required.");
+    }
+
+    /* Format date nicely */
+    const fmtDate = (d) => {
+      if (!d) return null;
+      const dt = new Date(d);
+      return isNaN(dt.getTime()) ? d : dt.toLocaleString("en-PK", { dateStyle: "medium", timeStyle: "short" });
+    };
+
+    const payload = {
+      startTime: fmtDate(startTime),
+      endTime:   fmtDate(endTime),
+      reason:    reason.trim(),
+      affectedServices: affectedServices?.trim() || "",
+    };
+
+    /* Notify ALL active non-banned users */
+    const recipients = await User.find({ isActive: true, isBanned: false }).select("name email").lean();
+
+    const results = await Promise.allSettled(
+      recipients.map((u) =>
+        sendEmail({
+          to: u.email,
+          subject: "⚠️ RoomBridge — Scheduled Maintenance Notice",
+          html: maintenanceEmail(u.name, payload),
+        }),
+      ),
+    );
+
+    const sent   = results.filter((r) => r.status === "fulfilled").length;
+    const failed = results.filter((r) => r.status === "rejected").length;
+
+    return successResponse(res, 200, `Maintenance notice sent to ${sent} user(s).`, {
+      sent, failed, total: recipients.length,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/* ══════════════════════════════════════════════════════════
+   SEND ERROR ALERT (admins only)
+   POST /api/v1/admin/notifications/error-alert
+══════════════════════════════════════════════════════════ */
+const sendErrorAlert = async (req, res, next) => {
+  try {
+    const { errorType, description, severity = "medium", affectedFeatures } = req.body;
+
+    if (!errorType?.trim() || !description?.trim()) {
+      return errorResponse(res, 400, "errorType and description are required.");
+    }
+
+    const VALID_SEVERITIES = ["low", "medium", "high", "critical"];
+    if (!VALID_SEVERITIES.includes(severity)) {
+      return errorResponse(res, 400, "severity must be low, medium, high, or critical.");
+    }
+
+    const payload = {
+      errorType: errorType.trim(),
+      description: description.trim(),
+      severity,
+      affectedFeatures: affectedFeatures?.trim() || "",
+    };
+
+    /* Only notify admin accounts */
+    const admins = await User.find({ role: "admin", isActive: true }).select("name email").lean();
+
+    const results = await Promise.allSettled(
+      admins.map((u) =>
+        sendEmail({
+          to: u.email,
+          subject: `🚨 [${severity.toUpperCase()}] RoomBridge System Alert — ${errorType.trim()}`,
+          html: errorAlertEmail(u.name, payload),
+        }),
+      ),
+    );
+
+    const sent   = results.filter((r) => r.status === "fulfilled").length;
+    const failed = results.filter((r) => r.status === "rejected").length;
+
+    return successResponse(res, 200, `Error alert sent to ${sent} admin(s).`, {
+      sent, failed, total: admins.length,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getDashboardStats,
   getAllUsers,
@@ -868,4 +1093,8 @@ module.exports = {
   updateContactMessageStatus,
   deleteContactMessage,
   getAllBookings,
+  getRecipientCount,
+  sendNotification,
+  sendMaintenanceNotification,
+  sendErrorAlert,
 };

@@ -4,6 +4,7 @@ import listingReducer from "./slices/listingSlice";
 import bookingReducer from "./slices/bookingSlice";
 import chatReducer from "./slices/chatSlice";
 import adminReducer from "./slices/adminSlice";
+import communityReducer from "./slices/communitySlice";
 
 /*
   Root reducer factory.
@@ -33,6 +34,7 @@ const rootReducer = (state, action) => {
     booking: bookingReducer(state?.booking, action),
     chat: chatReducer(state?.chat, action),
     admin: adminReducer(state?.admin, action),
+    community: communityReducer(state?.community, action),
   };
 };
 

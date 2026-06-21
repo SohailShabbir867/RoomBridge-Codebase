@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from "react";
-import { Routes, Route, Navigate, Outlet, Link } from "react-router-dom";
+import { Routes, Route, Navigate, Outlet, Link, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 import Navbar from "../components/common/Navbar";
 import Footer from "../components/common/Footer";
@@ -12,10 +12,14 @@ const ListingsPage = lazy(() => import("../pages/public/ListingsPage"));
 const ListingDetailPage = lazy(
   () => import("../pages/public/ListingDetailPage"),
 );
-const AboutPage = lazy(() => import("../pages/public/AboutPage"));
-const ContactPage = lazy(() => import("../pages/public/ContactPage"));
+const AboutPage    = lazy(() => import("../pages/public/AboutPage"));
+const AboutUsPage  = lazy(() => import("../pages/public/AboutUsPage"));
+const CommunityPage = lazy(() => import("../pages/public/CommunityPage"));
+const CommunityRoomPage = lazy(() => import("../pages/public/CommunityRoomPage"));
+const ContactPage  = lazy(() => import("../pages/public/ContactPage"));
 const TermsPage = lazy(() => import("../pages/public/TermsPage"));
 const PrivacyPage = lazy(() => import("../pages/public/PrivacyPage"));
+const NotFoundPage = lazy(() => import("../pages/public/NotFoundPage"));
 
 // ── Auth Pages ────────────────────────────────────────────────────
 const LoginPage = lazy(() => import("../pages/auth/LoginPage"));
@@ -57,6 +61,8 @@ const AdminContactMessages = lazy(
   () => import("../pages/admin/AdminContactMessages"),
 );
 const AdminProfile = lazy(() => import("../pages/admin/AdminProfile"));
+const SendNotifications = lazy(() => import("../pages/admin/SendNotifications"));
+const ManageCommunities = lazy(() => import("../pages/admin/ManageCommunities"));
 
 /* ── Role → dashboard path mapping ────────────────────────────── */
 const DASHBOARD_PATH = {
@@ -106,23 +112,7 @@ const DashboardLayout = () => (
   </main>
 );
 
-/* ── 404 Page ───────────────────────────────────────────────────── */
-const NotFoundPage = () => (
-  <div className="min-h-screen flex flex-col items-center justify-center bg-background p-8">
-    <div className="text-7xl mb-6">🔍</div>
-    <h1 className="text-4xl font-bold text-primary mb-3">
-      404 — Page Not Found
-    </h1>
-    <p className="text-text-secondary mb-8 text-lg text-center max-w-md">
-      The page you're looking for doesn't exist or has been moved.
-    </p>
-    {/* was <a href="/"> which causes a full page reload.
-        Use React Router <Link> for SPA navigation. */}
-    <Link to="/" className="btn-primary">
-      ← Go Home
-    </Link>
-  </div>
-);
+
 
 /* ── AppRoutes ───────────────────────────────────────────────────── */
 const AppRoutes = () => {
@@ -132,10 +122,13 @@ const AppRoutes = () => {
         {/* ── Public Pages (Navbar + Footer) ── */}
         <Route element={<PublicLayout />}>
           <Route path="/" element={<HomePage />} />
-          <Route path="/listings" element={<ListingsPage />} />
-          <Route path="/listings/:id" element={<ListingDetailPage />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/explore" element={<ListingsPage />} />
+          <Route path="/explore/:id" element={<ListingDetailPage />} />
+          <Route path="/how-it-works" element={<AboutPage />} />
+          <Route path="/about"        element={<AboutUsPage />} />
+          <Route path="/community" element={<CommunityPage />} />
+          <Route path="/communities/:id" element={<CommunityRoomPage />} />
+          <Route path="/contact"   element={<ContactPage />} />
           <Route path="/terms-and-conditions" element={<TermsPage />} />
           <Route path="/privacy-policy" element={<PrivacyPage />} />
         </Route>
@@ -197,6 +190,8 @@ const AppRoutes = () => {
             <Route path="contact-messages" element={<AdminContactMessages />} />
             <Route path="reports" element={<Reports />} />
             <Route path="profile" element={<AdminProfile />} />
+            <Route path="notifications" element={<SendNotifications />} />
+            <Route path="communities" element={<ManageCommunities />} />
           </Route>
         </Route>
 

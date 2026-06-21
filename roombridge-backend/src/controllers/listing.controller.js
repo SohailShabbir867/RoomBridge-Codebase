@@ -10,6 +10,7 @@ const {
   errorResponse,
   paginatedResponse,
 } = require("../utils/apiResponse");
+const { listingsCache } = require("../utils/cache");
 
 /* Frontend uses plain amenities labels, while Listing model stores
    normalized feature objects. These maps keep both sides compatible. */
@@ -124,21 +125,31 @@ const getAllListings = async (req, res, next) => {
       sortBy = "newest",
     } = req.query;
 
-    /* ── Build dynamic filter ──────────────────────────── */
+    /* ── LRU cache (public, unauthenticated requests only) ───────
+       Only cache for guests — authenticated users get isSaved flag
+       which is personal, so we skip the cache for them.            */
+    const isGuest = !req.user;
+    const cacheKey = isGuest
+      ? `listings:${JSON.stringify(req.query)}`
+      : null;
+
+    if (cacheKey) {
+      const cached = listingsCache.get(cacheKey);
+      if (cached) {
+        return res.status(200).json(cached);
+      }
+    }
+
+    /* ── Build dynamic filter ────────────────────────────── */
     const filter = { status: "active" }; // ALWAYS restrict to active on public route
 
     if (city) filter.city = city;
     if (roomType) filter.roomType = roomType;
 
-    /* genderPreference filter — when a seeker passes their gender
-       ('male') they want listings that accept 'male' OR 'any'.
-       If the client passes genderPreference directly (e.g. 'any'), filter exactly.
-       If the client passes a seeker gender we map it to a $in query. */
     if (genderPreference) {
       if (genderPreference === "any") {
-        filter.genderPreference = "any"; // show only "any" listings
+        filter.genderPreference = "any";
       } else {
-        // Show listings that prefer this gender OR accept anyone
         filter.genderPreference = { $in: [genderPreference, "any"] };
       }
     }
@@ -147,19 +158,12 @@ const getAllListings = async (req, res, next) => {
       filter.furnished = furnished === "true" || furnished === true;
     }
 
-    /* Rent range */
     if (minRent || maxRent) {
       filter.rent = {};
       if (minRent) filter.rent.$gte = Number(minRent);
       if (maxRent) filter.rent.$lte = Number(maxRent);
     }
 
-    /* Text search — when $text is in the filter, sort MUST include
-       textScore to return results by relevance. Without it Mongoose throws
-       "text search requires a text index" only if the index doesn't exist,
-       but the results come back in arbitrary order.
-       When search is active: add textScore projection + sort by score DESC.
-       When search is not active: use the chosen sort map. */
     let sort, projection;
     if (search && search.trim()) {
       filter.$text = { $search: search.trim() };
@@ -167,23 +171,21 @@ const getAllListings = async (req, res, next) => {
       sort = { score: { $meta: "textScore" } };
     } else {
       const sortMap = {
-        newest: { createdAt: -1 },
-        oldest: { createdAt: 1 },
-        price_low: { rent: 1 },
-        price_high: { rent: -1 },
+        newest:      { createdAt: -1 },
+        oldest:      { createdAt: 1 },
+        price_low:   { rent: 1 },
+        price_high:  { rent: -1 },
         most_viewed: { views: -1 },
       };
       sort = sortMap[sortBy] || sortMap.newest;
     }
 
-    /* ── Pagination ─────────────────────────────────────── */
-    /* safeInt instead of Math.max(1, parseInt(...))
-       which returned NaN when the param was a non-numeric string */
-    const pageNum = safeInt(page, 1, 1);
+    /* ── Pagination ──────────────────────────────────── */
+    const pageNum  = safeInt(page, 1, 1);
     const limitNum = safeInt(limit, 12, 1, 50);
-    const skip = (pageNum - 1) * limitNum;
+    const skip     = (pageNum - 1) * limitNum;
 
-    /* ── Query ──────────────────────────────────────────── */
+    /* ── Query ───────────────────────────────────────── */
     const [listings, total] = await Promise.all([
       Listing.find(filter, projection)
         .sort(sort)
@@ -194,29 +196,44 @@ const getAllListings = async (req, res, next) => {
       Listing.countDocuments(filter),
     ]);
 
-    /* Add isSaved flag per listing when user is authenticated.
-       Previously getAllListings had no optionalAuth so req.user was always
-       undefined. Route now uses optionalAuth so req.user may be present. */
-    let enriched = listings.map(withAmenities);
+    /* ── O(1) isSaved check using Set of user's savedListings ── */
+    let enriched;
     if (req.user) {
-      const userId = req.user._id.toString();
+      const savedSet = new Set(
+        (req.user.savedListings || []).map((id) => id.toString())
+      );
       enriched = listings.map((l) => ({
         ...l,
         amenities: toAmenities(l.features),
-        isSaved:
-          Array.isArray(l.savedBy) &&
-          l.savedBy.some((id) => id.toString() === userId),
+        isSaved: savedSet.has(l._id.toString()),
+      }));
+    } else {
+      enriched = listings.map((l) => ({
+        ...l,
+        amenities: toAmenities(l.features),
+        isSaved: false,
       }));
     }
 
-    return paginatedResponse(
-      res,
-      "Listings retrieved successfully.",
-      enriched,
-      pageNum,
-      limitNum,
-      total,
-    );
+    const payload = {
+      success: true,
+      message: "Listings retrieved successfully.",
+      data: enriched,
+      pagination: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: limitNum > 0 ? Math.ceil(total / limitNum) : 0,
+        hasNextPage: pageNum < (limitNum > 0 ? Math.ceil(total / limitNum) : 0),
+        hasPrevPage: pageNum > 1,
+      },
+    };
+
+    if (cacheKey) {
+      listingsCache.set(cacheKey, payload);
+    }
+
+    return res.status(200).json(payload);
   } catch (err) {
     next(err);
   }
@@ -304,6 +321,7 @@ const createListing = async (req, res, next) => {
       city,
       address,
       area,
+      nearbyUniversity,
       roomType,
       genderPreference,
       availableFrom,
@@ -329,6 +347,7 @@ const createListing = async (req, res, next) => {
       city,
       address,
       area: area || "",
+      nearbyUniversity: nearbyUniversity?.trim() || "",
       roomType,
       genderPreference: genderPreference || "any",
       availableFrom,
@@ -343,7 +362,7 @@ const createListing = async (req, res, next) => {
       nearbyPlaces: Array.isArray(parsedNearby) ? parsedNearby : [],
       roommatePreferences: parsedRoommate,
       owner: req.user._id,
-      status: "pending", // always start as pending until admin approves
+      status: "pending",
     });
 
     return successResponse(
@@ -390,6 +409,7 @@ const updateListing = async (req, res, next) => {
       city,
       address,
       area,
+      nearbyUniversity,
       roomType,
       genderPreference,
       availableFrom,
@@ -461,6 +481,7 @@ const updateListing = async (req, res, next) => {
     if (city !== undefined) listing.city = city;
     if (address !== undefined) listing.address = address;
     if (area !== undefined) listing.area = area;
+    if (nearbyUniversity !== undefined) listing.nearbyUniversity = nearbyUniversity?.trim() || "";
     if (roomType !== undefined) listing.roomType = roomType;
     if (genderPreference !== undefined)
       listing.genderPreference = genderPreference;

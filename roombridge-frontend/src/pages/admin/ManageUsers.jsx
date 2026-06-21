@@ -10,127 +10,121 @@ import {
   RiShieldLine,
   RiDeleteBinLine,
   RiCheckLine,
-  RiCloseLine,
   RiRefreshLine,
-  RiFilterLine,
 } from "react-icons/ri";
 
 document.title = "Manage Users — RoomBridge";
 
-const ROLE_BADGE = {
-  seeker: "bg-primary/10 text-primary border-primary/20",
-  owner: "bg-secondary/10 text-secondary border-secondary/20",
-  admin: "bg-accent/20 text-accent border-accent/30",
+/* ── Design tokens ──────────────────────────────────────────── */
+const DK  = "#012D1D";
+const BTN = "#8E4E14";
+const ACC = "#FFAB69";
+const CR  = "#F7F4EF";
+
+/* ── Badge helpers ───────────────────────────────────────────── */
+const ROLE_COLORS = {
+  seeker: { bg: "#EFF6FF", text: "#1D4ED8" },
+  owner:  { bg: `${BTN}15`, text: BTN      },
+  admin:  { bg: `${DK}15`,  text: DK       },
+};
+const STATUS_COLORS = {
+  active:   { bg: "#D1FAE5", text: "#065F46" },
+  banned:   { bg: "#FEE2E2", text: "#991B1B" },
+  inactive: { bg: "#F3F4F6", text: "#6B7280" },
 };
 
-const STATUS_BADGE = {
-  active: "bg-success/10 text-success border-success/20",
-  banned: "bg-error/10 text-error border-error/20",
-  inactive: "bg-border text-text-secondary border-border",
-};
+const getUserStatus = (u) =>
+  u.isBanned ? "banned" : !u.isActive ? "inactive" : "active";
 
-const getUserStatus = (u) => {
-  if (u.isBanned) return "banned";
-  if (!u.isActive) return "inactive";
-  return "active";
-};
+/* ── Pill filter button ───────────────────────────────────────── */
+const FilterPill = ({ label, active, onClick }) => (
+  <button
+    onClick={onClick}
+    className="px-4 py-1.5 rounded-full text-xs font-bold capitalize transition-all border"
+    style={{
+      backgroundColor: active ? DK      : "#FFFFFF",
+      color:           active ? "#FFF"  : "#6B7280",
+      borderColor:     active ? DK      : "#E8E2D9",
+    }}
+  >
+    {label}
+  </button>
+);
+
+/* ── Action button ───────────────────────────────────────────── */
+const ActionBtn = ({ onClick, disabled, color, children }) => (
+  <button
+    onClick={onClick}
+    disabled={disabled}
+    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold
+               border transition-all disabled:opacity-60"
+    style={{ backgroundColor: `${color}15`, color, borderColor: `${color}30` }}
+    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = color; e.currentTarget.style.color = "#fff"; }}
+    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = `${color}15`; e.currentTarget.style.color = color; }}
+  >
+    {children}
+  </button>
+);
 
 const ManageUsers = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState(() => searchParams.get("search") || "");
+  const [users, setUsers]       = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [search, setSearch]     = useState(() => searchParams.get("search") || "");
   const [roleFilter, setRoleFilter] = useState(() => {
     const role = searchParams.get("role") || "";
     return ["", "seeker", "owner", "admin"].includes(role) ? role : "";
   });
-  const [page, setPage] = useState(() => {
+  const [page, setPage]         = useState(() => {
     const p = parseInt(searchParams.get("page") || "1", 10);
     return Number.isNaN(p) ? 1 : Math.max(1, p);
   });
-  const [total, setTotal] = useState(0);
-  const [updating, setUpdating] = useState(null); // userId being updated
+  const [total, setTotal]       = useState(0);
+  const [updating, setUpdating] = useState(null);
   const [deleting, setDeleting] = useState(null);
-  const [banModal, setBanModal] = useState(null); // user to ban { user, reason }
+  const [banModal, setBanModal] = useState(null);
   const [banReason, setBanReason] = useState("");
   const LIMIT = 20;
-
   const searchTimer = useRef(null);
 
-  const fetchUsers = useCallback(
-    async (opts = {}) => {
-      try {
-        setLoading(true);
-        const nextPage = opts.page ?? page;
-        const nextRole = opts.role ?? roleFilter;
-        const nextSearch = opts.search !== undefined ? opts.search : search;
+  const fetchUsers = useCallback(async (opts = {}) => {
+    try {
+      setLoading(true);
+      const nextPage   = opts.page   ?? page;
+      const nextRole   = opts.role   ?? roleFilter;
+      const nextSearch = opts.search !== undefined ? opts.search : search;
+      const nextParams = new URLSearchParams();
+      if (nextRole)   nextParams.set("role",   nextRole);
+      if (nextSearch) nextParams.set("search", nextSearch);
+      if (nextPage > 1) nextParams.set("page", String(nextPage));
+      setSearchParams(nextParams);
+      const res   = await adminService.getAllUsers({ page: nextPage, limit: LIMIT, role: nextRole, search: nextSearch });
+      const items = res.data ?? res.users ?? [];
+      setUsers(Array.isArray(items) ? items : []);
+      setTotal(res.pagination?.total ?? res.total ?? 0);
+      setPage(nextPage);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to load users.");
+    } finally {
+      setLoading(false);
+    }
+  }, [page, roleFilter, search, setSearchParams]);
 
-        const nextParams = new URLSearchParams();
-        if (nextRole) nextParams.set("role", nextRole);
-        if (nextSearch) nextParams.set("search", nextSearch);
-        if (nextPage > 1) nextParams.set("page", String(nextPage));
-        setSearchParams(nextParams);
+  useEffect(() => { fetchUsers(); }, []); // eslint-disable-line
 
-        const params = {
-          page: nextPage,
-          limit: LIMIT,
-          role: nextRole,
-          search: nextSearch,
-        };
-        const res = await adminService.getAllUsers(params);
-        /*
-        Backend returns paginatedResponse:
-        { success, message, data, pagination: { currentPage, totalPages, total } }
-        data may be res.data or res.users depending on paginatedResponse impl.
-      */
-        const items = res.data ?? res.users ?? [];
-        setUsers(Array.isArray(items) ? items : []);
-        setTotal(res.pagination?.total ?? res.total ?? 0);
-        setPage(nextPage);
-      } catch (err) {
-        toast.error(err.response?.data?.message || "Failed to load users.");
-      } finally {
-        setLoading(false);
-      }
-    },
-    [page, roleFilter, search, setSearchParams],
-  );
-
-  useEffect(() => {
-    fetchUsers();
-  }, []); // eslint-disable-line
-
-  /* Debounced search */
   const handleSearch = (val) => {
     setSearch(val);
     clearTimeout(searchTimer.current);
-    searchTimer.current = setTimeout(() => {
-      fetchUsers({ page: 1, search: val, role: roleFilter });
-    }, 400);
+    searchTimer.current = setTimeout(() => fetchUsers({ page: 1, search: val, role: roleFilter }), 400);
   };
 
-  const handleRoleFilter = (role) => {
-    setRoleFilter(role);
-    fetchUsers({ page: 1, role, search });
-  };
-
-  /* Ban */
   const handleBan = async () => {
     const u = banModal;
     if (!u) return;
     try {
       setUpdating(u._id);
-      await adminService.updateUserStatus(u._id, {
-        isBanned: true,
-        bannedReason: banReason || undefined,
-      });
-      setUsers((us) =>
-        us.map((x) =>
-          x._id === u._id
-            ? { ...x, isBanned: true, bannedReason: banReason }
-            : x,
-        ),
-      );
+      await adminService.updateUserStatus(u._id, { isBanned: true, bannedReason: banReason || undefined });
+      setUsers((us) => us.map((x) => x._id === u._id ? { ...x, isBanned: true, bannedReason: banReason } : x));
       toast.success(`${u.name} banned.`);
       setBanModal(null);
       setBanReason("");
@@ -141,17 +135,12 @@ const ManageUsers = () => {
     }
   };
 
-  /* Unban */
   const handleUnban = async (u) => {
     if (!window.confirm(`Unban ${u.name}?`)) return;
     try {
       setUpdating(u._id);
       await adminService.updateUserStatus(u._id, { isBanned: false });
-      setUsers((us) =>
-        us.map((x) =>
-          x._id === u._id ? { ...x, isBanned: false, bannedReason: "" } : x,
-        ),
-      );
+      setUsers((us) => us.map((x) => x._id === u._id ? { ...x, isBanned: false, bannedReason: "" } : x));
       toast.success(`${u.name} unbanned.`);
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to unban user.");
@@ -160,10 +149,8 @@ const ManageUsers = () => {
     }
   };
 
-  /* Delete */
   const handleDelete = async (u) => {
-    if (!window.confirm(`Permanently delete ${u.name}? This cannot be undone.`))
-      return;
+    if (!window.confirm(`Permanently delete ${u.name}? This cannot be undone.`)) return;
     try {
       setDeleting(u._id);
       await adminService.deleteUser(u._id);
@@ -187,7 +174,8 @@ const ManageUsers = () => {
       headerAction={
         <button
           onClick={() => fetchUsers()}
-          className="flex items-center gap-2 text-sm text-secondary border border-secondary/30 px-3 py-1.5 rounded-btn hover:bg-secondary hover:text-white transition-colors"
+          className="flex items-center gap-2 text-xs font-bold text-white px-4 py-2 rounded-xl hover:opacity-90 transition-all"
+          style={{ backgroundColor: BTN }}
         >
           <RiRefreshLine className={loading ? "animate-spin" : ""} /> Refresh
         </button>
@@ -197,29 +185,23 @@ const ManageUsers = () => {
         {/* Filters */}
         <div className="flex flex-wrap gap-3 mb-6">
           <div className="relative flex-1 min-w-48">
-            <RiSearchLine className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary pointer-events-none" />
+            <RiSearchLine className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
             <input
               type="text"
               placeholder="Search by name or email…"
               value={search}
               onChange={(e) => handleSearch(e.target.value)}
-              className="input pl-9 py-2 text-sm w-full"
+              className="w-full pl-9 pr-4 py-2.5 text-sm rounded-xl border outline-none transition-all focus:ring-2"
+              style={{ backgroundColor: CR, borderColor: "#E8E2D9" }}
             />
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             {["", "seeker", "owner", "admin"].map((r) => (
-              <button
-                key={r}
-                onClick={() => handleRoleFilter(r)}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium capitalize transition-all
-                                  ${
-                                    roleFilter === r
-                                      ? "bg-primary text-white shadow-card"
-                                      : "bg-white border border-border text-text-secondary hover:text-primary"
-                                  }`}
-              >
-                {r || "All"}
-              </button>
+              <FilterPill
+                key={r} label={r || "All"}
+                active={roleFilter === r}
+                onClick={() => { setRoleFilter(r); fetchUsers({ page: 1, role: r, search }); }}
+              />
             ))}
           </div>
         </div>
@@ -227,155 +209,93 @@ const ManageUsers = () => {
         {/* Table */}
         {loading && users.length === 0 ? (
           <div className="flex justify-center py-20">
-            <RiLoader4Line className="animate-spin text-4xl text-primary" />
+            <RiLoader4Line className="animate-spin text-4xl" style={{ color: DK }} />
           </div>
         ) : users.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-card border border-border shadow-card">
-            <RiUserLine className="text-5xl text-border mx-auto mb-4" />
-            <p className="text-primary font-semibold">No users found</p>
+          <div className="text-center py-20 bg-white rounded-2xl border shadow-sm" style={{ borderColor: "#E8E2D9" }}>
+            <RiUserLine className="text-5xl text-gray-200 mx-auto mb-4" />
+            <p className="font-bold" style={{ color: DK }}>No users found</p>
           </div>
         ) : (
-          <div className="bg-white rounded-card border border-border shadow-card overflow-hidden">
+          <div className="bg-white rounded-2xl border shadow-sm overflow-hidden" style={{ borderColor: "#E8E2D9" }}>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-border bg-background">
-                    <th className="text-left px-4 py-3 font-semibold text-text-secondary">
-                      User
-                    </th>
-                    <th className="text-left px-4 py-3 font-semibold text-text-secondary">
-                      Role
-                    </th>
-                    <th className="text-left px-4 py-3 font-semibold text-text-secondary">
-                      Status
-                    </th>
-                    <th className="text-left px-4 py-3 font-semibold text-text-secondary">
-                      Joined
-                    </th>
-                    <th className="text-right px-4 py-3 font-semibold text-text-secondary">
-                      Actions
-                    </th>
+                  <tr className="border-b" style={{ backgroundColor: CR, borderColor: "#E8E2D9" }}>
+                    {["User", "Role", "Status", "Joined", "Actions"].map((h, i) => (
+                      <th key={h}
+                        className={`px-4 py-3 text-[10px] font-black uppercase tracking-widest ${i === 4 ? "text-right" : "text-left"}`}
+                        style={{ color: `${DK}70` }}
+                      >
+                        {h}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border">
+                <tbody>
                   {users.map((u) => {
-                    const status = getUserStatus(u);
+                    const status     = getUserStatus(u);
                     const isUpdating = updating === u._id;
                     const isDeleting = deleting === u._id;
+                    const rc = ROLE_COLORS[u.role] || ROLE_COLORS.seeker;
+                    const sc = STATUS_COLORS[status] || STATUS_COLORS.inactive;
                     return (
-                      <tr
-                        key={u._id}
-                        className="hover:bg-background/50 transition-colors"
-                      >
+                      <tr key={u._id} className="border-b transition-colors hover:bg-[#F7F4EF]" style={{ borderColor: "#F3EFE9" }}>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-full bg-background flex items-center justify-center overflow-hidden shrink-0">
-                              {u.profilePhoto?.url ? (
-                                <img
-                                  src={u.profilePhoto.url}
-                                  alt={u.name}
-                                  className="w-9 h-9 rounded-full object-cover"
-                                />
-                              ) : (
-                                <span className="text-primary font-bold text-sm">
-                                  {u.name?.[0]?.toUpperCase()}
-                                </span>
-                              )}
+                            <div
+                              className="w-9 h-9 rounded-full flex items-center justify-center overflow-hidden shrink-0 font-bold text-sm"
+                              style={{ backgroundColor: `${DK}15`, color: DK }}
+                            >
+                              {u.profilePhoto?.url
+                                ? <img src={u.profilePhoto.url} alt={u.name} className="w-9 h-9 rounded-full object-cover" />
+                                : u.name?.[0]?.toUpperCase()}
                             </div>
                             <div className="min-w-0">
-                              <p className="font-semibold text-primary truncate">
-                                {u.name}
-                              </p>
-                              <p className="text-xs text-text-secondary truncate">
-                                {u.email}
-                              </p>
+                              <p className="font-bold truncate text-xs" style={{ color: DK }}>{u.name}</p>
+                              <p className="text-xs text-gray-400 truncate">{u.email}</p>
                             </div>
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <span
-                            className={`text-xs font-medium px-2.5 py-1 rounded-full border capitalize
-                                           ${ROLE_BADGE[u.role] || ""}`}
-                          >
+                          <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full capitalize"
+                            style={{ backgroundColor: rc.bg, color: rc.text }}>
                             {u.role}
                           </span>
                         </td>
                         <td className="px-4 py-3">
-                          <span
-                            className={`text-xs font-medium px-2.5 py-1 rounded-full border capitalize
-                                           ${STATUS_BADGE[status] || ""}`}
-                          >
+                          <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full capitalize"
+                            style={{ backgroundColor: sc.bg, color: sc.text }}>
                             {status}
                           </span>
                           {u.bannedReason && (
-                            <p
-                              className="text-[11px] text-error mt-0.5 max-w-45 truncate"
-                              title={u.bannedReason}
-                            >
+                            <p className="text-[10px] text-red-400 mt-0.5 max-w-40 truncate" title={u.bannedReason}>
                               {u.bannedReason}
                             </p>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-text-secondary text-xs">
+                        <td className="px-4 py-3 text-xs text-gray-400">
                           {new Date(u.createdAt).toLocaleDateString()}
                         </td>
                         <td className="px-4 py-3">
-                          <div className="flex items-center justify-end gap-2">
-                            {u.role !== "admin" && (
+                          <div className="flex items-center justify-end gap-1.5">
+                            {u.role !== "admin" ? (
                               <>
                                 {u.isBanned ? (
-                                  <button
-                                    onClick={() => handleUnban(u)}
-                                    disabled={isUpdating}
-                                    title="Unban user"
-                                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-btn text-xs
-                                               bg-success/10 text-success border border-success/20
-                                               hover:bg-success hover:text-white disabled:opacity-60 transition-colors"
-                                  >
-                                    {isUpdating ? (
-                                      <RiLoader4Line className="animate-spin" />
-                                    ) : (
-                                      <RiCheckLine />
-                                    )}
-                                    Unban
-                                  </button>
+                                  <ActionBtn onClick={() => handleUnban(u)} disabled={isUpdating} color="#16A34A">
+                                    {isUpdating ? <RiLoader4Line className="animate-spin" /> : <RiCheckLine />} Unban
+                                  </ActionBtn>
                                 ) : (
-                                  <button
-                                    onClick={() => setBanModal(u)}
-                                    disabled={isUpdating}
-                                    title="Ban user"
-                                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-btn text-xs
-                                               bg-warning/10 text-warning border border-warning/20
-                                               hover:bg-warning hover:text-white disabled:opacity-60 transition-colors"
-                                  >
-                                    {isUpdating ? (
-                                      <RiLoader4Line className="animate-spin" />
-                                    ) : (
-                                      <RiShieldLine />
-                                    )}
-                                    Ban
-                                  </button>
+                                  <ActionBtn onClick={() => setBanModal(u)} disabled={isUpdating} color="#D97706">
+                                    {isUpdating ? <RiLoader4Line className="animate-spin" /> : <RiShieldLine />} Ban
+                                  </ActionBtn>
                                 )}
-                                <button
-                                  onClick={() => handleDelete(u)}
-                                  disabled={isDeleting}
-                                  title="Delete user"
-                                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-btn text-xs
-                                             bg-error/10 text-error border border-error/20
-                                             hover:bg-error hover:text-white disabled:opacity-60 transition-colors"
-                                >
-                                  {isDeleting ? (
-                                    <RiLoader4Line className="animate-spin" />
-                                  ) : (
-                                    <RiDeleteBinLine />
-                                  )}
-                                </button>
+                                <ActionBtn onClick={() => handleDelete(u)} disabled={isDeleting} color="#DC2626">
+                                  {isDeleting ? <RiLoader4Line className="animate-spin" /> : <RiDeleteBinLine />}
+                                </ActionBtn>
                               </>
-                            )}
-                            {u.role === "admin" && (
-                              <span className="text-xs text-text-secondary italic">
-                                Admin — protected
-                              </span>
+                            ) : (
+                              <span className="text-xs text-gray-400 italic">Admin — protected</span>
                             )}
                           </div>
                         </td>
@@ -386,29 +306,18 @@ const ManageUsers = () => {
               </table>
             </div>
 
-            {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-background/50">
-                <p className="text-xs text-text-secondary">
-                  Page {page} of {totalPages} · {total} users
-                </p>
+              <div className="flex items-center justify-between px-4 py-3 border-t" style={{ borderColor: "#F3EFE9", backgroundColor: CR }}>
+                <p className="text-xs text-gray-400">Page {page} of {totalPages} · {total} users</p>
                 <div className="flex gap-2">
-                  <button
-                    onClick={() => fetchUsers({ page: page - 1 })}
-                    disabled={page <= 1 || loading}
-                    className="px-3 py-1.5 rounded-btn text-sm border border-border text-text-secondary
-                                     hover:text-primary disabled:opacity-40 transition-colors"
-                  >
-                    ← Prev
-                  </button>
-                  <button
-                    onClick={() => fetchUsers({ page: page + 1 })}
-                    disabled={page >= totalPages || loading}
-                    className="px-3 py-1.5 rounded-btn text-sm border border-border text-text-secondary
-                                     hover:text-primary disabled:opacity-40 transition-colors"
-                  >
-                    Next →
-                  </button>
+                  {[{ label: "← Prev", pg: page - 1, dis: page <= 1 }, { label: "Next →", pg: page + 1, dis: page >= totalPages }]
+                    .map(({ label, pg, dis }) => (
+                      <button key={label} onClick={() => fetchUsers({ page: pg })} disabled={dis || loading}
+                        className="px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all disabled:opacity-40"
+                        style={{ borderColor: "#E8E2D9", color: DK }}>
+                        {label}
+                      </button>
+                    ))}
                 </div>
               </div>
             )}
@@ -416,46 +325,36 @@ const ManageUsers = () => {
         )}
       </div>
 
-      {/* Ban reason modal */}
+      {/* Ban modal */}
       {banModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-card shadow-hover w-full max-w-md p-6">
-            <h3 className="font-bold text-primary text-lg mb-1">
-              Ban {banModal.name}?
-            </h3>
-            <p className="text-text-secondary text-sm mb-4">
-              This will prevent them from logging in. You can unban at any time.
-            </p>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+            <h3 className="font-extrabold text-lg mb-1" style={{ color: DK }}>Ban {banModal.name}?</h3>
+            <p className="text-gray-400 text-sm mb-4">This will prevent them from logging in. You can unban at any time.</p>
             <div className="mb-4">
-              <label className="label">Reason (optional)</label>
+              <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">Reason (optional)</label>
               <textarea
                 value={banReason}
                 onChange={(e) => setBanReason(e.target.value)}
                 placeholder="Violation of platform rules…"
                 rows={3}
-                className="input resize-none"
+                className="w-full rounded-xl py-3 px-4 text-sm border outline-none resize-none focus:ring-2"
+                style={{ backgroundColor: CR, borderColor: "#E8E2D9" }}
               />
             </div>
             <div className="flex gap-3">
               <button
-                onClick={() => {
-                  setBanModal(null);
-                  setBanReason("");
-                }}
-                className="btn-secondary flex-1 justify-center"
-              >
-                Cancel
-              </button>
+                onClick={() => { setBanModal(null); setBanReason(""); }}
+                className="flex-1 py-2.5 rounded-xl border text-sm font-semibold text-gray-500 hover:bg-gray-50 transition-all"
+                style={{ borderColor: "#E8E2D9" }}
+              >Cancel</button>
               <button
                 onClick={handleBan}
                 disabled={updating === banModal._id}
-                className="btn-primary flex-1 justify-center gap-2 bg-error hover:bg-error/90"
+                className="flex-1 py-2.5 rounded-xl text-white text-sm font-bold hover:opacity-90 disabled:opacity-60 transition-all"
+                style={{ backgroundColor: "#DC2626" }}
               >
-                {updating === banModal._id ? (
-                  <RiLoader4Line className="animate-spin" />
-                ) : (
-                  <RiShieldLine />
-                )}
+                {updating === banModal._id ? <RiLoader4Line className="animate-spin inline mr-1" /> : null}
                 Confirm Ban
               </button>
             </div>
