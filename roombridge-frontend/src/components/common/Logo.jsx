@@ -23,7 +23,7 @@ const Logo = ({
     <Link
       to="/"
       onClick={onClick}
-      className={`flex items-center gap-2 group.inline-flex select-none ${className}`}
+      className={`flex items-center gap-2 group inline-flex select-none ${className}`}
     >
       {/* Brand Icon */}
       <div className="relative flex items-center justify-center shrink-0 w-8 h-8 sm:w-9 sm:h-9 transition-transform duration-300 group-hover:scale-105">
@@ -33,28 +33,32 @@ const Logo = ({
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
         >
-          {/* House outline with a circular window cut out of the attic */}
+          {/* House Base (green) with Arch Cutout */}
           <path
-            fillRule="evenodd"
-            clipRule="evenodd"
-            d="M16 4L5 13.5V26a1 1 0 001 1h4a6 6 0 0112 0h4a1 1 0 001-1V13.5L16 4z M16 9a2 2 0 100 4 2 2 0 000-4z"
+            d="M6 14H26V27H20A4 4 0 0012 27H6Z"
             fill={isDarkBg ? accentBrown : darkGreen}
             className="transition-colors duration-200"
           />
-          {/* Bridge arch support */}
+          {/* House Roof (green) with slight overhang */}
           <path
-            d="M10 27a6 6 0 0112 0"
-            stroke={isDarkBg ? darkGreen : accentBrown}
-            strokeWidth="2"
-            fill="none"
+            d="M16 4L4 14H28Z"
+            fill={isDarkBg ? accentBrown : darkGreen}
             className="transition-colors duration-200"
           />
-          {/* Bridge horizontal deck line */}
-          <path
-            d="M3 18.5h26"
-            stroke={isDarkBg ? darkGreen : accentBrown}
-            strokeWidth="2.5"
-            strokeLinecap="round"
+          {/* Circular attic window (white) */}
+          <circle
+            cx="16"
+            cy="10"
+            r="1.5"
+            fill="#FFFFFF"
+          />
+          {/* Bridge Deck Line (brown flat horizontal bar) */}
+          <rect
+            x="3"
+            y="17"
+            width="26"
+            height="2"
+            fill={isDarkBg ? darkGreen : accentBrown}
             className="transition-colors duration-200"
           />
         </svg>

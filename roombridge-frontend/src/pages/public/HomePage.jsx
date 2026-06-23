@@ -41,6 +41,51 @@ const C = {
   white:       "#FFFFFF",
 };
 
+/* ── Typewriter phrases (hero headline) ──────────────────────── */
+const TYPEWRITER_LINES = [
+  "Find Your Perfect Room in Pakistan.",
+  "Safe, Verified Hostels Near You.",
+  "Your Home Away From Home.",
+  "Affordable Rooms. Trusted Owners.",
+];
+
+const useTypewriter = (lines, typeSpeed = 100, deleteSpeed = 55, pauseMs = 2200) => {
+  const [displayed, setDisplayed] = React.useState("");
+  const [lineIdx, setLineIdx]     = React.useState(0);
+  const [charIdx, setCharIdx]     = React.useState(0);
+  const [deleting, setDeleting]   = React.useState(false);
+
+  React.useEffect(() => {
+    const current = lines[lineIdx];
+    let timer;
+
+    if (!deleting && charIdx < current.length) {
+      // Still typing
+      timer = setTimeout(() => {
+        setDisplayed(current.slice(0, charIdx + 1));
+        setCharIdx((i) => i + 1);
+      }, typeSpeed);
+    } else if (!deleting && charIdx === current.length) {
+      // Finished typing — pause then start deleting
+      timer = setTimeout(() => setDeleting(true), pauseMs);
+    } else if (deleting && charIdx > 0) {
+      // Deleting
+      timer = setTimeout(() => {
+        setDisplayed(current.slice(0, charIdx - 1));
+        setCharIdx((i) => i - 1);
+      }, deleteSpeed);
+    } else if (deleting && charIdx === 0) {
+      // Move to next line
+      setDeleting(false);
+      setLineIdx((i) => (i + 1) % lines.length);
+    }
+
+    return () => clearTimeout(timer);
+  }, [charIdx, deleting, lineIdx, lines, typeSpeed, deleteSpeed, pauseMs]);
+
+  return displayed;
+};
+
 /* ── Static data ──────────────────────────────────────────────── */
 const STATS = [
   { value: "12,000+", label: "Rooms Listed" },
@@ -208,6 +253,28 @@ const FeaturedListingCard = ({ listing }) => {
   );
 };
 
+/* ── Typewriter Headline component ───────────────────────────── */
+const TypewriterHeadline = () => {
+  const text = useTypewriter(TYPEWRITER_LINES);
+  return (
+    <>
+      {/* Blink keyframe — injected once */}
+      <style>{`
+        @keyframes rb-blink { 0%,100%{opacity:1} 50%{opacity:0} }
+        .rb-cursor { display:inline-block; width:3px; animation: rb-blink 0.85s step-end infinite; margin-left:2px; vertical-align:baseline; }
+      `}</style>
+      <h1
+        className="text-4xl sm:text-5xl lg:text-[62px] font-black font-sans leading-[1.15] mb-6 min-h-[1.15em]"
+        style={{ color: "#FFAB69", fontFamily: "'Inter', sans-serif" }}
+        aria-live="polite"
+      >
+        {text}
+        <span className="rb-cursor" style={{ backgroundColor: "#FFAB69", borderRadius: "2px" }}>&nbsp;</span>
+      </h1>
+    </>
+  );
+};
+
 /* ════════════════════════════════════════════════════════════
    HOME PAGE
 ════════════════════════════════════════════════════════════ */
@@ -295,10 +362,8 @@ const HomePage = () => {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28 lg:py-36">
           <div className="max-w-4xl mx-auto text-center">
 
-            {/* Headline */}
-            <h1 className="text-4xl sm:text-5xl lg:text-[68px] font-black text-white font-serif leading-[1.1] mb-6">
-              Ghar se door,<br />magar mehfooz.
-            </h1>
+            {/* Headline — typewriter */}
+            <TypewriterHeadline />
             <p className="text-white/90 text-sm sm:text-base lg:text-lg mb-12 max-w-3xl mx-auto font-medium leading-relaxed">
               Find verified hostels near your university, anywhere in Pakistan. The curated sanctuary for your academic journey.
             </p>

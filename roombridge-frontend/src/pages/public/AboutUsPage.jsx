@@ -11,7 +11,9 @@ import {
   RiCheckboxCircleLine,
   RiStarFill,
 } from "react-icons/ri";
-
+// imporing image from the assets images folder 
+import sohailImage from "../../assets/images/sohail.jpg";
+import radifImage from "../../assets/images/radif.jpg";
 document.title = "About Us — RoomBridge";
 
 /* ─── Design tokens (match Figma) ──────────────────────────── */
@@ -354,14 +356,14 @@ const AboutUsPage = () => {
             <div className="text-center space-y-4">
               <div className="w-36 h-36 rounded-full overflow-hidden mx-auto shadow-md border-4 border-[#F7F4EF]">
                 <img
-                  src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=300&h=300&q=80"
-                  alt="Arslaan Khan"
+                  src={sohailImage}
+                  alt="Sohail Shabbir"
                   className="w-full h-full object-cover"
                 />
               </div>
               <div>
                 <h3 className="font-extrabold text-base" style={{ color: C.darkGreen }}>
-                  Arslaan Khan
+                 Sohail Shabbir
                 </h3>
                 <p className="text-xs font-semibold uppercase tracking-wider mt-0.5" style={{ color: C.btnBrown }}>
                   CEO & Co-founder
@@ -376,14 +378,14 @@ const AboutUsPage = () => {
             <div className="text-center space-y-4">
               <div className="w-36 h-36 rounded-full overflow-hidden mx-auto shadow-md border-4 border-[#F7F4EF]">
                 <img
-                  src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=300&h=300&q=80"
-                  alt="Fatima Noor"
+                  src={sohailImage}
+                  alt="Sohail Shabbir"
                   className="w-full h-full object-cover"
                 />
               </div>
               <div>
                 <h3 className="font-extrabold text-base" style={{ color: C.darkGreen }}>
-                  Fatima Noor
+                 Sohail Shabbir
                 </h3>
                 <p className="text-xs font-semibold uppercase tracking-wider mt-0.5" style={{ color: C.btnBrown }}>
                   CTO & Co-founder
@@ -398,14 +400,14 @@ const AboutUsPage = () => {
             <div className="text-center space-y-4">
               <div className="w-36 h-36 rounded-full overflow-hidden mx-auto shadow-md border-4 border-[#F7F4EF]">
                 <img
-                  src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&h=300&q=80"
-                  alt="Bilal Ahmed"
+                  src={radifImage}
+                  alt="Radif Fiaz"
                   className="w-full h-full object-cover"
                 />
               </div>
               <div>
                 <h3 className="font-extrabold text-base" style={{ color: C.darkGreen }}>
-                  Bilal Ahmed
+                  Radif Fiaz
                 </h3>
                 <p className="text-xs font-semibold uppercase tracking-wider mt-0.5" style={{ color: C.btnBrown }}>
                   Lead Designer

@@ -32,10 +32,10 @@ const C = {
 
 /* ─── Original content (unchanged) ─────────────────────────── */
 const TEAM = [
-  { name: "Arslaan Khan", role: "CEO & Co-founder",  bio: "Full-stack developer with 3+ years in MERN. Architect of RoomBridge." },
-  { name: "Fatima Noor",  role: "CTO",               bio: "Backend engineer specialising in Node.js, MongoDB, and scalable APIs." },
-  { name: "Bilal Ahmed",  role: "Lead Designer",     bio: "UI/UX designer focused on accessible, beautiful product experiences." },
-  { name: "Sana Malik",   role: "Product Manager",   bio: "Shapes strategy and roadmap. Passionate about Pakistan's housing market." },
+  { name: "Sohail Shabbir ", role: "CEO & Co-founder",  bio: "Full-stack developer with 3+ years in MERN. Architect of RoomBridge." },
+  { name: "Sohail Shabbir ",  role: "CTO",               bio: "Backend engineer specialising in Node.js, MongoDB, and scalable APIs." },
+  { name: "Radif Fiaz",  role: "Lead Designer",     bio: "UI/UX designer focused on accessible, beautiful product experiences." },
+  { name: "Sohail Shabbir",   role: "Product Manager",   bio: "Shapes strategy and roadmap. Passionate about Pakistan's housing market." },
 ];
 
 const VALUES = [
