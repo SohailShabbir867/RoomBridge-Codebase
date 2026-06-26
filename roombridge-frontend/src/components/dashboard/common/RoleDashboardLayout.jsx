@@ -32,7 +32,7 @@ const CR  = "#F7F4EF"; // cream background
 const NAV_BY_ROLE = {
   seeker: [
     { to: "/seeker/dashboard", icon: RiDashboardLine, label: "Dashboard" },
-    { to: "/listings", icon: RiSearchLine, label: "Browse Rooms" },
+    { to: "/explore", icon: RiSearchLine, label: "Browse Rooms" },
     { to: "/seeker/saved", icon: RiHeart3Line, label: "Saved Rooms" },
     { to: "/seeker/requests", icon: RiCalendarCheckLine, label: "My Requests" },
     { to: "/seeker/roommate-match", icon: RiGroupLine, label: "Roommate Match" },

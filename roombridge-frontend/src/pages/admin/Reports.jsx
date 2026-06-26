@@ -37,6 +37,15 @@ const REASON_LABELS = {
   scam: "Scam", harassment: "Harassment", other: "Other",
 };
 
+const REASON_COLORS = {
+  spam:         { bg: "#FEF3C7", text: "#D97706" }, // Amber
+  scam:         { bg: "#FEE2E2", text: "#DC2626" }, // Red
+  harassment:   { bg: "#F3E8FF", text: "#7C3AED" }, // Purple
+  fake:         { bg: "#E0F2FE", text: "#0284C7" }, // Blue
+  inappropriate:{ bg: "#FCE7F3", text: "#DB2777" }, // Pink
+  other:        { bg: "#F3F4F6", text: "#4B5563" }, // Gray
+};
+
 /* ── Avatar ─────────────────────────────────────────────────── */
 const Avatar = ({ user }) => {
   if (!user) return (
@@ -274,13 +283,13 @@ const Reports = () => {
           <div className="bg-white rounded-2xl border shadow-sm overflow-hidden" style={{ borderColor: "#E8E2D9" }}>
             {/* Table header */}
             <div
-              className="grid gap-0 border-b px-4 py-3"
+              className="grid gap-4 border-b px-4 py-3"
               style={{
-                gridTemplateColumns: "1fr 1fr 110px 100px 160px",
+                gridTemplateColumns: "1.2fr 1.5fr 110px 100px 280px",
                 backgroundColor: CR, borderColor: "#E8E2D9",
               }}
             >
-              {["Reporter", "Reported", "Reason", "Status", "Actions"].map((h, i) => (
+              {["Reporter", "Reported Item", "Reason", "Status", "Actions"].map((h, i) => (
                 <div key={h} className={`text-[10px] font-black uppercase tracking-widest ${i === 4 ? "text-right" : ""}`}
                   style={{ color: `${DK}70` }}>
                   {h}
@@ -292,13 +301,12 @@ const Reports = () => {
               {reports.map((r) => {
                 const isExpanded = expandedId === r._id;
                 const canAct     = r.status !== "resolved" && r.status !== "dismissed";
-                const targetLink = getTargetLink(r);
                 const sc         = STATUS_COLORS[r.status] || STATUS_COLORS.dismissed;
                 return (
                   <div key={r._id} className="transition-colors hover:bg-[#F7F4EF]">
                     {/* Main row */}
-                    <div className="grid items-center px-4 py-4 gap-0"
-                      style={{ gridTemplateColumns: "1fr 1fr 110px 100px 160px" }}>
+                    <div className="grid items-center px-4 py-4 gap-4"
+                      style={{ gridTemplateColumns: "1.2fr 1.5fr 110px 100px 280px" }}>
 
                       {/* Reporter */}
                       <div className="flex items-center gap-2 min-w-0">
@@ -315,17 +323,36 @@ const Reports = () => {
                           <>
                             <Avatar user={r.reportedUser} />
                             <div className="min-w-0">
-                              <p className="text-xs font-bold truncate" style={{ color: DK }}>{r.reportedUser.name}</p>
-                              <p className="text-[10px] text-gray-400">User</p>
+                              <p className="text-xs font-bold truncate hover:underline cursor-pointer" style={{ color: DK }}
+                                onClick={() => window.open(`/admin/users?search=${encodeURIComponent(r.reportedUser.email || r.reportedUser.name || "")}`, "_blank")}>
+                                {r.reportedUser.name}
+                              </p>
+                              <div className="mt-0.5">
+                                <span className="text-[8px] font-black text-gray-400 border border-gray-200 px-1 py-0.2 rounded bg-gray-50 uppercase tracking-wider">User</span>
+                              </div>
                             </div>
                           </>
                         ) : r.reportedListing ? (
                           <>
-                            <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: CR }}>
-                              <RiHome4Line className="text-sm" style={{ color: DK }} />
-                            </div>
+                            {r.reportedListing.photos?.[0]?.url ? (
+                              <img
+                                src={r.reportedListing.photos[0].url}
+                                alt={r.reportedListing.title}
+                                className="w-11 h-11 object-cover rounded-lg border shadow-sm shrink-0"
+                              />
+                            ) : (
+                              <div
+                                className="w-11 h-11 rounded-lg flex items-center justify-center shrink-0 border"
+                                style={{ backgroundColor: `${DK}0D`, borderColor: "#E8E2D9" }}
+                              >
+                                <RiHome4Line className="text-lg" style={{ color: DK }} />
+                              </div>
+                            )}
                             <div className="min-w-0">
-                              <p className="text-xs font-bold truncate" style={{ color: DK }}>{r.reportedListing.title}</p>
+                              <p className="text-xs font-bold truncate hover:underline cursor-pointer" style={{ color: DK }}
+                                onClick={() => window.open(`/explore/${r.reportedListing._id}`, "_blank")}>
+                                {r.reportedListing.title}
+                              </p>
                               <p className="text-[10px] text-gray-400">{r.reportedListing.city}</p>
                             </div>
                           </>
@@ -335,31 +362,63 @@ const Reports = () => {
                       </div>
 
                       {/* Reason */}
-                      <div className="text-xs font-semibold" style={{ color: DK }}>
-                        {REASON_LABELS[r.reason] || r.reason || "—"}
+                      <div>
+                        {r.reason ? (
+                          <span
+                            className="text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider"
+                            style={{
+                              backgroundColor: REASON_COLORS[r.reason]?.bg || "#F3F4F6",
+                              color: REASON_COLORS[r.reason]?.text || "#4B5563",
+                            }}
+                          >
+                            {REASON_LABELS[r.reason] || r.reason}
+                          </span>
+                        ) : (
+                          <span className="text-gray-300 italic text-xs">—</span>
+                        )}
                       </div>
 
                       {/* Status */}
-                      <div>
-                        <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full capitalize"
+                      <div className="flex items-center">
+                        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-0.5 rounded-full capitalize"
                           style={{ backgroundColor: sc.bg, color: sc.text }}>
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${r.status === "pending" ? "animate-pulse" : ""}`}
+                            style={{
+                              backgroundColor:
+                                r.status === "pending"
+                                  ? "#D97706"
+                                  : r.status === "resolved"
+                                  ? "#059669"
+                                  : r.status === "reviewed"
+                                  ? "#2563EB"
+                                  : "#6B7280",
+                            }}
+                          />
                           {r.status}
                         </span>
                       </div>
 
                       {/* Actions */}
                       <div className="flex items-center justify-end gap-1.5">
-                        {targetLink && (
-                          <Link to={targetLink} title="Open target"
-                            className="inline-flex items-center gap-1 px-2 py-1.5 rounded-xl text-xs font-semibold border hover:opacity-80 transition-all"
-                            style={{ borderColor: "#E8E2D9", color: DK }}>
-                            <RiExternalLinkLine className="text-sm" /> Target
+                        {r.reportedListing && (
+                          <Link to={`/explore/${r.reportedListing._id}`} target="_blank" rel="noopener noreferrer" title="View Listing Details (Opens in New Tab)"
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all hover:bg-[#8E4E14] hover:text-white"
+                            style={{ borderColor: "#8E4E14", color: "#8E4E14" }}>
+                            <RiExternalLinkLine className="text-sm" /> View Room
+                          </Link>
+                        )}
+                        {r.reportedUser && (
+                          <Link to={`/admin/users?search=${encodeURIComponent(r.reportedUser.email || r.reportedUser.name || "")}`} target="_blank" rel="noopener noreferrer" title="View User in Dashboard (Opens in New Tab)"
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all hover:bg-[#8E4E14] hover:text-white"
+                            style={{ borderColor: "#8E4E14", color: "#8E4E14" }}>
+                            <RiExternalLinkLine className="text-sm" /> View User
                           </Link>
                         )}
                         <button
                           onClick={() => setExpandedId(isExpanded ? null : r._id)}
-                          title="View details"
-                          className="p-1.5 rounded-xl border transition-colors hover:opacity-80"
+                          title="View report details"
+                          className="p-1.5 rounded-xl border transition-all hover:bg-gray-100"
                           style={{ borderColor: "#E8E2D9", color: DK }}
                         >
                           <RiEyeLine className="text-sm" />
@@ -377,9 +436,6 @@ const Reports = () => {
                           {deletingId === r._id ? <RiLoader4Line className="animate-spin" /> : <RiDeleteBinLine />}
                           Del
                         </ActionBtn>
-                        {!canAct && (
-                          <span className="text-[10px] text-gray-400 italic capitalize">{r.status}</span>
-                        )}
                       </div>
                     </div>
 

@@ -7,7 +7,11 @@ const {
   paginatedResponse,
 } = require("../utils/apiResponse");
 const { ERROR_CODES } = require("../utils/errorCodes");
-const { sendEmail } = require("../utils/sendEmail");
+const {
+  sendEmail,
+  newReportAdminEmail,
+  reportAcknowledgmentEmail,
+} = require("../utils/sendEmail");
 
 /* ── Fire-and-forget email helper ────────────────────────── */
 const sendEmailSafe = (opts, label = "report email") =>
@@ -132,58 +136,43 @@ const submitReport = async (req, res, next) => {
           other: "Other",
         }[reason] || reason;
 
-      const targetHtml = reportedUserInfo
-        ? `<p><strong>Target Type:</strong> User</p>
-           <p><strong>Reported User:</strong> ${reportedUserInfo.name || "Unknown"}</p>
-           <p><strong>User Email:</strong> ${reportedUserInfo.email || "N/A"}</p>
-           <p><strong>User Role:</strong> ${reportedUserInfo.role || "N/A"}</p>
-           <p><strong>User City:</strong> ${reportedUserInfo.city || "N/A"}</p>`
-        : `<p><strong>Target Type:</strong> Listing</p>
-           <p><strong>Listing Title:</strong> ${reportedListingInfo?.title || "Unknown"}</p>
-           <p><strong>Listing City:</strong> ${reportedListingInfo?.city || "N/A"}</p>
-           <p><strong>Listing Rent:</strong> PKR ${(reportedListingInfo?.rent || 0).toLocaleString()}</p>
-           <p><strong>Listing Owner:</strong> ${reportedListingInfo?.owner?.name || "Unknown"}</p>
-           <p><strong>Owner Email:</strong> ${reportedListingInfo?.owner?.email || "N/A"}</p>`;
+      const targetDetails = reportedUserInfo
+        ? `
+           <p style="margin:0 0 4px;font-size:14px;color:#334155;"><strong>Email:</strong> ${reportedUserInfo.email || "N/A"}</p>
+           <p style="margin:0 0 4px;font-size:14px;color:#334155;"><strong>Role:</strong> ${reportedUserInfo.role || "N/A"}</p>
+           <p style="margin:0;font-size:14px;color:#334155;"><strong>City:</strong> ${reportedUserInfo.city || "N/A"}</p>`
+        : `
+           <p style="margin:0 0 4px;font-size:14px;color:#334155;"><strong>City:</strong> ${reportedListingInfo?.city || "N/A"}</p>
+           <p style="margin:0 0 4px;font-size:14px;color:#334155;"><strong>Rent:</strong> PKR ${(reportedListingInfo?.rent || 0).toLocaleString()}</p>
+           <p style="margin:0 0 4px;font-size:14px;color:#334155;"><strong>Owner:</strong> ${reportedListingInfo?.owner?.name || "Unknown"}</p>
+           <p style="margin:0;font-size:14px;color:#334155;"><strong>Owner Email:</strong> ${reportedListingInfo?.owner?.email || "N/A"}</p>`;
 
-      const reportLink = `${process.env.CLIENT_URL || "http://localhost:5173"}/admin/reports`;
-      const emailHtml = `
-        <div style="font-family:Inter,Arial,sans-serif;color:#374151;line-height:1.6;">
-          <h2 style="color:#1A3A5C;">New User Report Received</h2>
-          <p>A new report has been submitted and needs review.</p>
+      const targetName = reportedUserInfo
+        ? (reportedUserInfo.name || "Unknown")
+        : (reportedListingInfo?.title || "Unknown");
 
-          <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:14px;margin:14px 0;">
-            <h3 style="margin:0 0 8px;color:#1A3A5C;font-size:15px;">Reporter Information</h3>
-            <p><strong>Name:</strong> ${reporterInfo?.name || req.user?.name || "Unknown"}</p>
-            <p><strong>Email:</strong> ${reporterInfo?.email || req.user?.email || "N/A"}</p>
-            <p><strong>Role:</strong> ${reporterInfo?.role || req.user?.role || "N/A"}</p>
-          </div>
+      const reporterName = reporterInfo?.name || req.user?.name || "Unknown";
+      const reporterEmail = reporterInfo?.email || req.user?.email || "N/A";
+      const reporterRole = reporterInfo?.role || req.user?.role || "N/A";
 
-          <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:14px;margin:14px 0;">
-            <h3 style="margin:0 0 8px;color:#1A3A5C;font-size:15px;">Reported Target</h3>
-            ${targetHtml}
-          </div>
-
-          <div style="background:#fff7ed;border:1px solid #fdba74;border-radius:8px;padding:14px;margin:14px 0;">
-            <h3 style="margin:0 0 8px;color:#9a3412;font-size:15px;">Report Details</h3>
-            <p><strong>Reason:</strong> ${reasonLabel}</p>
-            <p><strong>Description:</strong> ${description.trim()}</p>
-            <p><strong>Report ID:</strong> ${report._id.toString()}</p>
-          </div>
-
-          <p>
-            <a href="${reportLink}" style="display:inline-block;background:#1A3A5C;color:#fff;text-decoration:none;padding:10px 16px;border-radius:6px;font-weight:600;">
-              Open Admin Reports
-            </a>
-          </p>
-        </div>
-      `;
+      const emailHtml = newReportAdminEmail(
+        reporterName,
+        reporterEmail,
+        reporterRole,
+        reportedUserInfo ? "User" : "Listing",
+        targetName,
+        targetDetails,
+        reasonLabel,
+        description.trim(),
+        report._id.toString()
+      );
 
       admins.forEach((admin) => {
         if (!admin.email) return;
         sendEmailSafe(
           {
             to: admin.email,
-            subject: `New Report: ${reasonLabel} (${report._id.toString().slice(-6)})`,
+            subject: `🚨 Report: ${reasonLabel} (${report._id.toString().slice(-6)})`,
             html: emailHtml,
           },
           `new report notification to ${admin.email}`,
@@ -192,28 +181,11 @@ const submitReport = async (req, res, next) => {
     }
 
     if (reporterInfo?.email) {
-      const reportStatusLink = `${process.env.CLIENT_URL || "http://localhost:5173"}/seeker/reports`;
       sendEmailSafe(
         {
           to: reporterInfo.email,
           subject: "Report Received — RoomBridge Safety Team",
-          html: `
-            <div style="font-family:Inter,Arial,sans-serif;color:#374151;line-height:1.6;">
-              <h2 style="color:#1A3A5C;">We received your report</h2>
-              <p>Hi <strong>${reporterInfo.name || "there"}</strong>,</p>
-              <p>Thank you for reporting this issue. Our safety team is now investigating and will take action soon.</p>
-              <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:14px;margin:14px 0;">
-                <p><strong>Report ID:</strong> ${report._id.toString()}</p>
-                <p><strong>Status:</strong> Pending review</p>
-              </div>
-              <p>You can track updates from your reports page.</p>
-              <p>
-                <a href="${reportStatusLink}" style="display:inline-block;background:#1A3A5C;color:#fff;text-decoration:none;padding:10px 16px;border-radius:6px;font-weight:600;">
-                  View My Reports
-                </a>
-              </p>
-            </div>
-          `,
+          html: reportAcknowledgmentEmail(reporterInfo.name || "there", report._id.toString()),
         },
         `report acknowledgment to ${reporterInfo.email}`,
       );

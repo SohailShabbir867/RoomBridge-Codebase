@@ -109,7 +109,7 @@ const ListingCard = ({
   if (horizontal) {
     return (
       <Link
-        to={`/listings/${listing._id}`}
+        to={`/explore/${listing._id}`}
         className="flex bg-white rounded-card border border-border shadow-card
                        hover:shadow-hover transition-all duration-300 group overflow-hidden"
       >
@@ -196,7 +196,7 @@ const ListingCard = ({
   /* ── Default vertical card ───────────────────────────── */
   return (
     <Link
-      to={`/listings/${listing._id}`}
+      to={`/explore/${listing._id}`}
       className="flex flex-col bg-white rounded-card border border-border shadow-card
                      hover:shadow-hover transition-all duration-300 group overflow-hidden"
     >

@@ -350,11 +350,11 @@ const ContactPage = () => {
                   Drop us a line anytime.
                 </p>
                 <a
-                  href="mailto:hello@roombridge.pk"
+                  href="mailto:contact.roombridge@gmail.com"
                   className="text-xs font-bold underline mt-2 block hover:opacity-85 transition-all"
                   style={{ color: C.btnBrown }}
                 >
-                  hello@roombridge.pk
+                  contact.roombridge@gmail.com
                 </a>
               </div>
             </div>
@@ -375,13 +375,13 @@ const ContactPage = () => {
                   Available for quick chats.
                 </p>
                 <a
-                  href="https://wa.me/923001234567"
+                  href="https://wa.me/923291729925"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-xs font-bold underline mt-2 block hover:opacity-85 transition-all"
                   style={{ color: C.btnBrown }}
                 >
-                  +92 300 NESTIQ
+                  +92 329 172 9925
                 </a>
               </div>
             </div>
@@ -399,7 +399,7 @@ const ContactPage = () => {
                   Office
                 </h3>
                 <p className="text-xs text-gray-500 mt-1.5 leading-relaxed font-medium">
-                  Gulberg III, Main Boulevard<br />Lahore, Punjab, Pakistan
+                  Khanpur Rahim Yar Khan<br /> Punjab, Pakistan
                 </p>
               </div>
             </div>

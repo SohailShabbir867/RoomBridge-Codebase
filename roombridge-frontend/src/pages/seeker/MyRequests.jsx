@@ -25,6 +25,7 @@ const STATUS_COLOR = {
   rejected:  { bg: "#FEE2E2", text: "#991B1B" },
   cancelled: { bg: "#F3F4F6", text: "#6B7280" },
 };
+// Hooks 
 
 const MyRequests = () => {
   const [bookings, setBookings]   = useState([]);

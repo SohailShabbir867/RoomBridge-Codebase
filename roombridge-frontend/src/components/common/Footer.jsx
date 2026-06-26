@@ -42,9 +42,9 @@ const SOCIAL = [
 ];
 
 const CONTACT = [
-  { icon: RiMapPin2Line, text: "Islamabad, Pakistan" },
-  { icon: RiMailLine, text: "hello@roombridge.pk" },
-  { icon: RiPhoneLine, text: "+92 300 1234567" },
+  { icon: RiMapPin2Line, text: "Khanpur Rahim Yar Khan, Punjab, Pakistan" },
+  { icon: RiMailLine, text: "contact.roombridge@gmail.com" },
+  { icon: RiPhoneLine, text: "+92 329 172 9925" },
 ];
 
 const Footer = () => {

@@ -17,6 +17,9 @@ const {
   adminNotificationEmail,
   maintenanceEmail,
   errorAlertEmail,
+  listingRejectedEmail,
+  listingDeactivatedEmail,
+  listingApprovedEmail,
 } = require("../utils/sendEmail");
 
 /* ── Fire-and-forget email helper ────────────────────────── */
@@ -514,28 +517,13 @@ const updateListingStatus = async (req, res, next) => {
 
     await listing.save({ validateBeforeSave: false });
 
-    /* ── Send notification email to listing owner ────────── */
     if (listing.owner?.email && prevStatus !== status) {
-      const CLIENT = process.env.CLIENT_URL || "http://localhost:5173";
-      const listingLink = `${CLIENT}/listings/${listing._id}`;
-      const dashboardLink = `${CLIENT}/owner/listings`;
-
       if (status === "active") {
-        /* was missing .catch() — sendEmail now throws.
-           Using sendEmailSafe wrapper. */
         sendEmailSafe(
           {
             to: listing.owner.email,
             subject: `✅ Listing Approved — "${listing.title}"`,
-            html: `
-            <div style="font-family:Inter,Arial,sans-serif;color:#374151;">
-              <h2 style="color:#10b981;">Your Listing is Live! 🎉</h2>
-              <p>Hi <strong>${listing.owner.name}</strong>,</p>
-              <p>Your listing <strong>"${listing.title}"</strong> has been reviewed and <strong>approved</strong>. It is now live on RoomBridge and visible to seekers.</p>
-              <div style="text-align:center;margin:24px 0;">
-                <a href="${listingLink}" style="background:#1A3A5C;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;">View Your Listing</a>
-              </div>
-            </div>`,
+            html: listingApprovedEmail(listing.owner.name, listing.title, listing._id),
           },
           `approval to ${listing.owner.email}`,
         );
@@ -544,19 +532,7 @@ const updateListingStatus = async (req, res, next) => {
           {
             to: listing.owner.email,
             subject: `❌ Listing Declined — "${listing.title}"`,
-            html: `
-            <div style="font-family:Inter,Arial,sans-serif;color:#374151;">
-              <h2 style="color:#ef4444;">Listing Review Update</h2>
-              <p>Hi <strong>${listing.owner.name}</strong>,</p>
-              <p>Your listing <strong>"${listing.title}"</strong> was reviewed but could not be approved.</p>
-              <div style="background:#fef2f2;border:1px solid #ef4444;border-radius:8px;padding:16px;margin:16px 0;">
-                <strong>Reason:</strong> ${listing.rejectionReason}
-              </div>
-              <p>Please update your listing and resubmit for review.</p>
-              <div style="text-align:center;margin:24px 0;">
-                <a href="${dashboardLink}" style="background:#1A3A5C;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;">Edit Your Listings</a>
-              </div>
-            </div>`,
+            html: listingRejectedEmail(listing.owner.name, listing.title, listing.rejectionReason),
           },
           `rejection to ${listing.owner.email}`,
         );
@@ -564,14 +540,8 @@ const updateListingStatus = async (req, res, next) => {
         sendEmailSafe(
           {
             to: listing.owner.email,
-            subject: `Listing Deactivated — "${listing.title}"`,
-            html: `
-            <div style="font-family:Inter,Arial,sans-serif;color:#374151;">
-              <h2 style="color:#f59e0b;">Listing Deactivated</h2>
-              <p>Hi <strong>${listing.owner.name}</strong>,</p>
-              <p>Your listing <strong>"${listing.title}"</strong> has been deactivated by an admin and is no longer visible to seekers.</p>
-              <p>If you believe this is in error, please contact support.</p>
-            </div>`,
+            subject: `⚠️ Listing Deactivated — "${listing.title}"`,
+            html: listingDeactivatedEmail(listing.owner.name, listing.title),
           },
           `deactivation to ${listing.owner.email}`,
         );
@@ -656,7 +626,7 @@ const getAllReports = async (req, res, next) => {
         .populate("reportedUser", "name email profilePhoto")
         .populate({
           path: "reportedListing",
-          select: "title city rent status owner",
+          select: "title city rent status owner photos",
           populate: { path: "owner", select: "name email" },
         })
         .populate("resolvedBy", "name email")

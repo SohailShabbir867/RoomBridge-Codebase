@@ -10,6 +10,8 @@ const {
   sendEmail,
   bookingAcceptedEmail,
   bookingRejectedEmail,
+  newBookingRequestEmail,
+  bookingCancelledEmail,
 } = require("../utils/sendEmail");
 
 /* ── Whitelist of valid booking statuses for query filters ── */
@@ -131,29 +133,20 @@ const sendBookingRequest = async (req, res, next) => {
       .populate("seeker", "name profilePhoto")
       .populate("owner", "name profilePhoto");
 
-    /* ── Notify owner via email (fire-and-forget) ───────── */
     if (listing.owner.email) {
-      /* was using raw HTML string without the layout template.
-         Now uses sendEmailSafe wrapper so failures don't crash the response.
-         Also uses a proper styled template matching the rest of the app. */
       sendEmailSafe(
         {
           to: listing.owner.email,
-          subject: `New Booking Request — ${listing.title}`,
-          html: `
-            <div style="font-family:Inter,Arial,sans-serif;color:#374151;">
-              <h2 style="color:#1A3A5C;">New Booking Request 📬</h2>
-              <p>Hi <strong>${listing.owner.name}</strong>,</p>
-              <p><strong>${req.user.name}</strong> has sent a booking request for your listing:</p>
-              <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:16px;margin:16px 0;">
-                <p style="margin:0;font-weight:600;color:#0369a1;">🏠 ${listing.title}</p>
-                <p style="margin:4px 0 0;color:#6b7280;">${listing.city}</p>
-              </div>
-              <p><strong>Message from ${req.user.name}:</strong><br><em>"${message.trim()}"</em></p>
-              ${moveInDate ? `<p><strong>Preferred Move-in Date:</strong> ${new Date(moveInDate).toLocaleDateString("en-PK")}</p>` : ""}
-              <p>Log in to your <a href="${process.env.CLIENT_URL || "http://localhost:5173"}/owner/bookings" style="color:#1A3A5C;">owner dashboard</a> to accept or reject this request.</p>
-            </div>
-          `,
+          subject: `📬 New Booking Request — "${listing.title}"`,
+          html: newBookingRequestEmail(
+            listing.owner.name,
+            req.user.name,
+            listing.title,
+            listing.city,
+            listing.rent,
+            message,
+            moveInDate
+          ),
         },
         "owner booking notification",
       );
@@ -482,16 +475,8 @@ const cancelBooking = async (req, res, next) => {
         sendEmailSafe(
           {
             to: owner.email,
-            subject: `Booking Cancelled — ${booking.listing.title}`,
-            html: `
-              <div style="font-family:Inter,Arial,sans-serif;color:#374151;">
-                <h2 style="color:#1A3A5C;">Booking Cancelled</h2>
-                <p>Hi <strong>${owner.name}</strong>,</p>
-                <p>The seeker <strong>${req.user.name}</strong> has cancelled their booking request for your listing <strong>"${booking.listing.title}"</strong>.</p>
-                <p>Your listing is now active again and accepting new requests.</p>
-                <a href="${process.env.CLIENT_URL || "http://localhost:5173"}/owner/bookings" style="color:#1A3A5C;">View your bookings</a>
-              </div>
-            `,
+            subject: `❌ Booking Cancelled — "${booking.listing.title}"`,
+            html: bookingCancelledEmail(owner.name, req.user.name, booking.listing.title),
           },
           "cancellation notification to owner",
         );

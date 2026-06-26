@@ -216,7 +216,7 @@ const MyListings = () => {
                     <div className="flex gap-2 pt-3 border-t" style={{ borderColor: "#F3EFE9" }}>
                       {l.status === "active" && (
                         <Link
-                          to={`/listings/${l._id}`}
+                          to={`/explore/${l._id}`}
                           className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl
                                      border text-xs font-semibold text-gray-500 hover:border-gray-400 transition-colors"
                           style={{ borderColor: "#E8E2D9" }}
