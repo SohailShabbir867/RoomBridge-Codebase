@@ -98,25 +98,7 @@ const updateProfile = async (req, res, next) => {
       updates.phone = phone;
     }
 
-    /* Validate city against enum (Mongoose will catch it too, but give a clear message) */
-    const validCities = [
-      "Karachi",
-      "Lahore",
-      "Islamabad",
-      "Rawalpindi",
-      "Peshawar",
-      "Quetta",
-      "Faisalabad",
-      "Multan",
-      "Hyderabad",
-      "Sialkot",
-      "Gujranwala",
-      "Bahawalpur",
-      "Sargodha",
-      "Abbottabad",
-      "Murree",
-    ];
-    if (updates.city !== undefined && !validCities.includes(updates.city)) {
+    if (updates.city !== undefined && !User.PAKISTAN_CITIES.includes(updates.city)) {
       return errorResponse(res, 400, "Please select a valid Pakistani city.");
     }
 
@@ -253,8 +235,7 @@ const getAllSeekers = async (req, res, next) => {
       User.find(seekerFilter)
         .select("name profilePhoto city bio createdAt")
         .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limitNum)
+        .limit(500)
         .lean(),
       User.countDocuments(seekerFilter),
     ]);
@@ -308,8 +289,11 @@ const getAllSeekers = async (req, res, next) => {
       return scoreB - scoreA;
     });
 
+    /* Slice the sorted array to get the correct page items */
+    const paginatedSeekers = enriched.slice(skip, skip + limitNum);
+
     return successResponse(res, 200, "Seekers retrieved successfully.", {
-      seekers: enriched,
+      seekers: paginatedSeekers,
       pagination: {
         total: totalSeekers,
         page: pageNum,

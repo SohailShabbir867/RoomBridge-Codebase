@@ -57,12 +57,25 @@ router.get("/owner/my-listings", protect, authorize("owner"), getOwnerListings);
  */
 router.get("/:id", optionalAuth, getListingById);
 
+const rateLimit = require("express-rate-limit");
+const viewsLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 minutes
+  max: 1,                    // 1 request per window per IP
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  skipFailedRequests: true,
+  message: {
+    success: false,
+    message: "View already counted. Please wait before incrementing again.",
+  },
+});
+
 /**
  * @route   POST /api/v1/listings/:id/views
  * @desc    Increment listing view count (called explicitly by frontend)
- * @access  Public
+ * @access  Public (Rate limited)
  */
-router.post("/:id/views", incrementViews);
+router.post("/:id/views", viewsLimiter, incrementViews);
 
 /* ── PROTECTED ROUTES — OWNER (create / update / delete) ── */
 

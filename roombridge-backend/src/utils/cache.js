@@ -181,4 +181,22 @@ const listingsCache = new LRUCache({ max: 200, ttl: 60_000 });
 /** Admin dashboard stats cache — 30 second TTL */
 const statsCache = new LRUCache({ max: 10, ttl: 30_000 });
 
+/* ── BUG FIX: Periodic TTL sweep ───────────────────────────────────
+   _size is only decremented when expired entries are actively accessed
+   (get / has). If a burst fills the cache and all entries expire without
+   being read, _size stays at max and new inserts evict live entries.
+   This sweep runs every 30 seconds and purges all expired nodes so
+   _size stays accurate. Only runs in non-test environments. */
+if (process.env.NODE_ENV !== "test") {
+  setInterval(() => {
+    const now = Date.now();
+    for (const [, node] of listingsCache.map.entries()) {
+      if (now > node.expiresAt) listingsCache._evict(node);
+    }
+    for (const [, node] of statsCache.map.entries()) {
+      if (now > node.expiresAt) statsCache._evict(node);
+    }
+  }, 30_000).unref(); // .unref() so this timer doesn't keep the process alive
+}
+
 module.exports = { LRUCache, listingsCache, statsCache };

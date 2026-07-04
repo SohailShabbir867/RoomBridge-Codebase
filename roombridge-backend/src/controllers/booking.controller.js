@@ -449,8 +449,9 @@ const cancelBooking = async (req, res, next) => {
 
     await booking.deleteOne();
 
-    /* Reactivate listing when a pending/accepted booking is cancelled and no active blocker remains. */
-    if (booking.listing && ["pending", "accepted"].includes(booking.status)) {
+    /* Reactivate listing when a pending/accepted booking is cancelled and no active blocker remains.
+       Guard: booking.listing may be null if the listing was already cascade-deleted. */
+    if (booking.listing?._id && ["pending", "accepted"].includes(booking.status)) {
       const listing = await Listing.findById(booking.listing._id);
       if (listing && listing.status === "inactive") {
         const remainingActiveBookings = await Booking.countDocuments({

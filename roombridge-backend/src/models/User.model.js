@@ -153,4 +153,6 @@ userSchema.methods.generateVerificationToken = function () {
   return token;
 };
 
-module.exports = mongoose.model("User", userSchema);
+const User = mongoose.model("User", userSchema);
+User.PAKISTAN_CITIES = PAKISTAN_CITIES;
+module.exports = User;

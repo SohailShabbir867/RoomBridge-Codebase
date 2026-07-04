@@ -43,7 +43,10 @@ const isParticipant = (conversationId, userId) => {
   if (parts.length !== 2) return false;
   const [a, b] = parts;
   if (!/^[a-f0-9]{24}$/i.test(a) || !/^[a-f0-9]{24}$/i.test(b)) return false;
-  return a === userId || b === userId;
+  const lowerA = a.toLowerCase();
+  const lowerB = b.toLowerCase();
+  const lowerUser = userId.toString().toLowerCase();
+  return lowerA === lowerUser || lowerB === lowerUser;
 };
 
 /* ══════════════════════════════════════════════════════════

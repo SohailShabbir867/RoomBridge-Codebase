@@ -37,14 +37,17 @@ const generateToken = (userId, res) => {
 };
 
 /**
- * Generate a refresh JWT (not stored in cookie — caller decides storage).
- * Used for long-lived sessions where access token rotation is needed.
+ * @deprecated NOT YET IN USE — Access token rotation/refresh flow is planned but not active.
+ *
+ * BUG FIX: access token and refresh token must not use the same secret key.
+ * Now retrieves JWT_REFRESH_SECRET if defined, falling back to JWT_SECRET.
  *
  * @param {string} userId
  * @returns {string} - Signed refresh token (30-day expiry)
  */
 const generateRefreshToken = (userId) => {
-  return jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: "30d" });
+  const secret = process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET;
+  return jwt.sign({ id: userId }, secret, { expiresIn: "30d" });
 };
 
 /**

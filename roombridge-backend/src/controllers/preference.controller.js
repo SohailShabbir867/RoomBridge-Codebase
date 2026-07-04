@@ -209,6 +209,7 @@ const getRoommateMatches = async (req, res, next) => {
         "user",
         "name profilePhoto city bio createdAt role isActive isBanned",
       )
+      .limit(500)
       .lean();
 
     const matches = [];

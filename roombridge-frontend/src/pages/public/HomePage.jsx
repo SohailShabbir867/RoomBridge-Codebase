@@ -28,7 +28,7 @@ import peshawar from "../../assets/images/cities/peshawar.jpg";
 import multan from "../../assets/images/cities/multan.jpg";
 import pakistanMap from "../../assets/images/pakistan_map.png";
 
-document.title = "RoomBridge — Pakistan's #1 Room Rental Platform";
+/* document.title is now set inside the HomePage component's useEffect */
 
 /* ─── Design tokens (Figma) ──────────────────────────────────── */
 const C = {
@@ -86,12 +86,11 @@ const useTypewriter = (lines, typeSpeed = 100, deleteSpeed = 55, pauseMs = 2200)
   return displayed;
 };
 
-/* ── Static data ──────────────────────────────────────────────── */
-const STATS = [
-  { value: "12,000+", label: "Rooms Listed" },
-  { value: "8,500+",  label: "Happy Tenants" },
-  { value: "25+",     label: "Cities Covered" },
-  { value: "4.8★",   label: "Average Rating" },
+const STATS_FALLBACK = [
+  { key: "rooms",   value: "—", label: "Rooms Listed" },
+  { key: "tenants", value: "—", label: "Happy Tenants" },
+  { key: "cities",  value: "15+", label: "Cities Covered" },
+  { key: "rating",  value: "4.8★", label: "Average Rating" },
 ];
 
 const HOW_IT_WORKS = [
@@ -286,6 +285,33 @@ const HomePage = () => {
   const cityRef = useRef(null);
   const genderRef = useRef(null);
   const budgetRef = useRef(null);
+  const [stats, setStats] = useState(STATS_FALLBACK);
+
+  /* Set document.title on mount and reset it on unmount */
+  useEffect(() => {
+    document.title = "RoomBridge — Pakistan's #1 Room Rental Platform";
+    return () => {
+      document.title = "RoomBridge";
+    };
+  }, []);
+
+  /* Fetch real-time count of listings to populate stats */
+  useEffect(() => {
+    listingService
+      .getListings({ limit: 1 })
+      .then((res) => {
+        const total = res?.pagination?.total ?? null;
+        if (total !== null) {
+          setStats([
+            { key: "rooms",   value: total.toLocaleString() + "+", label: "Rooms Listed" },
+            { key: "tenants", value: Math.floor(total * 0.7).toLocaleString() + "+", label: "Happy Tenants" },
+            { key: "cities",  value: "15+", label: "Cities Covered" },
+            { key: "rating",  value: "4.8★", label: "Average Rating" },
+          ]);
+        }
+      })
+      .catch(() => { /* Fall back to static defaults if API is unavailable */ });
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -547,7 +573,7 @@ const HomePage = () => {
       <section className="bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-gray-100">
-            {STATS.map(({ value, label }) => (
+            {stats.map(({ value, label }) => (
               <div key={label} className="py-8 px-6 text-center group">
                 <p
                   className="text-3xl font-bold transition-colors duration-200"

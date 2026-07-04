@@ -118,6 +118,14 @@ export const SocketProvider = ({ children }) => {
     emit,
     on,
     off,
+    /* BUG FIX: expose the socket ref so components can inspect the connected
+       state directly. Also note: Socket.io auto-reconnect REUSES the same
+       socket instance, so .on() listeners registered via context helpers
+       survive network drops. The ref is only replaced when userId changes
+       (different user logs in), at which point all components unmount anyway
+       and re-register via their own useEffect. Do NOT call
+       socketRef.current.on() directly — always use the context on() helper. */
+    socket: socketRef,
   };
 
   return (

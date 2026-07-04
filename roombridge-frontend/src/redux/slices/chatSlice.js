@@ -101,7 +101,7 @@ const chatSlice = createSlice({
       to update the last message and unread count in the list.
     */
     updateConversation: (state, action) => {
-      const { conversationId, lastMessage, increment } = action.payload;
+      const { conversationId, lastMessage, increment, otherUser } = action.payload;
       const conv = state.conversations.find(
         (c) => c.conversationId === conversationId,
       );
@@ -109,7 +109,15 @@ const chatSlice = createSlice({
         if (lastMessage) conv.lastMessage = lastMessage;
         if (increment) conv.unreadCount = (conv.unreadCount || 0) + 1;
       } else {
-        /* New conversation — will show on next full refresh */
+        /* BUG FIX: conversation not yet loaded (e.g. user opened via direct link).
+           Add a minimal entry so the unread badge and list still update correctly.
+           The full conversation data will be loaded on next getConversations() call. */
+        state.conversations.unshift({
+          conversationId,
+          otherUser: otherUser || null,
+          lastMessage: lastMessage || null,
+          unreadCount: increment ? 1 : 0,
+        });
       }
       /* Recompute global unread badge */
       state.unreadCount = state.conversations.reduce(

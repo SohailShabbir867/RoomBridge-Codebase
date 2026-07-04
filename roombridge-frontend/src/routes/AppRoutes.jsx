@@ -91,8 +91,12 @@ const AuthLayout = () => {
   const { user, isAuthenticated } = useSelector((state) => state.auth);
 
   if (isAuthenticated && user) {
-    const dest = DASHBOARD_PATH[user.role] || "/";
-    return <Navigate to={dest} replace />;
+    /* BUG FIX: if user.role is undefined/unrecognized, fall back to "/"
+       instead of silently sending to a broken path. */
+    const dest = DASHBOARD_PATH[user.role];
+    if (dest) return <Navigate to={dest} replace />;
+    /* Unknown role — go to home rather than loop */
+    return <Navigate to="/" replace />;
   }
 
   return (

@@ -25,6 +25,10 @@ const FEATURE_TO_AMENITY = {
   security: "Security",
   generator: "Generator",
   cctv: "CCTV",
+  furnished: "Furnished",
+  attached_bath: "Attached Bath",
+  balcony: "Balcony",
+  gas: "Gas",
 };
 
 const AMENITY_TO_FEATURE = {
@@ -38,6 +42,13 @@ const AMENITY_TO_FEATURE = {
   security: "security",
   generator: "generator",
   cctv: "cctv",
+  furnished: "furnished",
+  "attached bath": "attached_bath",
+  balcony: "balcony",
+  gas: "gas",
+  "generator backup": "generator",
+  "water supply 24/7": "water",
+  "water supply": "water",
 };
 
 /* ── Safe integer parse with fallback ──────────────────────
@@ -490,14 +501,16 @@ const updateListing = async (req, res, next) => {
       listing.furnished = furnished === "true" || furnished === true;
     }
 
-    /* JSON sub-doc fields */
+    /* JSON sub-doc fields. Use else-if block to prioritize amenities and avoid double-writing listing.features. */
     const pAmenities = parseAmenitiesInput(amenities);
     const pFeatures = parseJSON(features, null);
     const pNearby = parseJSON(nearbyPlaces, null);
     const pRoommate = parseJSON(roommatePreferences, null);
-    if (pAmenities !== null) listing.features = pAmenities;
-    if (pFeatures !== null && Array.isArray(pFeatures))
+    if (pAmenities !== null) {
+      listing.features = pAmenities;
+    } else if (pFeatures !== null && Array.isArray(pFeatures)) {
       listing.features = pFeatures;
+    }
     if (pNearby !== null && Array.isArray(pNearby))
       listing.nearbyPlaces = pNearby;
     if (pRoommate !== null && typeof pRoommate === "object")

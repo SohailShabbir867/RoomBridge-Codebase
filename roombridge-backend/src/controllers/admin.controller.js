@@ -410,13 +410,40 @@ const deleteUser = async (req, res, next) => {
       { $pull: { savedBy: user._id } },
     );
 
+    /* ── BUG FIX: Cancel active bookings before cascading ────────
+       Instead of hard-deleting active bookings, mark them as 'cancelled' first
+       so the other active party (seeker or owner) retains the booking record
+       with a clear explanation note. */
+    await Booking.updateMany(
+      { owner: user._id, status: { $in: ["pending", "accepted"] } },
+      {
+        $set: {
+          status: "cancelled",
+          ownerNote: "The owner's account has been removed from the platform.",
+        },
+      },
+    );
+    await Booking.updateMany(
+      { seeker: user._id, status: { $in: ["pending", "accepted"] } },
+      {
+        $set: {
+          status: "cancelled",
+          ownerNote: "The seeker's account has been removed from the platform.",
+        },
+      },
+    );
+
     /* Cascade delete everything in parallel */
     await Promise.all([
       /* Cloudinary photos (non-fatal — use allSettled) */
       ...photoIds.map((pid) => deleteFromCloudinary(pid).catch(() => {})),
-      /* Data records */
+      /* Data records. Do not delete bookings that are now marked 'cancelled'
+         so the other active party can still view them in their history. */
       Listing.deleteMany({ owner: user._id }),
-      Booking.deleteMany({ $or: [{ seeker: user._id }, { owner: user._id }] }),
+      Booking.deleteMany({
+        $or: [{ seeker: user._id }, { owner: user._id }],
+        status: { $nin: ["cancelled"] },
+      }),
       Message.deleteMany({
         $or: [{ sender: user._id }, { receiver: user._id }],
       }),
@@ -918,7 +945,7 @@ const sendNotification = async (req, res, next) => {
       const filter = { isActive: true, isBanned: false };
       if (recipientType === "users")   filter.role = "seeker";
       if (recipientType === "owners")  filter.role = "owner";
-      if (recipientType === "admins") { delete filter.isBanned; filter.role = "admin"; }
+      if (recipientType === "admins")  filter.role = "admin";
       recipients = await User.find(filter).select("name email").lean();
     }
 
