@@ -12,8 +12,8 @@ const User = require("../src/models/User.model");
 
 const ADMIN = {
   name: "Admin",
-  email: "contact.roombridge@gmail.com",
-  password: "Admin@1234",
+  email: process.env.ADMIN_EMAIL || "contact.roombridge@gmail.com",
+  password: process.env.ADMIN_PASSWORD || "Roombridge@123",
   role: "admin",
   city: "Islamabad",
   isVerified: true,
@@ -43,9 +43,14 @@ const ADMIN = {
         existing.isVerified = true;
         updated = true;
       }
+      
+      // Update password to match env variable if specified
+      existing.password = ADMIN.password;
+      updated = true;
+
       if (updated) {
-        await existing.save({ validateBeforeSave: false });
-        console.log("✅ Updated admin: role=admin, isVerified=true");
+        await existing.save(); // save() will trigger pre-save hook to hash the new password
+        console.log("✅ Updated admin credentials to match environment.");
       }
     } else {
       await User.create(ADMIN);
