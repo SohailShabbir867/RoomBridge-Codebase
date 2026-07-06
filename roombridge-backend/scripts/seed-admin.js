@@ -7,11 +7,12 @@ const dns = require("dns");
 dns.setServers(["8.8.8.8", "8.8.4.4"]);
 
 const mongoose = require("mongoose");
-const User = require("./src/models/User.model");
+const connectDB = require("../src/config/db");
+const User = require("../src/models/User.model");
 
 const ADMIN = {
   name: "Admin",
-  email: "sohailshabbir0347@gmail.com",
+  email: "contact.roombridge@gmail.com",
   password: "Admin@1234",
   role: "admin",
   city: "Islamabad",
@@ -21,10 +22,9 @@ const ADMIN = {
 
 (async () => {
   try {
-    await mongoose.connect(process.env.MONGO_URI, {
-      serverSelectionTimeoutMS: 30000,
-    });
-    console.log("✅ Connected to MongoDB");
+    // Call the robust database connector with Google DNS resolution fallback
+    await connectDB();
+    console.log("✅ Database connection established.");
 
     const existing = await User.findOne({ email: ADMIN.email });
     if (existing) {
