@@ -26,45 +26,65 @@ const connectDB = async () => {
         console.warn("⚠️  SRV/TXT DNS lookup failed (common on local/tethered networks).");
         console.log("🔄 Attempting automatic conversion to direct connection string...");
         
-        // Parse credentials and host from standard mongodb+srv URI
-        const match = mongoUri.match(/mongodb\+srv:\/\/([^:]+):([^@]+)@([^/]+)\/([^?]+)?/);
-        if (match) {
-          const [, username, password, host, dbAndOptions] = match;
-          const dbName = dbAndOptions ? dbAndOptions.split("?")[0] : "";
+        // Parse credentials and host robustly from mongodb+srv URI (supporting passwords with '@' characters)
+        const urlWithoutProtocol = mongoUri.replace("mongodb+srv://", "");
+        const lastAtIndex = urlWithoutProtocol.lastIndexOf("@");
+        
+        if (lastAtIndex !== -1) {
+          const credentialsPart = urlWithoutProtocol.substring(0, lastAtIndex);
+          const hostAndRest = urlWithoutProtocol.substring(lastAtIndex + 1);
           
-          // Force Google DNS resolver just for SRV resolution (which is often blocked by local ISPs)
-          const resolver = new dns.Resolver();
-          resolver.setServers(["8.8.8.8", "8.8.4.4"]);
-          
-          const srvHost = `_mongodb._tcp.${host}`;
-          const addresses = await new Promise((resolve, reject) => {
-            resolver.resolveSrv(srvHost, (err, addrs) => {
-              if (err) reject(err);
-              else resolve(addrs);
-            });
-          });
-          
-          if (addresses && addresses.length > 0) {
-            const hostsList = addresses.map(addr => `${addr.name}:${addr.port}`).join(",");
-            const optionsPart = dbAndOptions && dbAndOptions.includes("?") ? dbAndOptions.substring(dbAndOptions.indexOf("?")) : "";
+          const colonIndex = credentialsPart.indexOf(":");
+          if (colonIndex !== -1) {
+            const username = credentialsPart.substring(0, colonIndex);
+            const password = credentialsPart.substring(colonIndex + 1);
             
-            // Build standard direct connection string
-            let directUri = `mongodb://${username}:${password}@${hostsList}/${dbName}${optionsPart}`;
-            if (!directUri.includes("ssl=")) {
-              directUri += (directUri.includes("?") ? "&" : "?") + "ssl=true";
-            }
-            if (!directUri.includes("authSource=")) {
-              directUri += "&authSource=admin";
+            const slashIndex = hostAndRest.indexOf("/");
+            let host = hostAndRest;
+            let dbAndOptions = "";
+            if (slashIndex !== -1) {
+              host = hostAndRest.substring(0, slashIndex);
+              dbAndOptions = hostAndRest.substring(slashIndex + 1);
             }
             
-            console.log("🔗 Connecting via direct URI fallback...");
-            const conn = await mongoose.connect(directUri, {
-              serverSelectionTimeoutMS: 15000,
+            const dbName = dbAndOptions ? dbAndOptions.split("?")[0] : "";
+            
+            // Force Google DNS resolver just for SRV resolution (which is often blocked by local ISPs)
+            const resolver = new dns.Resolver();
+            resolver.setServers(["8.8.8.8", "8.8.4.4"]);
+            
+            const srvHost = `_mongodb._tcp.${host}`;
+            const addresses = await new Promise((resolve, reject) => {
+              resolver.resolveSrv(srvHost, (err, addrs) => {
+                if (err) reject(err);
+                else resolve(addrs);
+              });
             });
-            console.log(`✅ MongoDB Connected (Fallback): ${conn.connection.host}`);
-            console.log(`   Database: ${conn.connection.name}`);
-            setupEvents();
-            return;
+            
+            if (addresses && addresses.length > 0) {
+              const hostsList = addresses.map(addr => `${addr.name}:${addr.port}`).join(",");
+              const optionsPart = dbAndOptions && dbAndOptions.includes("?") ? dbAndOptions.substring(dbAndOptions.indexOf("?")) : "";
+              
+              // Build standard direct connection string with URL-encoded credentials
+              const encodedUser = encodeURIComponent(username);
+              const encodedPass = encodeURIComponent(password);
+              let directUri = `mongodb://${encodedUser}:${encodedPass}@${hostsList}/${dbName}${optionsPart}`;
+              if (!directUri.includes("ssl=")) {
+                directUri += (directUri.includes("?") ? "&" : "?") + "ssl=true";
+              }
+              if (!directUri.includes("authSource=")) {
+                directUri += "&authSource=admin";
+              }
+              
+              console.log("🔗 Connecting via direct URI fallback...");
+              const conn = await mongoose.connect(directUri, {
+                serverSelectionTimeoutMS: 15000,
+              });
+              console.log(`✅ MongoDB Connected (Fallback): ${conn.connection.host}`);
+              console.log(`   Database: ${conn.connection.name}`);
+              setupEvents();
+              return;
+            }
           }
         }
       }
