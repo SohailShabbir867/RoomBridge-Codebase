@@ -16,6 +16,7 @@ import authService from "../../services/authService";
 import { logout } from "../../redux/slices/authSlice";
 import RoleDashboardLayout from "../../components/dashboard/common/RoleDashboardLayout";
 import toast from "react-hot-toast";
+import api from "../../services/api";
 
 document.title = "Seeker Dashboard — RoomBridge";
 
@@ -63,8 +64,38 @@ const SeekerDashboard = () => {
   const [bookings, setBookings] = useState([]);
   const [saved, setSaved]       = useState([]);
   const [loading, setLoading]   = useState(true);
+  const [hasPreferences, setHasPreferences] = useState(true);
 
   useEffect(() => {
+    // Check roommate match preferences
+    api.get("/preferences/me")
+      .then((res) => {
+        const payload = res.data;
+        let p = null;
+        if (payload) {
+          if (payload.preference !== undefined) p = payload.preference;
+          else if (payload.data?.preference !== undefined) p = payload.data.preference;
+          else if (payload.data && !Array.isArray(payload.data)) p = payload.data;
+        }
+
+        if (!p) {
+          setHasPreferences(false);
+          toast("Create roommate matches to find out the best roommates!", {
+            icon: "🤝",
+            duration: 6000,
+            id: "roommate-match-toast",
+          });
+        }
+      })
+      .catch(() => {
+        setHasPreferences(false);
+        toast("Create roommate matches to find out the best roommates!", {
+          icon: "🤝",
+          duration: 6000,
+          id: "roommate-match-toast",
+        });
+      });
+
     Promise.all([
       bookingService.getMyBookings({ limit: 5 }),
       listingService.getSavedListings({ limit: 4 }),
@@ -112,6 +143,48 @@ const SeekerDashboard = () => {
         </div>
       ) : (
         <div className="max-w-4xl mx-auto space-y-6">
+
+          {/* Roommate Match Promo Banner */}
+          {!hasPreferences && (
+            <div 
+              className="relative overflow-hidden rounded-2xl border p-5 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm animate-fade-in transition-all duration-300 hover:shadow-md"
+              style={{ 
+                borderColor: "#FFD8A8", 
+                background: "linear-gradient(135deg, #FFF9DB 0%, #FFF3BF 100%)" 
+              }}
+            >
+              {/* Blur accent */}
+              <div 
+                className="absolute -right-8 -top-8 w-24 h-24 rounded-full opacity-20 filter blur-xl" 
+                style={{ backgroundColor: ACC }} 
+              />
+              
+              <div className="flex items-start gap-4">
+                <div 
+                  className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
+                  style={{ backgroundColor: "rgba(142, 78, 20, 0.1)" }}
+                >
+                  <RiGroupLine className="text-xl" style={{ color: BTN }} />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-sm" style={{ color: DK }}>
+                    Find Your Perfect Roommate! 🤝
+                  </h3>
+                  <p className="text-xs text-gray-600 mt-1 max-w-xl leading-relaxed">
+                    Create your roommate match profile to discover and connect with other seekers sharing similar lifestyles, budgets, and habits!
+                  </p>
+                </div>
+              </div>
+              
+              <Link
+                to="/seeker/roommate-match"
+                className="w-full md:w-auto text-center text-xs font-bold px-5 py-2.5 rounded-xl text-white shadow-sm transition-all hover:opacity-95 active:scale-95 shrink-0"
+                style={{ backgroundColor: BTN }}
+              >
+                Set Up Match Profile
+              </Link>
+            </div>
+          )}
 
           {/* Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
