@@ -28,11 +28,9 @@ import {
   RiBuilding3Line,
   RiVipCrownLine,
 } from "react-icons/ri";
-import { CITIES, AMENITIES } from "../../utils/constants";
+import { CITIES, AMENITIES, PAKISTAN_UNIVERSITIES } from "../../utils/constants";
 import listingService from "../../services/listingService";
 import toast from "react-hot-toast";
-
-document.title = "Browse Rooms — RoomBridge";
 
 /* ─── Design tokens (match Figma) ──────────────────────────── */
 const C = {
@@ -247,14 +245,19 @@ const ListingsPage = () => {
   const searchDebounceRef = useRef(null);
 
   const [filters, setFilters] = useState({
-    city: searchParams.get("city") || "",
-    roomType: searchParams.get("roomType") || "",
+    city:             searchParams.get("city")             || "",
+    roomType:         searchParams.get("roomType")         || "",
     genderPreference: searchParams.get("genderPreference") || "",
-    budget: "",
-    amenities: [],
-    sortBy: "newest",
-    search: "",
+    budget:           "",
+    amenities:        [],
+    sortBy:           "newest",
+    search:           searchParams.get("search")           || "",
+    university:       searchParams.get("university")       || "",  // NEW
+    location:         searchParams.get("location")         || "",  // NEW
   });
+
+  // Set page title on mount
+  React.useEffect(() => { document.title = "Browse Rooms — RoomBridge"; }, []);
 
   const handleFilter = (key, val) => {
     setFilters((f) => ({ ...f, [key]: val }));
@@ -278,13 +281,15 @@ const ListingsPage = () => {
 
   const clearFilters = () => {
     setFilters({
-      city: "",
-      roomType: "",
+      city:             "",
+      roomType:         "",
       genderPreference: "",
-      budget: "",
-      amenities: [],
-      sortBy: "newest",
-      search: "",
+      budget:           "",
+      amenities:        [],
+      sortBy:           "newest",
+      search:           "",
+      university:       "",
+      location:         "",
     });
     setPage(1);
   };
@@ -294,13 +299,14 @@ const ListingsPage = () => {
       setLoading(true);
       setError("");
       const params = { page, limit: PER_PAGE };
-      if (filters.city) params.city = filters.city;
-      if (filters.roomType) params.roomType = filters.roomType;
+      if (filters.city)             params.city             = filters.city;
+      if (filters.roomType)         params.roomType         = filters.roomType;
       if (filters.genderPreference) params.genderPreference = filters.genderPreference;
-      if (filters.search) params.search = filters.search;
-      if (filters.sortBy) params.sortBy = filters.sortBy;
-      if (filters.amenities.length)
-        params.amenities = filters.amenities.join(",");
+      if (filters.search)           params.search           = filters.search;
+      if (filters.university)       params.university       = filters.university;  // NEW
+      if (filters.location)         params.location         = filters.location;    // NEW
+      if (filters.sortBy)           params.sortBy           = filters.sortBy;
+      if (filters.amenities.length) params.amenities        = filters.amenities.join(",");
       if (filters.budget) {
         const range = PRICE_RANGES.find((r) => r.value === filters.budget);
         if (range?.min) params.minRent = range.min;
@@ -333,7 +339,8 @@ const ListingsPage = () => {
   useEffect(() => () => clearTimeout(searchDebounceRef.current), []);
 
   const activeFilterCount =
-    [filters.city, filters.roomType, filters.budget, filters.genderPreference].filter(Boolean).length +
+    [filters.city, filters.roomType, filters.budget, filters.genderPreference, filters.university, filters.location]
+      .filter(Boolean).length +
     filters.amenities.length;
 
   return (
@@ -348,7 +355,7 @@ const ListingsPage = () => {
               <RiSearchLine className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               <input
                 type="text"
-                placeholder="Search by area, hostel name..."
+                placeholder="Search hostels, universities, locations..."
                 value={filters.search}
                 onChange={handleSearchChange}
                 aria-label="Search listings"
@@ -427,6 +434,49 @@ const ListingsPage = () => {
         </div>
       </div>
 
+      {/* ── University Quick-Select Pill Bar ───────────────────────────────
+          A horizontally scrollable row of university shortcut pills. Clicking
+          a pill sets the university filter AND auto-selects the matching city
+          so results are already pre-filtered to the right location.        */}
+      <div
+        className="bg-white border-b border-gray-100"
+        style={{ overflowX: "auto", whiteSpace: "nowrap" }}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center gap-2">
+          <span className="text-[9px] font-extrabold uppercase tracking-widest text-gray-400 shrink-0 mr-1">
+            Near:
+          </span>
+          {PAKISTAN_UNIVERSITIES.map((uni) => {
+            const isActive = filters.university === uni.value;
+            return (
+              <button
+                key={uni.value}
+                type="button"
+                id={`uni-pill-${uni.value.replace(/\s+/g, "-").toLowerCase()}`}
+                onClick={() => {
+                  const newUni = isActive ? "" : uni.value;
+                  setFilters((f) => ({
+                    ...f,
+                    university: newUni,
+                    // Auto-select city if the university belongs to a supported city
+                    city: !isActive && uni.city ? uni.city : f.city,
+                  }));
+                  setPage(1);
+                }}
+                className="inline-flex items-center shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold transition-all duration-200 border cursor-pointer active:scale-95"
+                style={{
+                  backgroundColor: isActive ? "#012D1D" : "#F5F2EB",
+                  color:           isActive ? "#FFFFFF" : "#012D1D",
+                  borderColor:     isActive ? "#012D1D" : "transparent",
+                }}
+              >
+                🎓 {uni.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
         {/* ── Listings Results Grid (now at the top) ── */}
@@ -458,7 +508,7 @@ const ListingsPage = () => {
                 {/* City Selector */}
                 <div>
                   <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
-                    City Selector
+                    City
                   </label>
                   <div className="relative">
                     <RiMapPin2Line className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -477,6 +527,67 @@ const ListingsPage = () => {
                     <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
                       <RiArrowDownSLine className="text-base" />
                     </div>
+                  </div>
+                </div>
+
+                {/* University Filter */}
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
+                    Near University
+                  </label>
+                  <div className="relative">
+                    <RiBuilding3Line className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <select
+                      id="university-filter"
+                      value={filters.university}
+                      onChange={(e) => {
+                        const selected = PAKISTAN_UNIVERSITIES.find(u => u.value === e.target.value);
+                        setFilters(f => ({
+                          ...f,
+                          university: e.target.value,
+                          city: selected?.city || f.city,
+                        }));
+                        setPage(1);
+                      }}
+                      className="w-full bg-[#F5F2EB] border-0 rounded-xl py-3 px-4 pl-10 text-xs font-semibold focus:ring-1 focus:ring-[#8E4E14] outline-none text-gray-800 appearance-none cursor-pointer"
+                    >
+                      <option value="">Any University</option>
+                      {PAKISTAN_UNIVERSITIES.map((u) => (
+                        <option key={u.value} value={u.value}>
+                          {u.label}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
+                      <RiArrowDownSLine className="text-base" />
+                    </div>
+                  </div>
+                  {filters.university && (
+                    <button
+                      type="button"
+                      onClick={() => handleFilter("university", "")}
+                      className="mt-1.5 text-[10px] text-red-400 hover:text-red-600 font-semibold cursor-pointer"
+                    >
+                      ✕ Clear university
+                    </button>
+                  )}
+                </div>
+
+                {/* Location / Area Filter */}
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
+                    Area / Locality
+                  </label>
+                  <div className="relative">
+                    <RiMapPin2Line className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input
+                      id="location-filter"
+                      type="text"
+                      placeholder="e.g. Johar Town, Model Town"
+                      value={filters.location}
+                      onChange={(e) => { handleFilter("location", e.target.value); }}
+                      className="w-full bg-[#F5F2EB] border-0 rounded-xl py-3 px-4 pl-10 text-xs font-semibold focus:ring-1 focus:ring-[#8E4E14] outline-none text-gray-800 placeholder-gray-400/80"
+                    />
                   </div>
                 </div>
 
@@ -651,10 +762,21 @@ const ListingsPage = () => {
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
               <div>
                 <h1 className="text-2xl sm:text-[28px] font-extrabold font-serif tracking-tight leading-tight" style={{ color: C.darkGreen }}>
-                  Showing {total} hostels in {filters.city || "Lahore"}
+                  {filters.university
+                    ? `Hostels near ${PAKISTAN_UNIVERSITIES.find(u => u.value === filters.university)?.label || filters.university}`
+                    : filters.search
+                    ? `Results for "${filters.search}"`
+                    : filters.location
+                    ? `Hostels in "${filters.location}"`
+                    : `Showing ${total} hostel${total !== 1 ? "s" : ""}${filters.city ? ` in ${filters.city}` : ""}`
+                  }
                 </h1>
                 <p className="text-xs text-gray-400 mt-1 font-light">
-                  Curated stays near Punjab University and surrounding areas.
+                  {filters.university
+                    ? `${total} curated hostel${total !== 1 ? "s" : ""} found near this university`
+                    : filters.search || filters.location
+                    ? `${total} result${total !== 1 ? "s" : ""} found — sorted by relevance`
+                    : "Curated verified stays across Pakistan"}
                 </p>
               </div>
 
@@ -665,12 +787,17 @@ const ListingsPage = () => {
                     value={filters.sortBy}
                     onChange={(e) => handleFilter("sortBy", e.target.value)}
                     aria-label="Sort listings"
+                    id="sort-listings-select"
                     className="text-xs font-semibold text-gray-700 border border-gray-200/80 rounded-xl px-4 py-2.5 pr-8 bg-white outline-none hover:bg-gray-50 cursor-pointer appearance-none"
                   >
-                    <option value="newest">Sort by: Recommended</option>
+                    {/* Relevance option shown when search/university/location filter is active */}
+                    {(filters.search || filters.university || filters.location) && (
+                      <option value="relevance">Sort: Most Relevant</option>
+                    )}
+                    <option value="newest">Sort: Newest First</option>
                     <option value="price_asc">Price: Low → High</option>
                     <option value="price_desc">Price: High → Low</option>
-                    <option value="rating">Top Rated</option>
+                    <option value="most_viewed">Most Viewed</option>
                   </select>
                   <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
                     <RiArrowDownSLine className="text-base" />

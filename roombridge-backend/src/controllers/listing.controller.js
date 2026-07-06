@@ -131,6 +131,8 @@ const getAllListings = async (req, res, next) => {
       genderPreference,
       furnished,
       search,
+      university,   // NEW: dedicated university name filter (regex on nearbyUniversity)
+      location,     // NEW: dedicated location filter (regex on address + area)
       page = 1,
       limit = 12,
       sortBy = "newest",
@@ -175,21 +177,65 @@ const getAllListings = async (req, res, next) => {
       if (maxRent) filter.rent.$lte = Number(maxRent);
     }
 
+    /* ── University filter (dedicated param) ─────────────────────────────
+       ?university=Islamia University Bahawalpur
+       Matches against nearbyUniversity field (case-insensitive regex).
+       Split on spaces to allow partial word matching, e.g. "islamia" will
+       match "Islamia University of Bahawalpur". Uses $regex for flexibility
+       rather than $text so it works without exact phrase indexing.          */
+    if (university && university.trim()) {
+      const uniQuery = university.trim();
+      filter.nearbyUniversity = { $regex: uniQuery, $options: "i" };
+    }
+
+    /* ── Location filter (dedicated param) ───────────────────────────────
+       ?location=Johar Town
+       Matches address OR area with a case-insensitive regex.               */
+    if (location && location.trim()) {
+      const locQuery = location.trim();
+      filter.$or = [
+        { address: { $regex: locQuery, $options: "i" } },
+        { area:    { $regex: locQuery, $options: "i" } },
+      ];
+    }
+
+    /* ── Build sort + text search ────────────────────────────────────────
+       Relevance sort:
+         - "relevance"  → { score: { $meta: "textScore" } }  (needs $text)
+         - "price_asc"  → alias for price_low
+         - "price_desc" → alias for price_high
+       When a search query is present we default to relevance automatically.
+       When a university/location filter is present without a text query we
+       still sort by the user's sortBy preference.                          */
+    const sortMap = {
+      newest:     { createdAt: -1 },
+      oldest:     { createdAt:  1 },
+      price_low:  { rent:  1 },
+      price_high: { rent: -1 },
+      price_asc:  { rent:  1 },   // frontend alias
+      price_desc: { rent: -1 },   // frontend alias
+      most_viewed:{ views: -1 },
+      relevance:  { score: { $meta: "textScore" } },
+    };
+
     let sort, projection;
+
     if (search && search.trim()) {
-      filter.$text = { $search: search.trim() };
+      const searchTerm = search.trim();
+
+      /* Full-text search using our newly created weighted text index */
+      filter.$text = { $search: searchTerm };
       projection = { score: { $meta: "textScore" } };
-      sort = { score: { $meta: "textScore" } };
+
+      /* Default to relevance when searching; respect explicit sortBy */
+      sort = sortBy === "relevance" || !sortMap[sortBy]
+        ? sortMap.relevance
+        : sortMap[sortBy] ?? sortMap.relevance;
+
     } else {
-      const sortMap = {
-        newest:      { createdAt: -1 },
-        oldest:      { createdAt: 1 },
-        price_low:   { rent: 1 },
-        price_high:  { rent: -1 },
-        most_viewed: { views: -1 },
-      };
       sort = sortMap[sortBy] || sortMap.newest;
     }
+
 
     /* ── Pagination ──────────────────────────────────── */
     const pageNum  = safeInt(page, 1, 1);

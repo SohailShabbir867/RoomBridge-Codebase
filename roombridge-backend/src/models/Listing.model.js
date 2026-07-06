@@ -29,6 +29,10 @@ const FEATURE_NAMES = [
   "security",
   "generator",
   "cctv",
+  "furnished",
+  "attached_bath",
+  "balcony",
+  "gas",
 ];
 
 /* ── Sub-schemas (no auto _id) ─────────────────────────── */
@@ -205,13 +209,44 @@ const listingSchema = new mongoose.Schema(
 );
 
 /* ── Indexes ───────────────────────────────────────────── */
-listingSchema.index({ title: "text", description: "text" });
+
+/* Weighted full-text search index.
+   Weights control MongoDB's textScore for ranking:
+     title           → 10  (highest – exact title match is best)
+     nearbyUniversity → 8  (second – direct university name hit)
+     description      → 5  (contextual body text)
+     address          → 4  (street / landmark level)
+     area             → 4  (neighbourhood / zone level)
+   Drop the old index first if it exists; Mongoose will recreate
+   this weighted version on next startup automatically. */
+listingSchema.index(
+  {
+    title: "text",
+    nearbyUniversity: "text",
+    description: "text",
+    address: "text",
+    area: "text",
+  },
+  {
+    weights: {
+      title: 10,
+      nearbyUniversity: 8,
+      description: 5,
+      address: 4,
+      area: 4,
+    },
+    name: "listing_text_search",
+  }
+);
+
+/* Scalar indexes */
 listingSchema.index({ city: 1 });
 listingSchema.index({ status: 1 });
 listingSchema.index({ rent: 1 });
 listingSchema.index({ owner: 1 });
 listingSchema.index({ roomType: 1 });
 listingSchema.index({ genderPreference: 1 });
+listingSchema.index({ nearbyUniversity: 1 });   // fast regex prefix lookups
 listingSchema.index({ createdAt: -1 });
 listingSchema.index({ status: 1, createdAt: -1 });
 listingSchema.index({ owner: 1, status: 1, createdAt: -1 });

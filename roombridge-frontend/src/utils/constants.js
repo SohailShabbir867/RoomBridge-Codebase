@@ -21,6 +21,31 @@ export const CITIES = [
   "Murree",
 ];
 
+// ── Pakistan Universities (for hostel proximity search) ──
+export const PAKISTAN_UNIVERSITIES = [
+  { label: "Islamia University Bahawalpur",  value: "Islamia University Bahawalpur", city: "Bahawalpur" },
+  { label: "Punjab University",              value: "University of the Punjab",      city: "Lahore" },
+  { label: "LUMS",                           value: "LUMS",                          city: "Lahore" },
+  { label: "UET Lahore",                     value: "UET Lahore",                    city: "Lahore" },
+  { label: "COMSATS Islamabad",              value: "COMSATS University Islamabad",  city: "Islamabad" },
+  { label: "NUST",                           value: "NUST",                          city: "Islamabad" },
+  { label: "FAST NUCES",                     value: "FAST NUCES",                    city: "Islamabad" },
+  { label: "Quaid-i-Azam University",        value: "Quaid-i-Azam University",       city: "Islamabad" },
+  { label: "PIEAS",                          value: "PIEAS",                          city: "Islamabad" },
+  { label: "UET Peshawar",                   value: "UET Peshawar",                   city: "Peshawar" },
+  { label: "University of Peshawar",         value: "University of Peshawar",         city: "Peshawar" },
+  { label: "NED University",                 value: "NED University",                 city: "Karachi" },
+  { label: "Karachi University",             value: "University of Karachi",          city: "Karachi" },
+  { label: "IBA Karachi",                    value: "IBA Karachi",                    city: "Karachi" },
+  { label: "BZU Multan",                     value: "Bahauddin Zakariya University",  city: "Multan" },
+  { label: "University of Sargodha",        value: "University of Sargodha",          city: "Sargodha" },
+  { label: "University of Faisalabad",       value: "University of Faisalabad",       city: "Faisalabad" },
+  { label: "USAT Hyderabad",                value: "University of Sindh",             city: "Hyderabad" },
+  { label: "UOB Quetta",                    value: "University of Balochistan",        city: "Quetta" },
+  { label: "Abbottabad University",         value: "Abbottabad University of Science", city: "Abbottabad" },
+];
+
+
 // ── Listing / Room Types ────────────────────────────────
 // MUST match Listing.model.js enum exactly: 'single' | 'shared' | 'apartment'
 // Previous session incorrectly changed these to single_room/shared_room/full_apartment/hostel
