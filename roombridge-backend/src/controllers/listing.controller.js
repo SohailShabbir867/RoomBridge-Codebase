@@ -131,16 +131,17 @@ const getAllListings = async (req, res, next) => {
       genderPreference,
       furnished,
       search,
-      university,   // NEW: dedicated university name filter (regex on nearbyUniversity)
-      location,     // NEW: dedicated location filter (regex on address + area)
+      university,   // FILTER: matches university name (regex match against nearbyUniversity)
+      location,     // FILTER: matches location string (regex match against address or area)
       page = 1,
       limit = 12,
       sortBy = "newest",
     } = req.query;
 
-    /* ── LRU cache (public, unauthenticated requests only) ───────
-       Only cache for guests — authenticated users get isSaved flag
-       which is personal, so we skip the cache for them.            */
+    /* ── LRU Cache Layer ─────────────────────────────────────────
+       Guest requests (unauthenticated) are cached to optimize DB load.
+       We skip caching for authenticated users because we enrich their
+       results dynamically with personal flags like `isSaved`.       */
     const isGuest = !req.user;
     const cacheKey = isGuest
       ? `listings:${JSON.stringify(req.query)}`
@@ -199,21 +200,21 @@ const getAllListings = async (req, res, next) => {
       ];
     }
 
-    /* ── Build sort + text search ────────────────────────────────────────
-       Relevance sort:
-         - "relevance"  → { score: { $meta: "textScore" } }  (needs $text)
-         - "price_asc"  → alias for price_low
-         - "price_desc" → alias for price_high
-       When a search query is present we default to relevance automatically.
-       When a university/location filter is present without a text query we
-       still sort by the user's sortBy preference.                          */
+    /* ── Build Sort Map & Handle Search Scoring ───────────────────────
+       Define all supported sorting rules. Relevance sorting uses
+       MongoDB's textScore metadata, which is computed dynamically by
+       the $text search engine based on index field weights.
+       
+       Aliases:
+         - price_asc  → maps to rent (lowest first)
+         - price_desc → maps to rent (highest first)                    */
     const sortMap = {
       newest:     { createdAt: -1 },
       oldest:     { createdAt:  1 },
       price_low:  { rent:  1 },
       price_high: { rent: -1 },
-      price_asc:  { rent:  1 },   // frontend alias
-      price_desc: { rent: -1 },   // frontend alias
+      price_asc:  { rent:  1 },   // maps low to high
+      price_desc: { rent: -1 },   // maps high to low
       most_viewed:{ views: -1 },
       relevance:  { score: { $meta: "textScore" } },
     };
