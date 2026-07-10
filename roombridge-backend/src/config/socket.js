@@ -27,11 +27,19 @@ let io;
  * @returns {Server} io instance
  */
 const initSocket = (server) => {
-  const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+  const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim()).filter(Boolean)
+    : [process.env.CLIENT_URL || "http://localhost:5173"];
+
+  const corsOrigins = [
+    ...allowedOrigins,
+    "http://localhost:5173",
+    "http://localhost:3000",
+  ];
 
   io = new Server(server, {
     cors: {
-      origin: [clientUrl, "http://localhost:5173", "http://localhost:3000"],
+      origin: corsOrigins,
       methods: ["GET", "POST"],
       credentials: true,
     },

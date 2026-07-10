@@ -78,14 +78,27 @@ app.use((req, res, next) => {
 });
 
 /* ── CORS ──────────────────────────────────────────────── */
+/* Supports multiple allowed origins via ALLOWED_ORIGINS env var (comma-separated).
+   Falls back to CLIENT_URL for single-origin setups and localhost for local dev. */
+const buildAllowedOrigins = () => {
+  const base = [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:3000",
+  ];
+  if (process.env.ALLOWED_ORIGINS) {
+    const extra = process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim()).filter(Boolean);
+    return [...base, ...extra];
+  }
+  if (process.env.CLIENT_URL) {
+    return [...base, process.env.CLIENT_URL];
+  }
+  return base;
+};
+
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "http://localhost:5174",
-      "http://localhost:3000",
-      process.env.CLIENT_URL,
-    ].filter(Boolean),
+    origin: buildAllowedOrigins(),
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
