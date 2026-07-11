@@ -63,6 +63,7 @@ const AdminContactMessages = lazy(
 const AdminProfile = lazy(() => import("../pages/admin/AdminProfile"));
 const SendNotifications = lazy(() => import("../pages/admin/SendNotifications"));
 const ManageCommunities = lazy(() => import("../pages/admin/ManageCommunities"));
+const AdminFeedback     = lazy(() => import("../pages/admin/AdminFeedback"));
 
 /* ── Role → dashboard path mapping ────────────────────────────── */
 const DASHBOARD_PATH = {
@@ -196,6 +197,7 @@ const AppRoutes = () => {
             <Route path="profile" element={<AdminProfile />} />
             <Route path="notifications" element={<SendNotifications />} />
             <Route path="communities" element={<ManageCommunities />} />
+            <Route path="feedback"    element={<AdminFeedback />} />
           </Route>
         </Route>
 

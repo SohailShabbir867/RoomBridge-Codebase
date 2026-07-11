@@ -458,6 +458,35 @@ const errorAlertEmail = (name, { errorType, description, severity, affectedFeatu
   `);
 };
 
+/* ─────────────────────────────────────────────────────────────────
+   16. Feedback Thank You
+───────────────────────────────────────────────────────────────── */
+const feedbackThankYouEmail = (name, rating, category) => {
+  const stars = "★".repeat(rating) + "☆".repeat(5 - rating);
+  const categoryLabels = {
+    general:         "General Feedback",
+    bug_report:      "Bug Report",
+    feature_request: "Feature Request",
+    other:           "Other",
+  };
+  return layout(`
+    <h2 style="color:${BRAND.darkGreen};font-size:22px;font-weight:800;margin:0 0 18px;">Thank You for Your Feedback! 💬</h2>
+    ${greeting(name)}
+    ${para(`We truly appreciate you taking the time to share your thoughts with us. Your feedback helps us make RoomBridge better for everyone.`)}
+    ${card(BRAND.successBg, BRAND.successBdr, `
+      ${cardLabel("Your Feedback Summary", BRAND.success)}
+      ${row("Rating", `<span style="color:#FBBF24;font-size:18px;letter-spacing:2px;">${stars}</span> &nbsp;<span style="font-size:13px;color:${BRAND.textMuted};">(${rating}/5)</span>`)}
+      ${row("Category", categoryLabels[category] || "General Feedback")}
+    `)}
+    ${para(`Our team reviews all feedback carefully. If you reported an issue or requested a feature, we'll work on it as quickly as we can.`)}
+    ${btn(`${APP_URL()}/explore`, "Continue Exploring Rooms")}
+    ${divider}
+    <p style="margin:0;font-size:13px;color:${BRAND.textMuted};line-height:1.6;">
+      If you have urgent concerns, reach us at <a href="mailto:contact.roombridge@gmail.com" style="color:${BRAND.btnBrown};">contact.roombridge@gmail.com</a>.
+    </p>
+  `);
+};
+
 /* ── Exports ────────────────────────────────────────────────── */
 module.exports = {
   sendEmail,
@@ -477,4 +506,5 @@ module.exports = {
   adminNotificationEmail,
   maintenanceEmail,
   errorAlertEmail,
+  feedbackThankYouEmail,
 };

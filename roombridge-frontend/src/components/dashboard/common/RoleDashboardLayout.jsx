@@ -18,6 +18,7 @@ import {
   RiMailLine,
   RiBroadcastLine,
   RiGlobalLine,
+  RiChatSmile3Line,
 } from "react-icons/ri";
 import authService from "../../../services/authService";
 import { logout } from "../../../redux/slices/authSlice";
@@ -59,8 +60,9 @@ const NAV_BY_ROLE = {
     { to: "/admin/contact-messages", icon: RiMailLine, label: "Contact Messages" },
     { to: "/admin/reports",        icon: RiFlagLine,       label: "Reports" },
     { to: "/admin/notifications",  icon: RiBroadcastLine,  label: "Notifications" },
-    { to: "/admin/communities",    icon: RiGroupLine,      label: "Communities" },
-    { to: "/admin/profile",        icon: RiUserLine,       label: "My Profile" },
+    { to: "/admin/communities",    icon: RiGroupLine,        label: "Communities" },
+    { to: "/admin/feedback",       icon: RiChatSmile3Line,   label: "Feedback" },
+    { to: "/admin/profile",        icon: RiUserLine,         label: "My Profile" },
     { to: "/",                     icon: RiGlobalLine,     label: "Home Page" },
   ],
 };

@@ -5,6 +5,8 @@ import AppRoutes from "./routes/AppRoutes";
 import { SocketProvider } from "./context/SocketContext";
 import authService from "./services/authService";
 import { setCredentials, setAuthChecked } from "./redux/slices/authSlice";
+import FeedbackModal from "./components/common/FeedbackModal";
+import useFeedbackTimer from "./hooks/useFeedbackTimer";
 
 /*
   App component structure (outer → inner):
@@ -23,6 +25,7 @@ import { setCredentials, setAuthChecked } from "./redux/slices/authSlice";
 */
 function App() {
   const dispatch = useDispatch();
+  const { showModal, dismiss } = useFeedbackTimer();
 
   useEffect(() => {
     const checkSession = async () => {
@@ -50,6 +53,7 @@ function App() {
       <SocketProvider>
         <div className="min-h-screen flex flex-col bg-background">
           <AppRoutes />
+          {showModal && <FeedbackModal onClose={dismiss} />}
         </div>
       </SocketProvider>
     </Router>
