@@ -21,7 +21,9 @@ const AdminMessages = () => {
         setConversations(convs);
 
         if (!activeConv && convs.length > 0) {
-          setActiveConv(convs[0]);
+          if (window.innerWidth >= 1024) {
+            setActiveConv(convs[0]);
+          }
         }
       } catch (err) {
         toast.error(
@@ -97,7 +99,9 @@ const AdminMessages = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-12 h-full">
-            <div className="lg:col-span-4 border-r border-border">
+            <div
+              className={`lg:col-span-4 border-r border-border h-full ${activeConv ? "hidden lg:block" : "block"}`}
+            >
               <ChatList
                 conversations={filteredConversations}
                 activeConvId={activeConv?.conversationId}
@@ -107,12 +111,13 @@ const AdminMessages = () => {
                 onSearch={setSearch}
               />
             </div>
-            <div className="lg:col-span-8 h-full min-h-0 flex flex-col">
+            <div className={`lg:col-span-8 h-full min-h-0 flex flex-col ${!activeConv ? "hidden lg:block" : "block"}`}>
               {activeConv ? (
                 <ChatBox
                   conversation={activeConv}
                   onMessageSent={handleMessageSent}
                   onUnreadCleared={handleUnreadCleared}
+                  onBack={() => setActiveConv(null)}
                 />
               ) : (
                 <div className="h-full flex items-center justify-center text-center px-6">
