@@ -107,7 +107,7 @@ const AdminMessages = () => {
                 onSearch={setSearch}
               />
             </div>
-            <div className="lg:col-span-8 h-full">
+            <div className="lg:col-span-8 h-full min-h-0 flex flex-col">
               {activeConv ? (
                 <ChatBox
                   conversation={activeConv}

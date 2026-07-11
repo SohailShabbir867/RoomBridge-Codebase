@@ -5,7 +5,7 @@ import ChatMessage from "./ChatMessage";
 import ChatInput from "./ChatInput";
 import ImageLightbox from "./ImageLightbox";
 import toast from "react-hot-toast";
-import { RiLoader4Line, RiMoreLine, RiUser3Line } from "react-icons/ri";
+import { RiLoader4Line, RiMoreLine, RiUser3Line, RiArrowLeftLine } from "react-icons/ri";
 
 /*
   ChatBox — the message thread for a single conversation.
@@ -16,6 +16,7 @@ import { RiLoader4Line, RiMoreLine, RiUser3Line } from "react-icons/ri";
     }
     onMessageSent: (savedMessage) => void   — to update ChatList last message
     onUnreadCleared: (convId) => void       — to zero-out unread count in parent
+    onBack: () => void                      — optional back button callback for mobile
 */
 
 const DK  = "#012D1D";
@@ -26,7 +27,7 @@ const TYPING_THROTTLE_MS = 1500;
 const TYPING_TIMEOUT_MS  = 3000;
 const READ_SYNC_WINDOW_MS = 1200;
 
-const ChatBox = ({ conversation, onMessageSent, onUnreadCleared }) => {
+const ChatBox = ({ conversation, onMessageSent, onUnreadCleared, onBack }) => {
   const { on, off, emit } = useSocket();
 
   const [messages, setMessages]         = useState([]);
@@ -193,6 +194,15 @@ const ChatBox = ({ conversation, onMessageSent, onUnreadCleared }) => {
         className="flex items-center gap-3 px-4 py-3 border-b shrink-0"
         style={{ backgroundColor: DK, borderColor: "rgba(255,255,255,0.08)" }}
       >
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="lg:hidden text-white/80 hover:text-white p-1 -ml-1 rounded-full transition-all active:scale-95 cursor-pointer"
+            aria-label="Back to conversations"
+          >
+            <RiArrowLeftLine className="text-xl" />
+          </button>
+        )}
         <OtherAvatar size="md" />
         <div className="flex-1 min-w-0">
           <p className="text-white font-bold text-sm leading-tight truncate">
@@ -215,7 +225,7 @@ const ChatBox = ({ conversation, onMessageSent, onUnreadCleared }) => {
       </div>
 
       {/* ── Messages area ────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-1.5">
+      <div className="flex-1 overflow-y-auto custom-chat-scrollbar px-4 py-4 space-y-1.5">
         {loading ? (
           <div className="flex justify-center py-12">
             <RiLoader4Line className="animate-spin text-3xl" style={{ color: DK }} />

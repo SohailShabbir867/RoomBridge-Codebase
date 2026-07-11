@@ -80,7 +80,10 @@ const SeekerMessages = () => {
             }
           } catch {/* silent */}
         } else if (!activeConv && convs.length > 0) {
-          setActiveConv(convs[0]);
+          /* Only auto-select first conversation on desktop */
+          if (window.innerWidth >= 1024) {
+            setActiveConv(convs[0]);
+          }
         }
       } catch (err) {
         toast.error(err.response?.data?.message || "Failed to load conversations.");
@@ -236,7 +239,7 @@ const SeekerMessages = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 h-full">
             {/* Sidebar */}
             <div
-              className="lg:col-span-4 border-r"
+              className={`lg:col-span-4 border-r h-full ${activeConv ? "hidden lg:block" : "block"}`}
               style={{ borderColor: "#E8E2D9" }}
             >
               <ChatList
@@ -250,12 +253,13 @@ const SeekerMessages = () => {
             </div>
 
             {/* Chat area */}
-            <div className="lg:col-span-8 h-full">
+            <div className={`lg:col-span-8 h-full min-h-0 flex flex-col ${!activeConv ? "hidden lg:block" : "block"}`}>
               {activeConv ? (
                 <ChatBox
                   conversation={activeConv}
                   onMessageSent={handleMessageSent}
                   onUnreadCleared={handleUnreadCleared}
+                  onBack={() => setActiveConv(null)}
                 />
               ) : (
                 <div className="h-full flex items-center justify-center text-center px-6">

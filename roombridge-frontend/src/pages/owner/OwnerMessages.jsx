@@ -28,9 +28,11 @@ const OwnerMessages = () => {
           res.conversations       ||
           (Array.isArray(res.data) ? res.data : []);
         setConversations(convs);
-        /* Auto-select first conversation if nothing is active */
+        /* Auto-select first conversation if nothing is active (desktop only) */
         if (!activeConv && convs.length > 0) {
-          setActiveConv(convs[0]);
+          if (window.innerWidth >= 1024) {
+            setActiveConv(convs[0]);
+          }
         }
       } catch (err) {
         toast.error(err.response?.data?.message || "Failed to load conversations.");
@@ -173,11 +175,10 @@ const OwnerMessages = () => {
             </div>
           </div>
         ) : (
-          /* ── Two-panel chat layout ─────────────────────── */
           <div className="grid grid-cols-1 lg:grid-cols-12 h-full">
             {/* Sidebar */}
             <div
-              className="lg:col-span-4 border-r"
+              className={`lg:col-span-4 border-r h-full ${activeConv ? "hidden lg:block" : "block"}`}
               style={{ borderColor: "#E8E2D9" }}
             >
               <ChatList
@@ -191,12 +192,13 @@ const OwnerMessages = () => {
             </div>
 
             {/* Chat area */}
-            <div className="lg:col-span-8 h-full">
+            <div className={`lg:col-span-8 h-full min-h-0 flex flex-col ${!activeConv ? "hidden lg:block" : "block"}`}>
               {activeConv ? (
                 <ChatBox
                   conversation={activeConv}
                   onMessageSent={handleMessageSent}
                   onUnreadCleared={handleUnreadCleared}
+                  onBack={() => setActiveConv(null)}
                 />
               ) : (
                 <div className="h-full flex items-center justify-center text-center px-6">

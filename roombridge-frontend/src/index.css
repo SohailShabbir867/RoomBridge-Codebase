@@ -324,6 +324,68 @@ body {
   }
 }
 
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ─── Mobile / Touch Utilities ───────────────────────────────── */
+
+/* Prevent text size adjustment on orientation change */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Remove tap highlight on mobile browsers */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Safe area padding for bottom sheets on notched devices */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Better touch scrolling on iOS */
+.overflow-y-auto,
+.overflow-x-auto,
+.overflow-y-scroll {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Community room page: full dynamic viewport height on mobile */
+.dvh-full {
+  height: 100dvh;
+}
+
+/* Minimum touch target size (WCAG 2.5.5) */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+
 /* ─── React Hot Toast overrides ──────────────────────────────── */
 .react-hot-toast [data-type="success"] {
   border-left: 4px solid var(--success);
@@ -331,3 +393,19 @@ body {
 .react-hot-toast [data-type="error"] {
   border-left: 4px solid var(--error);
 }
+
+/* ─── Custom Chat Scrollbar ───────────────────────────────────── */
+.custom-chat-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-chat-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-chat-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(1, 45, 29, 0.2); /* theme primary transparent */
+  border-radius: 9999px;
+}
+.custom-chat-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(1, 45, 29, 0.4);
+}
+
