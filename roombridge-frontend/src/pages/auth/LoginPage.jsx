@@ -251,47 +251,6 @@ const LoginPage = () => {
               >
                 {loading ? "Logging in..." : "Log In →"}
               </button>
-
-              {/* Divider */}
-              <div className="relative flex items-center gap-4 my-6">
-                <div className="flex-1 h-px bg-gray-100" />
-                <span className="text-[9px] sm:text-[10px] font-extrabold text-gray-400 uppercase tracking-widest">
-                  or continue with
-                </span>
-                <div className="flex-1 h-px bg-gray-100" />
-              </div>
-
-              {/* Google Button */}
-              <button
-                type="button"
-                onClick={() => toast("Google login coming soon!", { icon: "🚧" })}
-                className="w-full flex items-center justify-center gap-3 bg-white border border-gray-100 hover:border-gray-200 py-3.5 rounded-2xl text-xs sm:text-sm font-bold text-[#012D1D] shadow-[0_2px_8px_rgba(0,0,0,0.01)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.04)] transition-all duration-200"
-              >
-                <svg
-                  viewBox="0 0 48 48"
-                  className="w-4 h-4 sm:w-5 sm:h-5"
-                  xmlns="http://www.w3.org/2000/svg"
-                  aria-hidden="true"
-                >
-                  <path
-                    fill="#EA4335"
-                    d="M24 9.5c3.2 0 5.7 1.1 7.6 2.9l5.6-5.6C33.8 3.6 29.3 1.5 24 1.5 14.7 1.5 6.9 7.2 3.6 15.3l6.6 5.1C11.9 14.3 17.4 9.5 24 9.5z"
-                  />
-                  <path
-                    fill="#4285F4"
-                    d="M46.4 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.6c-.5 2.8-2.1 5.2-4.5 6.8l7 5.4c4.1-3.8 6.3-9.4 6.3-16.2z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M10.2 28.6A14.6 14.6 0 019.5 24c0-1.6.3-3.1.7-4.6L3.6 14.3A22.5 22.5 0 001.5 24c0 3.6.9 7 2.4 10l6.3-5.4z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M24 46.5c5.3 0 9.8-1.8 13.1-4.8l-7-5.4c-1.8 1.2-4.1 1.9-6.1 1.9-6.6 0-12.1-4.8-13.8-11.2l-6.6 5.1C6.9 40.8 14.7 46.5 24 46.5z"
-                  />
-                </svg>
-                Google
-              </button>
             </form>
 
             {/* Bottom links inside form box */}
