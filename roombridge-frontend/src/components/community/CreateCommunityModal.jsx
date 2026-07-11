@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import communityService from "../../services/communityService";
 import toast from "react-hot-toast";
 import { RiCloseLine, RiImageAddLine, RiLoader4Line } from "react-icons/ri";
@@ -7,8 +7,6 @@ const DK = "#012D1D";
 const ACC = "#FFAB69";
 const CR = "#F7F4EF";
 
-/* Same city list used in Community.model.js — kept here for the <select>
-   options. If the master list changes on the backend, update this too. */
 const PAKISTAN_CITIES = [
   "Karachi", "Lahore", "Islamabad", "Rawalpindi", "Peshawar", "Quetta",
   "Faisalabad", "Multan", "Hyderabad", "Sialkot", "Gujranwala",
@@ -16,28 +14,31 @@ const PAKISTAN_CITIES = [
 ];
 
 /*
-  CreateCommunityModal — admin-only. Only rendered from ManageCommunities.jsx,
-  which is itself behind ProtectedRoute role="admin", so no extra role check
-  needed here — the backend route also enforces authorize("admin") regardless.
-
-  Props:
-    onClose: () => void
-    onCreated: (community) => void
+  CreateCommunityModal — admin-only.
+  Supports both CREATE and EDIT modes.
+  If the `community` prop is provided, it acts in Edit/Update mode.
 */
-const CreateCommunityModal = ({ onClose, onCreated }) => {
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [type, setType] = useState("city");
-  const [city, setCity] = useState("");
-  const [visibility, setVisibility] = useState("public");
+const CreateCommunityModal = ({ onClose, onCreated, onUpdated, community = null }) => {
+  const isEdit = Boolean(community);
+
+  const [name, setName] = useState(community?.name || "");
+  const [description, setDescription] = useState(community?.description || "");
+  const [type, setType] = useState(community?.type || "city");
+  const [city, setCity] = useState(community?.city || "");
+  const [visibility, setVisibility] = useState(community?.visibility || "public");
   const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState("");
+  const [imagePreview, setImagePreview] = useState(community?.image?.url || "");
   const [submitting, setSubmitting] = useState(false);
   const fileInputRef = useRef(null);
 
   const handleImagePick = (file) => {
+    if (file && file.size > 10 * 1024 * 1024) {
+      toast.error("Image size should be less than 10MB");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
     setImageFile(file);
-    setImagePreview(file ? URL.createObjectURL(file) : "");
+    setImagePreview(file ? URL.createObjectURL(file) : (community?.image?.url || ""));
   };
 
   const handleSubmit = async (e) => {
@@ -55,18 +56,30 @@ const CreateCommunityModal = ({ onClose, onCreated }) => {
     fd.append("name", name.trim());
     fd.append("description", description.trim());
     fd.append("type", type);
-    if (type === "city") fd.append("city", city);
+    if (type === "city") {
+      fd.append("city", city);
+    } else {
+      fd.append("city", ""); // Clear city if type changes
+    }
     fd.append("visibility", visibility);
     if (imageFile) fd.append("image", imageFile);
 
     try {
       setSubmitting(true);
-      const res = await communityService.createCommunity(fd);
-      toast.success("Community created.");
-      onCreated?.(res.data?.community);
+      if (isEdit) {
+        const res = await communityService.updateCommunity(community._id, fd);
+        toast.success("Community updated.");
+        onUpdated?.(res.data?.community || res.community || res.data);
+      } else {
+        const res = await communityService.createCommunity(fd);
+        toast.success("Community created.");
+        onCreated?.(res.data?.community);
+      }
       onClose();
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to create community.");
+      toast.error(
+        err.response?.data?.message || `Failed to ${isEdit ? "update" : "create"} community.`
+      );
     } finally {
       setSubmitting(false);
     }
@@ -78,7 +91,7 @@ const CreateCommunityModal = ({ onClose, onCreated }) => {
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: "#E8E2D9" }}>
           <h2 className="font-bold text-lg" style={{ color: DK }}>
-            Create Community
+            {isEdit ? "Edit Community" : "Create Community"}
           </h2>
           <button onClick={onClose} aria-label="Close" className="text-gray-400 hover:text-gray-600">
             <RiCloseLine className="text-2xl" />
@@ -89,7 +102,7 @@ const CreateCommunityModal = ({ onClose, onCreated }) => {
           {/* Cover image */}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-bold uppercase tracking-wide text-gray-400">
-              Cover Image (optional)
+              Cover Image {isEdit ? "(optional update)" : "(optional)"}
             </label>
             <div
               onClick={() => fileInputRef.current?.click()}
@@ -101,7 +114,7 @@ const CreateCommunityModal = ({ onClose, onCreated }) => {
               ) : (
                 <div className="flex flex-col items-center gap-1 text-gray-400">
                   <RiImageAddLine className="text-2xl" />
-                  <span className="text-xs">Click to upload (JPEG, PNG, WebP — max 5MB)</span>
+                  <span className="text-xs">Click to upload (JPEG, PNG, WebP — max 10MB)</span>
                 </div>
               )}
             </div>
@@ -220,10 +233,10 @@ const CreateCommunityModal = ({ onClose, onCreated }) => {
           >
             {submitting ? (
               <>
-                <RiLoader4Line className="animate-spin" /> Creating…
+                <RiLoader4Line className="animate-spin" /> {isEdit ? "Updating…" : "Creating…"}
               </>
             ) : (
-              "Create Community"
+              isEdit ? "Update Community" : "Create Community"
             )}
           </button>
         </form>
