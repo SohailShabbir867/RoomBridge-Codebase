@@ -882,7 +882,7 @@ const ListingDetailPage = () => {
                 <Link
                   to={
                     isAuthenticated
-                      ? `/seeker/messages?owner=${listing.owner?._id || ""}&listing=${listing._id || id || ""}`
+                      ? `/seeker/messages?owner=${listing.owner?._id || ""}&listing=${listing._id || id || ""}&name=${encodeURIComponent(listing.owner?.name || "Owner")}`
                       : "/login"
                   }
                   state={!isAuthenticated ? { from: `/explore/${id}` } : undefined}

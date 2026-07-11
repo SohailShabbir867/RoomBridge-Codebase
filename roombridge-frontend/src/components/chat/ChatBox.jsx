@@ -75,7 +75,11 @@ const ChatBox = ({ conversation, onMessageSent, onUnreadCleared }) => {
 
   /* ── Load messages + join socket room ───────────────────── */
   useEffect(() => {
-    if (!convId) return;
+    if (!convId) {
+      setLoading(false);
+      setMessages([]);
+      return;
+    }
     setLoading(true);
     setMessages([]);
     emit("join_room", convId);

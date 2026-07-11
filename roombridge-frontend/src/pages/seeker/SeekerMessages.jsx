@@ -195,7 +195,7 @@ const SeekerMessages = () => {
         className="bg-white rounded-2xl border overflow-hidden shadow-sm"
         style={{ borderColor: "#E8E2D9", height: "72vh" }}
       >
-        {conversations.length === 0 && !loading ? (
+        {conversations.length === 0 && !loading && !activeConv ? (
           /* ── Empty state ───────────────────────────────── */
           <div className="h-full flex items-center justify-center text-center px-6">
             <div>
