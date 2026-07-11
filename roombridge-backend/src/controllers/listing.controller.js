@@ -180,62 +180,66 @@ const getAllListings = async (req, res, next) => {
 
     /* ── University filter (dedicated param) ─────────────────────────────
        ?university=Islamia University Bahawalpur
-       Matches against nearbyUniversity field (case-insensitive regex).
-       Split on spaces to allow partial word matching, e.g. "islamia" will
-       match "Islamia University of Bahawalpur". Uses $regex for flexibility
-       rather than $text so it works without exact phrase indexing.          */
+       Matches against nearbyUniversity field (case-insensitive regex).      */
     if (university && university.trim()) {
-      const uniQuery = university.trim();
-      filter.nearbyUniversity = { $regex: uniQuery, $options: "i" };
+      filter.nearbyUniversity = { $regex: university.trim(), $options: "i" };
     }
 
-    /* ── Location filter (dedicated param) ───────────────────────────────
-       ?location=Johar Town
-       Matches address OR area with a case-insensitive regex.               */
-    if (location && location.trim()) {
-      const locQuery = location.trim();
-      filter.$or = [
-        { address: { $regex: locQuery, $options: "i" } },
-        { area:    { $regex: locQuery, $options: "i" } },
-      ];
-    }
-
-    /* ── Build Sort Map & Handle Search Scoring ───────────────────────
-       Define all supported sorting rules. Relevance sorting uses
-       MongoDB's textScore metadata, which is computed dynamically by
-       the $text search engine based on index field weights.
+    /* ── Compound search + location filter ────────────────────────────────
+       Both search and location use $or internally. To avoid clobbering each
+       other we collect all OR-branches and AND them together.
        
-       Aliases:
-         - price_asc  → maps to rent (lowest first)
-         - price_desc → maps to rent (highest first)                    */
-    const sortMap = {
-      newest:     { createdAt: -1 },
-      oldest:     { createdAt:  1 },
-      price_low:  { rent:  1 },
-      price_high: { rent: -1 },
-      price_asc:  { rent:  1 },   // maps low to high
-      price_desc: { rent: -1 },   // maps high to low
-      most_viewed:{ views: -1 },
-      relevance:  { score: { $meta: "textScore" } },
-    };
-
-    let sort, projection;
+       search  → scans title, description, nearbyUniversity, address, area, city
+       location → scans address + area
+       
+       Using case-insensitive regex so partial words work:
+         "Islamia"  → matches "Islamia University of Bahawalpur"
+         "Johar"    → matches "Johar Town, Lahore"
+         "LUMS"     → matches address/description containing "LUMS"           */
+    const andClauses = [];
 
     if (search && search.trim()) {
-      const searchTerm = search.trim();
-
-      /* Full-text search using our newly created weighted text index */
-      filter.$text = { $search: searchTerm };
-      projection = { score: { $meta: "textScore" } };
-
-      /* Default to relevance when searching; respect explicit sortBy */
-      sort = sortBy === "relevance" || !sortMap[sortBy]
-        ? sortMap.relevance
-        : sortMap[sortBy] ?? sortMap.relevance;
-
-    } else {
-      sort = sortMap[sortBy] || sortMap.newest;
+      const re = { $regex: search.trim(), $options: "i" };
+      andClauses.push({
+        $or: [
+          { title:            re },
+          { description:      re },
+          { nearbyUniversity: re },
+          { address:          re },
+          { area:             re },
+          { city:             re },
+        ],
+      });
     }
+
+    if (location && location.trim()) {
+      const re = { $regex: location.trim(), $options: "i" };
+      andClauses.push({
+        $or: [
+          { address: re },
+          { area:    re },
+        ],
+      });
+    }
+
+    if (andClauses.length > 0) {
+      filter.$and = andClauses;
+    }
+
+    /* ── Sort ─────────────────────────────────────────────────────── */
+    const sortMap = {
+      newest:      { createdAt: -1 },
+      oldest:      { createdAt:  1 },
+      price_low:   { rent:  1 },
+      price_high:  { rent: -1 },
+      price_asc:   { rent:  1 },
+      price_desc:  { rent: -1 },
+      most_viewed: { views: -1 },
+    };
+
+    const sort       = sortMap[sortBy] || sortMap.newest;
+    const projection = {}; // no text score needed
+
 
 
     /* ── Pagination ──────────────────────────────────── */

@@ -352,7 +352,7 @@ const ListingsPage = () => {
               <RiSearchLine className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               <input
                 type="text"
-                placeholder="Search hostels, universities, locations..."
+                placeholder="Search by hostel name, university, area..."
                 value={filters.search}
                 onChange={handleSearchChange}
                 aria-label="Search listings"
@@ -366,6 +366,12 @@ const ListingsPage = () => {
                 >
                   <RiCloseLine />
                 </button>
+              )}
+              {/* Hint: university search */}
+              {filters.search && (
+                <div className="absolute top-full left-0 mt-1 text-[9px] font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap">
+                  🎓 Searching across hostels, addresses &amp; nearby universities
+                </div>
               )}
             </div>
 
