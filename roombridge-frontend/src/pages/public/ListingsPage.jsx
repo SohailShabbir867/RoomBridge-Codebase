@@ -28,7 +28,7 @@ import {
   RiBuilding3Line,
   RiVipCrownLine,
 } from "react-icons/ri";
-import { CITIES, AMENITIES, PAKISTAN_UNIVERSITIES } from "../../utils/constants";
+import { CITIES, AMENITIES } from "../../utils/constants";
 import listingService from "../../services/listingService";
 import toast from "react-hot-toast";
 
@@ -252,8 +252,7 @@ const ListingsPage = () => {
     amenities:        [],
     sortBy:           "newest",
     search:           searchParams.get("search")           || "",
-    university:       searchParams.get("university")       || "",  // NEW
-    location:         searchParams.get("location")         || "",  // NEW
+    location:         searchParams.get("location")         || "",
   });
 
   // Set page title on mount
@@ -288,7 +287,6 @@ const ListingsPage = () => {
       amenities:        [],
       sortBy:           "newest",
       search:           "",
-      university:       "",
       location:         "",
     });
     setPage(1);
@@ -303,8 +301,7 @@ const ListingsPage = () => {
       if (filters.roomType)         params.roomType         = filters.roomType;
       if (filters.genderPreference) params.genderPreference = filters.genderPreference;
       if (filters.search)           params.search           = filters.search;
-      if (filters.university)       params.university       = filters.university;  // NEW
-      if (filters.location)         params.location         = filters.location;    // NEW
+      if (filters.location)         params.location         = filters.location;
       if (filters.sortBy)           params.sortBy           = filters.sortBy;
       if (filters.amenities.length) params.amenities        = filters.amenities.join(",");
       if (filters.budget) {
@@ -339,7 +336,7 @@ const ListingsPage = () => {
   useEffect(() => () => clearTimeout(searchDebounceRef.current), []);
 
   const activeFilterCount =
-    [filters.city, filters.roomType, filters.budget, filters.genderPreference, filters.university, filters.location]
+    [filters.city, filters.roomType, filters.budget, filters.genderPreference, filters.location]
       .filter(Boolean).length +
     filters.amenities.length;
 
@@ -434,48 +431,7 @@ const ListingsPage = () => {
         </div>
       </div>
 
-      {/* ── University Quick-Select Pill Bar ───────────────────────────────
-          A horizontally scrollable row of university shortcut pills. Clicking
-          a pill sets the university filter AND auto-selects the matching city
-          so results are already pre-filtered to the right location.        */}
-      <div
-        className="bg-white border-b border-gray-100"
-        style={{ overflowX: "auto", whiteSpace: "nowrap" }}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center gap-2">
-          <span className="text-[9px] font-extrabold uppercase tracking-widest text-gray-400 shrink-0 mr-1">
-            Near:
-          </span>
-          {PAKISTAN_UNIVERSITIES.map((uni) => {
-            const isActive = filters.university === uni.value;
-            return (
-              <button
-                key={uni.value}
-                type="button"
-                id={`uni-pill-${uni.value.replace(/\s+/g, "-").toLowerCase()}`}
-                onClick={() => {
-                  const newUni = isActive ? "" : uni.value;
-                  setFilters((f) => ({
-                    ...f,
-                    university: newUni,
-                    // Auto-select city if the university belongs to a supported city
-                    city: !isActive && uni.city ? uni.city : f.city,
-                  }));
-                  setPage(1);
-                }}
-                className="inline-flex items-center shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold transition-all duration-200 border cursor-pointer active:scale-95"
-                style={{
-                  backgroundColor: isActive ? "#012D1D" : "#F5F2EB",
-                  color:           isActive ? "#FFFFFF" : "#012D1D",
-                  borderColor:     isActive ? "#012D1D" : "transparent",
-                }}
-              >
-                🎓 {uni.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
@@ -530,48 +486,7 @@ const ListingsPage = () => {
                   </div>
                 </div>
 
-                {/* University Filter */}
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
-                    Near University
-                  </label>
-                  <div className="relative">
-                    <RiBuilding3Line className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <select
-                      id="university-filter"
-                      value={filters.university}
-                      onChange={(e) => {
-                        const selected = PAKISTAN_UNIVERSITIES.find(u => u.value === e.target.value);
-                        setFilters(f => ({
-                          ...f,
-                          university: e.target.value,
-                          city: selected?.city || f.city,
-                        }));
-                        setPage(1);
-                      }}
-                      className="w-full bg-[#F5F2EB] border-0 rounded-xl py-3 px-4 pl-10 text-xs font-semibold focus:ring-1 focus:ring-[#8E4E14] outline-none text-gray-800 appearance-none cursor-pointer"
-                    >
-                      <option value="">Any University</option>
-                      {PAKISTAN_UNIVERSITIES.map((u) => (
-                        <option key={u.value} value={u.value}>
-                          {u.label}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
-                      <RiArrowDownSLine className="text-base" />
-                    </div>
-                  </div>
-                  {filters.university && (
-                    <button
-                      type="button"
-                      onClick={() => handleFilter("university", "")}
-                      className="mt-1.5 text-[10px] text-red-400 hover:text-red-600 font-semibold cursor-pointer"
-                    >
-                      ✕ Clear university
-                    </button>
-                  )}
-                </div>
+
 
                 {/* Location / Area Filter */}
                 <div>
