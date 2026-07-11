@@ -34,7 +34,7 @@ const C = {
 const TEAM = [
   { name: "Sohail Shabbir ", role: "CEO & Co-founder",  bio: "Full-stack developer with 3+ years in MERN. Architect of RoomBridge." },
   { name: "Sohail Shabbir ",  role: "CTO",               bio: "Backend engineer specialising in Node.js, MongoDB, and scalable APIs." },
-  { name: "Radif Fiaz",  role: "Lead Designer",     bio: "UI/UX designer focused on accessible, beautiful product experiences." },
+  { name: "Radif Fiaz",  role: "Frontend Developer & UI/UX Designer",     bio: "Frontend developer and UI/UX designer focused on accessible, beautiful product experiences." },
   { name: "Sohail Shabbir",   role: "Product Manager",   bio: "Shapes strategy and roadmap. Passionate about Pakistan's housing market." },
 ];
 

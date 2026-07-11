@@ -410,7 +410,7 @@ const AboutUsPage = () => {
                   Radif Fiaz
                 </h3>
                 <p className="text-xs font-semibold uppercase tracking-wider mt-0.5" style={{ color: C.btnBrown }}>
-                  Lead Designer
+                  Frontend Developer & UI/UX Designer
                 </p>
               </div>
               <p className="text-xs text-gray-500 italic px-4 font-light leading-relaxed">
