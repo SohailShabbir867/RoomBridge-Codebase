@@ -17,6 +17,7 @@ const preferenceRoutes = require("./routes/preference.routes");
 const adminRoutes = require("./routes/admin.routes");
 const reportRoutes = require("./routes/report.routes");
 const communityRoutes = require("./routes/community.routes");
+const subscriptionRoutes = require("./routes/subscription.routes");
 
 /* ── Middleware imports ────────────────────────────────── */
 const { errorHandler, notFound } = require("./middleware/error.middleware");
@@ -183,6 +184,7 @@ app.use("/api/v1/preferences", preferenceRoutes);
 app.use("/api/v1/admin", adminRoutes);
 app.use("/api/v1/reports", reportRoutes);
 app.use("/api/v1/communities", communityRoutes);
+app.use("/api/v1/alerts", subscriptionRoutes);
 
 /* ── Error handling (must be last) ─────────────────────── */
 app.use(notFound);

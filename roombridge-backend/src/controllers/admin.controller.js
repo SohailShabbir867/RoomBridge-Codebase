@@ -20,13 +20,39 @@ const {
   listingRejectedEmail,
   listingDeactivatedEmail,
   listingApprovedEmail,
+  newRoomAlertEmail,
 } = require("../utils/sendEmail");
+const Subscription = require("../models/Subscription.model");
 
 /* ── Fire-and-forget email helper ────────────────────────── */
 const sendEmailSafe = (opts, label = "admin email") =>
   sendEmail(opts).catch((err) =>
     console.error(`[Admin] ${label} failed:`, err.message),
   );
+
+/* ── Notify subscribers of new active listings ─────────────── */
+const notifySubscribersOfNewRoom = async (listing) => {
+  try {
+    const subs = await Subscription.find({ isActive: true });
+    if (!subs || subs.length === 0) return;
+
+    const subject = `🏠 New Room Alert in ${listing.city} — "${listing.title}"`;
+    const html = newRoomAlertEmail(listing);
+
+    subs.forEach((sub) => {
+      sendEmailSafe(
+        {
+          to: sub.email,
+          subject,
+          html,
+        },
+        `room alert to ${sub.email}`
+      );
+    });
+  } catch (err) {
+    console.error("❌ Failed to notify alert subscribers:", err.message);
+  }
+};
 
 /* ── Safe integer parse ─────────────────────────────────── */
 const safeInt = (val, fallback, min, max) => {
@@ -543,6 +569,10 @@ const updateListingStatus = async (req, res, next) => {
         : undefined;
 
     await listing.save({ validateBeforeSave: false });
+
+    if (prevStatus !== status && status === "active") {
+      notifySubscribersOfNewRoom(listing);
+    }
 
     if (listing.owner?.email && prevStatus !== status) {
       if (status === "active") {

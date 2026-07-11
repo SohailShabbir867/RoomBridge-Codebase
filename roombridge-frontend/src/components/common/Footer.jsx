@@ -1,5 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import { useSelector } from "react-redux";
+import api from "../../services/api";
+import toast from "react-hot-toast";
 import {
   RiMapPin2Line,
   RiMailLine,
@@ -49,6 +52,20 @@ const CONTACT = [
 
 const Footer = () => {
   const year = new Date().getFullYear();
+  const { isAuthenticated } = useSelector((s) => s.auth);
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubscribe = async () => {
+    try {
+      setSubmitting(true);
+      const res = await api.post("/alerts/subscribe");
+      toast.success(res.data?.message || "Subscribed successfully!");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to subscribe. Try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <footer style={{ backgroundColor: "#012D1D" }} className="text-white">
@@ -162,28 +179,29 @@ const Footer = () => {
               <p className="text-xs text-white/40 uppercase tracking-wider font-medium mb-2">
                 Get room alerts
               </p>
-              <form onSubmit={(e) => e.preventDefault()} className="flex gap-2">
-                <input
-                  type="email"
-                  placeholder="your@email.com"
-                  autoComplete="email"
-                  className="flex-1 text-xs px-3 py-2 rounded-lg border
-                             text-white placeholder-white/40 outline-none
-                             transition-colors"
-                  style={{
-                    backgroundColor: "rgba(255,255,255,0.08)",
-                    borderColor: "rgba(255,255,255,0.2)",
-                  }}
-                />
+              {isAuthenticated ? (
                 <button
-                  type="submit"
-                  className="px-3 py-2 text-white text-xs font-semibold
-                             rounded-lg hover:opacity-90 transition-colors duration-200 shrink-0"
+                  onClick={handleSubscribe}
+                  disabled={submitting}
+                  className="w-full py-2.5 px-4 text-white text-xs font-semibold
+                             rounded-lg hover:opacity-90 transition-colors duration-200 shrink-0 disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
                   style={{ backgroundColor: "#8E4E14" }}
                 >
-                  Go
+                  {submitting ? "Subscribing..." : "Subscribe to Room Alerts"}
                 </button>
-              </form>
+              ) : (
+                <Link
+                  to="/login"
+                  className="w-full py-2.5 px-4 text-white text-xs font-semibold
+                             rounded-lg hover:opacity-90 transition-colors duration-200 shrink-0 flex items-center justify-center gap-1.5"
+                  style={{
+                    backgroundColor: "rgba(255,255,255,0.08)",
+                    border: "1px solid rgba(255,255,255,0.2)",
+                  }}
+                >
+                  Login to Subscribe
+                </Link>
+              )}
             </div>
           </div>
         </div>

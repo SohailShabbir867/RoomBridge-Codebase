@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import communityService from "../../services/communityService";
 import CreateCommunityModal from "../../components/community/CreateCommunityModal";
 import toast from "react-hot-toast";
+import RoleDashboardLayout from "../../components/dashboard/common/RoleDashboardLayout";
 import {
   RiLoader4Line,
   RiAddLine,
@@ -64,25 +65,22 @@ const ManageCommunities = () => {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: DK }}>
-            Manage Communities
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Create city groups or announcement channels for RoomBridge users.
-          </p>
-        </div>
+    <RoleDashboardLayout
+      role="admin"
+      title="Manage Communities"
+      subtitle="Create city groups or announcement channels for RoomBridge users."
+      headerAction={
         <button
           onClick={() => setShowCreate(true)}
-          className="flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-bold text-white cursor-pointer active:scale-95"
+          className="flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-bold text-white cursor-pointer active:scale-95 shadow-sm"
           style={{ backgroundColor: DK }}
         >
           <RiAddLine className="text-base" />
           New Community
         </button>
-      </div>
+      }
+    >
+      <div className="max-w-5xl mx-auto py-4">
 
       {loading ? (
         <div className="flex justify-center py-20">
@@ -261,7 +259,8 @@ const ManageCommunities = () => {
           onUpdated={handleUpdated}
         />
       )}
-    </div>
+      </div>
+    </RoleDashboardLayout>
   );
 };
 

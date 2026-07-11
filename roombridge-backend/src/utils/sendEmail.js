@@ -458,6 +458,29 @@ const errorAlertEmail = (name, { errorType, description, severity, affectedFeatu
   `);
 };
 
+/* ─────────────────────────────────────────────────────────────────
+   16. New Room Alert (to Subscribers)
+   ───────────────────────────────────────────────────────────────── */
+const newRoomAlertEmail = (listing) =>
+  layout(`
+    <h2 style="color:${BRAND.darkGreen};font-size:22px;font-weight:800;margin:0 0 18px;">New Room Posted! 🏠</h2>
+    <p style="margin:0;font-size:14px;color:${BRAND.textBody};line-height:1.6;">
+      A new room has been listed on RoomBridge matching your alert subscription:
+    </p>
+    ${card(BRAND.cream, BRAND.border, `
+      ${cardLabel("Listing Details", BRAND.midGreen)}
+      ${row("Title", listing.title)}
+      ${row("Rent", `PKR ${listing.rent?.toLocaleString()}/month`)}
+      ${row("City", listing.city)}
+      ${row("Address", listing.address)}
+      ${listing.roomType ? row("Room Type", listing.roomType) : ""}
+    `)}
+    ${btn(`${APP_URL()}/listings/${listing._id}`, "View Listing Details")}
+    <p style="margin:20px 0 0;font-size:11px;color:${BRAND.textMuted};line-height:1.6;">
+      You received this email because you subscribed to RoomBridge Room Alerts.
+    </p>
+  `);
+
 /* ── Exports ────────────────────────────────────────────────── */
 module.exports = {
   sendEmail,
@@ -477,4 +500,5 @@ module.exports = {
   adminNotificationEmail,
   maintenanceEmail,
   errorAlertEmail,
+  newRoomAlertEmail,
 };
