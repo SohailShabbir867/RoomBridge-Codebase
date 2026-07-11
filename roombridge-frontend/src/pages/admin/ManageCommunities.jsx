@@ -96,80 +96,155 @@ const ManageCommunities = () => {
           <p className="text-xs text-gray-400 mt-1">Create the first one to get started.</p>
         </div>
       ) : (
-        <div className="rounded-2xl border overflow-hidden bg-white shadow-sm" style={{ borderColor: "#E8E2D9" }}>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left text-xs uppercase tracking-wide text-gray-400" style={{ borderColor: "#E8E2D9" }}>
-                <th className="px-4 py-3">Name</th>
-                <th className="px-4 py-3">Type</th>
-                <th className="px-4 py-3">City</th>
-                <th className="px-4 py-3">Visibility</th>
-                <th className="px-4 py-3">Members</th>
-                <th className="px-4 py-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {communities.map((c) => (
-                <tr key={c._id} className="border-b last:border-0 hover:bg-gray-50/50 transition-colors" style={{ borderColor: "#F0EBE3" }}>
-                  <td className="px-4 py-3 flex items-center gap-2">
-                    {c.image?.url ? (
-                      <img src={c.image.url} alt="" className="w-7 h-7 rounded-full object-cover shrink-0" />
-                    ) : (
-                      <div
-                        className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
-                        style={{ backgroundColor: ACC }}
-                      >
-                        {c.name?.[0]?.toUpperCase()}
-                      </div>
-                    )}
-                    <span className="font-medium truncate max-w-[200px]" style={{ color: DK }}>
-                      {c.name}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 capitalize text-gray-500">{c.type}</td>
-                  <td className="px-4 py-3 text-gray-500">{c.city || "—"}</td>
-                  <td className="px-4 py-3">
-                    {c.visibility === "private" ? (
-                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
-                        <RiLockLine className="text-[10px]" /> Private
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">Public</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-gray-500">
-                    <span className="inline-flex items-center gap-1 font-medium">
-                      <RiGroupLine className="text-xs" /> {c.memberCount ?? 0}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="inline-flex items-center gap-3">
-                      <button
-                        onClick={() => setSelectedCommunity(c)}
-                        aria-label="Edit community"
-                        className="text-gray-500 hover:text-gray-700 cursor-pointer p-1 rounded hover:bg-gray-100 transition-colors"
-                      >
-                        <RiEditLine className="text-base" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(c._id)}
-                        disabled={deletingId === c._id}
-                        aria-label="Delete community"
-                        className="text-red-500 hover:text-red-600 disabled:opacity-50 cursor-pointer p-1 rounded hover:bg-red-50 transition-colors"
-                      >
-                        {deletingId === c._id ? (
-                          <RiLoader4Line className="animate-spin text-base" />
-                        ) : (
-                          <RiDeleteBinLine className="text-base" />
-                        )}
-                      </button>
+        <>
+          {/* Card list for mobile screens */}
+          <div className="block md:hidden space-y-4">
+            {communities.map((c) => (
+              <div
+                key={c._id}
+                className="bg-white rounded-2xl border p-4 space-y-4 shadow-sm animate-fade-in"
+                style={{ borderColor: "#E8E2D9" }}
+              >
+                <div className="flex items-center gap-3">
+                  {c.image?.url ? (
+                    <img src={c.image.url} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
+                  ) : (
+                    <div
+                      className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
+                      style={{ backgroundColor: ACC }}
+                    >
+                      {c.name?.[0]?.toUpperCase()}
                     </div>
-                  </td>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-extrabold text-sm truncate" style={{ color: DK }}>
+                      {c.name}
+                    </h3>
+                    <p className="text-[11px] text-gray-500 capitalize">{c.type} community</p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2 text-xs">
+                  {c.city && (
+                    <span className="bg-gray-100 text-gray-600 px-2.5 py-0.5 rounded-full font-medium">
+                      {c.city}
+                    </span>
+                  )}
+                  {c.visibility === "private" ? (
+                    <span className="inline-flex items-center gap-1 font-semibold text-amber-600 bg-amber-50 px-2.5 py-0.5 rounded-full">
+                      <RiLockLine className="text-[10px]" /> Private
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full">
+                      Public
+                    </span>
+                  )}
+                  <span className="inline-flex items-center gap-1 text-gray-500 bg-gray-50 px-2.5 py-0.5 rounded-full font-medium">
+                    <RiGroupLine className="text-[10px]" /> {c.memberCount ?? 0} members
+                  </span>
+                </div>
+
+                <div className="border-t pt-3 flex justify-end gap-3" style={{ borderColor: "#F0EBE3" }}>
+                  <button
+                    onClick={() => setSelectedCommunity(c)}
+                    className="flex items-center gap-1.5 text-xs font-bold text-gray-600 border px-3 py-1.5 rounded-full hover:bg-gray-50 cursor-pointer active:scale-95 transition-all"
+                    style={{ borderColor: "#E8E2D9" }}
+                  >
+                    <RiEditLine className="text-xs" /> Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(c._id)}
+                    disabled={deletingId === c._id}
+                    className="flex items-center gap-1.5 text-xs font-bold text-red-500 border border-red-100 px-3 py-1.5 rounded-full hover:bg-red-50 disabled:opacity-50 cursor-pointer active:scale-95 transition-all"
+                  >
+                    {deletingId === c._id ? (
+                      <RiLoader4Line className="animate-spin text-xs" />
+                    ) : (
+                      <RiDeleteBinLine className="text-xs" />
+                    )}
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Table view for desktop screens */}
+          <div className="hidden md:block rounded-2xl border overflow-hidden bg-white shadow-sm" style={{ borderColor: "#E8E2D9" }}>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-xs uppercase tracking-wide text-gray-400" style={{ borderColor: "#E8E2D9" }}>
+                  <th className="px-4 py-3">Name</th>
+                  <th className="px-4 py-3">Type</th>
+                  <th className="px-4 py-3">City</th>
+                  <th className="px-4 py-3">Visibility</th>
+                  <th className="px-4 py-3">Members</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {communities.map((c) => (
+                  <tr key={c._id} className="border-b last:border-0 hover:bg-gray-50/50 transition-colors" style={{ borderColor: "#F0EBE3" }}>
+                    <td className="px-4 py-3 flex items-center gap-2">
+                      {c.image?.url ? (
+                        <img src={c.image.url} alt="" className="w-7 h-7 rounded-full object-cover shrink-0" />
+                      ) : (
+                        <div
+                          className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
+                          style={{ backgroundColor: ACC }}
+                        >
+                          {c.name?.[0]?.toUpperCase()}
+                        </div>
+                      )}
+                      <span className="font-medium truncate max-w-[200px]" style={{ color: DK }}>
+                        {c.name}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 capitalize text-gray-500">{c.type}</td>
+                    <td className="px-4 py-3 text-gray-500">{c.city || "—"}</td>
+                    <td className="px-4 py-3">
+                      {c.visibility === "private" ? (
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
+                          <RiLockLine className="text-[10px]" /> Private
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">Public</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-gray-500">
+                      <span className="inline-flex items-center gap-1 font-medium">
+                        <RiGroupLine className="text-xs" /> {c.memberCount ?? 0}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="inline-flex items-center gap-3">
+                        <button
+                          onClick={() => setSelectedCommunity(c)}
+                          aria-label="Edit community"
+                          className="text-gray-500 hover:text-gray-700 cursor-pointer p-1 rounded hover:bg-gray-100 transition-colors"
+                        >
+                          <RiEditLine className="text-base" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(c._id)}
+                          disabled={deletingId === c._id}
+                          aria-label="Delete community"
+                          className="text-red-500 hover:text-red-600 disabled:opacity-50 cursor-pointer p-1 rounded hover:bg-red-50 transition-colors"
+                        >
+                          {deletingId === c._id ? (
+                            <RiLoader4Line className="animate-spin text-base" />
+                          ) : (
+                            <RiDeleteBinLine className="text-base" />
+                          )}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       {showCreate && (
