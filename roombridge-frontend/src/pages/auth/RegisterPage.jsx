@@ -82,6 +82,8 @@ const RegisterPage = () => {
     if (!form.password) e.password = "Password is required";
     else if (form.password.length < 8)
       e.password = "Password must be at least 8 characters";
+    else if (getStrength(form.password) < 3)
+      e.password = "The password is weak. Please use a strong password for registration.";
     if (form.password !== form.confirmPassword)
       e.confirmPassword = "Passwords do not match";
     if (!form.phone) e.phone = "Phone number is required";
