@@ -153,6 +153,12 @@ const CreateListing = () => {
 
   const handlePhotos = (e) => {
     const files = Array.from(e.target.files);
+    const tooLarge = files.some(file => file.size > 10 * 1024 * 1024);
+    if (tooLarge) {
+      toast.error("Image size should be less than 10MB");
+      e.target.value = "";
+      return;
+    }
     const remaining = 6 - photos.length;
     const toAdd = files.slice(0, remaining);
     if (files.length > remaining) toast.error(`Max 6 photos. Only adding ${remaining}.`);

@@ -86,6 +86,12 @@ const EditListing = () => {
 
   const handleNewPhotos = (e) => {
     const files = Array.from(e.target.files);
+    const tooLarge = files.some(file => file.size > 10 * 1024 * 1024);
+    if (tooLarge) {
+      toast.error("Image size should be less than 10MB");
+      e.target.value = "";
+      return;
+    }
     const remaining =
       6 - (form.existingPhotos.length - toRemove.length) - newPhotos.length;
     const toAdd = files.slice(0, Math.max(0, remaining));

@@ -72,6 +72,11 @@ const AdminProfile = () => {
   const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Image size should be less than 10MB");
+      e.target.value = "";
+      return;
+    }
     try {
       setUploadingPhoto(true);
       const fd = new FormData();

@@ -6,6 +6,7 @@ import {
   RiCloseCircleLine,
   RiLockLine,
 } from "react-icons/ri";
+import toast from "react-hot-toast";
 
 /* Same palette used across ChatInput.jsx / CommunityPage.jsx so the new
    component feels native to the rest of RoomBridge, not bolted on. */
@@ -99,7 +100,15 @@ const CommunityChatInput = ({
           type="file"
           accept="image/jpeg,image/jpg,image/png,image/webp"
           className="hidden"
-          onChange={(e) => onImageSelect?.(e.target.files?.[0] || null)}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file && file.size > 10 * 1024 * 1024) {
+              toast.error("Image size should be less than 10MB");
+              e.target.value = "";
+              return;
+            }
+            onImageSelect?.(file || null);
+          }}
         />
 
         <button

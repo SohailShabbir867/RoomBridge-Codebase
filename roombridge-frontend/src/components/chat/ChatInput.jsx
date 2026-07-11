@@ -5,6 +5,7 @@ import {
   RiImageAddLine,
   RiCloseCircleLine,
 } from "react-icons/ri";
+import toast from "react-hot-toast";
 
 const DK  = "#012D1D";
 const ACC = "#FFAB69";
@@ -79,7 +80,15 @@ const ChatInput = ({
       <div className="flex items-end gap-2">
         {/* Hidden file input */}
         <input ref={fileInputRef} type="file" accept="image/jpeg,image/jpg,image/png,image/webp"
-          className="hidden" onChange={(e) => onImageSelect?.(e.target.files?.[0] || null)} />
+          className="hidden" onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file && file.size > 10 * 1024 * 1024) {
+              toast.error("Image size should be less than 10MB");
+              e.target.value = "";
+              return;
+            }
+            onImageSelect?.(file || null);
+          }} />
 
         {/* Attach image button */}
         <button type="button" onClick={() => fileInputRef.current?.click()}
