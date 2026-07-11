@@ -93,10 +93,10 @@ const EditListing = () => {
       return;
     }
     const remaining =
-      6 - (form.existingPhotos.length - toRemove.length) - newPhotos.length;
+      4 - (form.existingPhotos.length - toRemove.length) - newPhotos.length;
     const toAdd = files.slice(0, Math.max(0, remaining));
     if (files.length > remaining)
-      toast.error(`Max 6 photos total. Adding ${toAdd.length} only.`);
+      toast.error(`Max 4 photos total. Adding ${toAdd.length} only.`);
     setNewPhotos((p) => [...p, ...toAdd]);
     toAdd.forEach((f) => {
       const reader = new FileReader();
@@ -215,7 +215,7 @@ const EditListing = () => {
               <RiImageAddLine className="text-secondary" /> Photos
             </h2>
             <p className="text-xs text-text-secondary mb-4">
-              Max 6 photos total. Click × to remove.
+              Max 4 photos total. Click × to remove.
             </p>
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-3">
               {/* Existing photos */}
@@ -269,7 +269,7 @@ const EditListing = () => {
                 </div>
               ))}
               {/* Add button */}
-              {form.existingPhotos.length + newPhotos.length < 6 && (
+              {form.existingPhotos.length + newPhotos.length < 4 && (
                 <button
                   type="button"
                   onClick={() => fileRef.current.click()}

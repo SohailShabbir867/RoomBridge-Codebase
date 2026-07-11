@@ -88,7 +88,7 @@ router.post(
   "/",
   protect,
   authorize("owner"),
-  uploadMultiple("photos", 6),
+  uploadMultiple("photos", 4),
   listingRules,
   validate,
   createListing,
@@ -103,7 +103,7 @@ router.put(
   "/:id",
   protect,
   authorize("owner"),
-  uploadMultiple("photos", 6),
+  uploadMultiple("photos", 4),
   updateListing,
 );
 

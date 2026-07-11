@@ -159,9 +159,9 @@ const CreateListing = () => {
       e.target.value = "";
       return;
     }
-    const remaining = 6 - photos.length;
+    const remaining = 4 - photos.length;
     const toAdd = files.slice(0, remaining);
-    if (files.length > remaining) toast.error(`Max 6 photos. Only adding ${remaining}.`);
+    if (files.length > remaining) toast.error(`Max 4 photos. Only adding ${remaining}.`);
     setPhotos((p) => [...p, ...toAdd]);
     toAdd.forEach((f) => {
       const reader = new FileReader();
@@ -608,7 +608,7 @@ const CreateListing = () => {
               <>
                 <div>
                   <p className="text-sm text-gray-400 mb-4">
-                    Upload up to <strong>6 photos</strong>. The first photo will be the cover image shown in listings.
+                    Upload up to <strong>4 photos</strong>. The first photo will be the cover image shown in listings.
                   </p>
 
                   {/* Photo grid */}
@@ -640,7 +640,7 @@ const CreateListing = () => {
                     ))}
 
                     {/* Add photo slot */}
-                    {photos.length < 6 && (
+                    {photos.length < 4 && (
                       <button
                         type="button"
                         onClick={() => fileRef.current.click()}
@@ -653,7 +653,7 @@ const CreateListing = () => {
                           Add Photo
                         </span>
                         <span className="text-[10px] text-gray-400 mt-0.5">
-                          {photos.length}/6
+                          {photos.length}/4
                         </span>
                       </button>
                     )}
