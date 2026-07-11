@@ -35,7 +35,7 @@ const STATUSES = ["active", "pending", "inactive", "active", "rejected"];
 const DEMO_OWNERS = [
   {
     name: "Demo Owner One",
-    email: "owner.demo1@roombridge.pk",
+    email: "owner.demo1@roombridge.site",
     password: "Owner@1234",
     role: "owner",
     city: "Islamabad",
@@ -45,7 +45,7 @@ const DEMO_OWNERS = [
   },
   {
     name: "Demo Owner Two",
-    email: "owner.demo2@roombridge.pk",
+    email: "owner.demo2@roombridge.site",
     password: "Owner@1234",
     role: "owner",
     city: "Lahore",
@@ -55,7 +55,7 @@ const DEMO_OWNERS = [
   },
   {
     name: "Demo Owner Three",
-    email: "owner.demo3@roombridge.pk",
+    email: "owner.demo3@roombridge.site",
     password: "Owner@1234",
     role: "owner",
     city: "Karachi",
@@ -68,7 +68,7 @@ const DEMO_OWNERS = [
 const DEMO_SEEKERS = [
   {
     name: "Demo Seeker Prime",
-    email: "seeker.demo@roombridge.pk",
+    email: "seeker.demo@roombridge.site",
     password: "Seeker@1234",
     role: "seeker",
     city: "Islamabad",
@@ -78,7 +78,7 @@ const DEMO_SEEKERS = [
   },
   {
     name: "Ayesha Demo",
-    email: "seeker.demo2@roombridge.pk",
+    email: "seeker.demo2@roombridge.site",
     password: "Seeker@1234",
     role: "seeker",
     city: "Lahore",
@@ -88,7 +88,7 @@ const DEMO_SEEKERS = [
   },
   {
     name: "Bilal Demo",
-    email: "seeker.demo3@roombridge.pk",
+    email: "seeker.demo3@roombridge.site",
     password: "Seeker@1234",
     role: "seeker",
     city: "Karachi",
@@ -98,7 +98,7 @@ const DEMO_SEEKERS = [
   },
   {
     name: "Hina Demo",
-    email: "seeker.demo4@roombridge.pk",
+    email: "seeker.demo4@roombridge.site",
     password: "Seeker@1234",
     role: "seeker",
     city: "Rawalpindi",
@@ -108,7 +108,7 @@ const DEMO_SEEKERS = [
   },
   {
     name: "Umer Demo",
-    email: "seeker.demo5@roombridge.pk",
+    email: "seeker.demo5@roombridge.site",
     password: "Seeker@1234",
     role: "seeker",
     city: "Peshawar",
@@ -118,7 +118,7 @@ const DEMO_SEEKERS = [
   },
   {
     name: "Sana Demo",
-    email: "seeker.demo6@roombridge.pk",
+    email: "seeker.demo6@roombridge.site",
     password: "Seeker@1234",
     role: "seeker",
     city: "Multan",
@@ -353,8 +353,8 @@ const seed = async () => {
   console.log("Bookings and saved listings ready for dashboard views.");
 
   console.log("\nDemo login credentials:");
-  console.log("Owner:  owner.demo1@roombridge.pk / Owner@1234");
-  console.log("Seeker: seeker.demo@roombridge.pk / Seeker@1234");
+  console.log("Owner:  owner.demo1@roombridge.site / Owner@1234");
+  console.log("Seeker: seeker.demo@roombridge.site / Seeker@1234");
 };
 
 (async () => {

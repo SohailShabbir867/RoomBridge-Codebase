@@ -117,7 +117,7 @@ const layout = (content) => `
                 Connecting seekers with verified rooms and compatible roommates.
               </p>
               <p style="margin:10px 0 0;font-size:12px;">
-                <a href="${APP_URL()}" style="color:${BRAND.btnBrown};text-decoration:none;font-weight:700;letter-spacing:0.02em;">roombridge.pk</a>
+                <a href="${APP_URL()}" style="color:${BRAND.btnBrown};text-decoration:none;font-weight:700;letter-spacing:0.02em;">roombridge.site</a>
               </p>
             </td>
           </tr>
@@ -188,7 +188,7 @@ const welcomeEmail = (name) =>
     ${btn(`${APP_URL()}/explore`, "Browse Rooms Now")}
     ${divider}
     <p style="margin:0;font-size:13px;color:${BRAND.textMuted};line-height:1.6;">
-      If you didn't create this account, please <a href="mailto:support@roombridge.pk" style="color:${BRAND.btnBrown};">contact us</a> immediately.
+      If you didn't create this account, please <a href="mailto:support@roombridge.site" style="color:${BRAND.btnBrown};">contact us</a> immediately.
     </p>
   `);
 
@@ -341,7 +341,7 @@ const listingDeactivatedEmail = (ownerName, listingTitle) =>
       ${cardLabel("What this means", BRAND.warn)}
       <p style="margin:0;font-size:14px;color:${BRAND.warn};line-height:1.7;">Your listing won't appear in searches and new bookings cannot be submitted until it is reactivated.</p>
     `)}
-    ${para(`If you believe this was done in error or would like to appeal, please contact our support team at <a href="mailto:support@roombridge.pk" style="color:${BRAND.btnBrown};">support@roombridge.pk</a>.`)}
+    ${para(`If you believe this was done in error or would like to appeal, please contact our support team at <a href="mailto:support@roombridge.site" style="color:${BRAND.btnBrown};">support@roombridge.site</a>.`)}
     ${btn(`${APP_URL()}/owner/listings`, "Manage My Listings", BRAND.warn)}
   `);
 

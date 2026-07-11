@@ -203,7 +203,7 @@ SMTP_HOST=smtp.mailtrap.io
 SMTP_PORT=2525
 SMTP_USER=your_smtp_username
 SMTP_PASS=your_smtp_password
-FROM_EMAIL=noreply@roombridge.pk
+FROM_EMAIL=noreply@roombridge.site
 FROM_NAME=RoomBridge Support
 ```
 
@@ -244,7 +244,7 @@ RoomBridge is equipped with database scripts to pre-populate mock data for quick
     ```
     > [!TIP]
     > **Default Admin Credentials:**  
-    > - **Email:** `admin@roombridge.pk`  
+    > - **Email:** `admin@roombridge.site`  
     > - **Password:** `AdminSecure123!`
 
 *   **Seed Complete Mock Data:** Populates multiple Seekers, Owners, Listings, Bookings, and roommate preferences.

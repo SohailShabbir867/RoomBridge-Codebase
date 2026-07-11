@@ -38,7 +38,7 @@ const TermsPage = () => {
     { id: "liability", title: "6. Limitation of Liability", text: "RoomBridge provides the platform on an \"as is\" basis. To the maximum extent permitted by law, RoomBridge is not liable for indirect losses, disputes, or damages arising from user interactions." },
     { id: "governing", title: "7. Governing Law and Jurisdiction", text: "These terms are governed by the laws of Pakistan. Any dispute relating to the use of RoomBridge will be subject to the courts of Pakistan, unless otherwise required by applicable law." },
     { id: "updates", title: "8. Updates to Terms", text: "We may update these terms from time to time. Continued use after updates means you accept the revised terms." },
-    { id: "contact", title: "9. Contact Support", text: "For legal questions regarding these terms, contact us at hello@roombridge.pk." }
+    { id: "contact", title: "9. Contact Support", text: "For legal questions regarding these terms, contact us at hello@roombridge.site." }
   ];
 
   return (

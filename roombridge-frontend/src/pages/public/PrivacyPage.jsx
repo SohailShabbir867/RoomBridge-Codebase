@@ -39,7 +39,7 @@ const PrivacyPage = () => {
     { id: "location", title: "6. Data Location and Transfers", text: "Your data may be processed on servers in Pakistan or in other jurisdictions used by our service providers. Where transfers are needed, we apply reasonable safeguards consistent with applicable law." },
     { id: "rights", title: "7. Your Rights", text: "You can request correction or deletion of account information, subject to legal and operational obligations. Contact our support team for privacy-related requests." },
     { id: "updates", title: "8. Policy Updates", text: "We may revise this policy from time to time. Updates are posted on this page with the latest effective date." },
-    { id: "contact", title: "9. Contact Support", text: "For privacy questions, contact us at hello@roombridge.pk." }
+    { id: "contact", title: "9. Contact Support", text: "For privacy questions, contact us at hello@roombridge.site." }
   ];
 
   return (

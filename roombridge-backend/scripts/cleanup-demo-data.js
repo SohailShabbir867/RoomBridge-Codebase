@@ -13,15 +13,15 @@ const Report = require("../src/models/Report.model");
 dns.setServers(["8.8.8.8", "8.8.4.4"]);
 
 const DEMO_EMAILS = [
-  "owner.demo1@roombridge.pk",
-  "owner.demo2@roombridge.pk",
-  "owner.demo3@roombridge.pk",
-  "seeker.demo@roombridge.pk",
-  "seeker.demo2@roombridge.pk",
-  "seeker.demo3@roombridge.pk",
-  "seeker.demo4@roombridge.pk",
-  "seeker.demo5@roombridge.pk",
-  "seeker.demo6@roombridge.pk",
+  "owner.demo1@roombridge.site",
+  "owner.demo2@roombridge.site",
+  "owner.demo3@roombridge.site",
+  "seeker.demo@roombridge.site",
+  "seeker.demo2@roombridge.site",
+  "seeker.demo3@roombridge.site",
+  "seeker.demo4@roombridge.site",
+  "seeker.demo5@roombridge.site",
+  "seeker.demo6@roombridge.site",
 ];
 
 const cleanup = async () => {
