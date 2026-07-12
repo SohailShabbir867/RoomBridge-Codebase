@@ -31,6 +31,7 @@ import {
 import { CITIES, AMENITIES } from "../../utils/constants";
 import listingService from "../../services/listingService";
 import toast from "react-hot-toast";
+import { useSEO } from "../../hooks/useSEO";
 
 /* ─── Design tokens (match Figma) ──────────────────────────── */
 const C = {
@@ -230,6 +231,12 @@ const ListingCard = ({ listing, view, onToggleSave }) => {
    LISTINGS PAGE
 ════════════════════════════════════════════════════════════ */
 const ListingsPage = () => {
+  useSEO({
+    title: "Browse Verified Rooms | RoomBridge Pakistan",
+    description: "Explore listings of hostels, shared student flats, and single rooms for rent in Karachi, Lahore, Islamabad, and across Pakistan on roombridge.site.",
+    keywords: "student flats, hostel directory, Lahore rooms, Karachi rooms, roombridge.site, roommate finders"
+  });
+
   const [searchParams] = useSearchParams();
 
   const [view, setView] = useState("grid");

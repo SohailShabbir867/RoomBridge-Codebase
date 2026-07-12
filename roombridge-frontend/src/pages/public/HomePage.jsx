@@ -20,6 +20,7 @@ import {
 } from "react-icons/ri";
 import { CITIES } from "../../utils/constants";
 import listingService from "../../services/listingService";
+import { useSEO } from "../../hooks/useSEO";
 import karachi from "../../assets/images/cities/qaid.jpg";
 import lahore from "../../assets/images/cities/lahore.jpg";
 import islamabad from "../../assets/images/cities/islamabad.jpg";
@@ -287,13 +288,11 @@ const HomePage = () => {
   const budgetRef = useRef(null);
   const [stats, setStats] = useState(STATS_FALLBACK);
 
-  /* Set document.title on mount and reset it on unmount */
-  useEffect(() => {
-    document.title = "RoomBridge — Pakistan's #1 Room Rental Platform";
-    return () => {
-      document.title = "RoomBridge";
-    };
-  }, []);
+  useSEO({
+    title: "RoomBridge — Pakistan's #1 Room Rental Platform",
+    description: "Find verified host family rooms, student hostels, flatmates, and compatible roommates across Pakistan. Search by budget, city, or gender preference on roombridge.site.",
+    keywords: "room rental Pakistan, student hostel, roommate finder, flatmates Lahore, rooms for rent Karachi, roombridge.site, roommate matching"
+  });
 
   /* Fetch real-time count of listings to populate stats */
   useEffect(() => {

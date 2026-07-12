@@ -18,7 +18,7 @@ import {
   RiChat3Line,
 } from "react-icons/ri";
 
-document.title = "How It Works — RoomBridge";
+import { useSEO } from "../../hooks/useSEO";
 
 /* ─── Design tokens (match Figma) ──────────────────────────── */
 const C = {
@@ -29,6 +29,8 @@ const C = {
   promise:   "#F0EDE9",
   white:     "#FFFFFF",
 };
+
+
 
 /* ─── Original content (unchanged) ─────────────────────────── */
 const TEAM = [
@@ -152,8 +154,15 @@ const FAQItem = ({ q, a }) => {
 /* ════════════════════════════════════════════════════════════════
    ABOUT / HOW IT WORKS PAGE
 ════════════════════════════════════════════════════════════════ */
-const AboutPage = () => (
-  <div className="min-h-screen" style={{ fontFamily: "'Inter', 'Segoe UI', sans-serif" }}>
+const AboutPage = () => {
+  useSEO({
+    title: "How It Works | RoomBridge Pakistan",
+    description: "Learn how RoomBridge works for room seekers and hostel owners in Pakistan. Steps to find rooms, match roommates, and list properties on roombridge.site.",
+    keywords: "how roombridge works, room rental guide, list room Pakistan, room rental steps, roombridge.site"
+  });
+
+  return (
+    <div className="min-h-screen" style={{ fontFamily: "'Inter', 'Segoe UI', sans-serif" }}>
 
     {/* ─────────────────────────────────────────────────────────
         HERO
@@ -548,6 +557,7 @@ const AboutPage = () => (
       </div>
     </section>
   </div>
-);
+  );
+};
 
 export default AboutPage;

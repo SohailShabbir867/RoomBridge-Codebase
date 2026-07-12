@@ -14,7 +14,7 @@ import {
 // imporing image from the assets images folder 
 import sohailImage from "../../assets/images/sohail.jpg";
 import radifImage from "../../assets/images/radif.jpg";
-document.title = "About Us — RoomBridge";
+import { useSEO } from "../../hooks/useSEO";
 
 /* ─── Design tokens (match Figma) ──────────────────────────── */
 const C = {
@@ -27,6 +27,11 @@ const C = {
 };
 
 const AboutUsPage = () => {
+  useSEO({
+    title: "About Us | RoomBridge Pakistan",
+    description: "Learn more about RoomBridge, Pakistan's curated room rental and roommate matching platform connecting students and owners on roombridge.site.",
+    keywords: "about roombridge, rental team, student housing Pakistan, roombridge.site"
+  });
   return (
     <div className="min-h-screen flex flex-col font-sans" style={{ backgroundColor: C.cream }}>
       

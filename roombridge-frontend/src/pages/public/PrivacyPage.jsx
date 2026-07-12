@@ -6,29 +6,14 @@ import {
   RiArrowRightSLine,
   RiExternalLinkLine,
 } from "react-icons/ri";
-
-const setMetaTag = (name, content) => {
-  let tag = document.querySelector(`meta[name="${name}"]`);
-  if (!tag) {
-    tag = document.createElement("meta");
-    tag.setAttribute("name", name);
-    document.head.appendChild(tag);
-  }
-  tag.setAttribute("content", content);
-};
+import { useSEO } from "../../hooks/useSEO";
 
 const PrivacyPage = () => {
-  useEffect(() => {
-    document.title = "Privacy Policy | RoomBridge Pakistan";
-    setMetaTag(
-      "description",
-      "Read the RoomBridge Privacy Policy for Pakistan users to understand how we collect, use, protect, and process personal data."
-    );
-    setMetaTag(
-      "keywords",
-      "RoomBridge privacy policy, data protection, personal data, room rental privacy"
-    );
-  }, []);
+  useSEO({
+    title: "Privacy Policy | RoomBridge Pakistan",
+    description: "Read the RoomBridge Privacy Policy for Pakistan users to understand how we collect, use, protect, and process personal data on roombridge.site.",
+    keywords: "RoomBridge privacy policy, data protection, personal data, room rental privacy, roombridge.site"
+  });
 
   const SECTIONS = [
     { id: "collect", title: "1. Information We Collect", text: "We may collect account data (name, email, phone), profile information, listing details, booking activity, and messages exchanged within the platform." },

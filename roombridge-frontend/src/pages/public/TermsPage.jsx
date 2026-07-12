@@ -5,29 +5,14 @@ import {
   RiTimeLine,
   RiArrowRightSLine,
 } from "react-icons/ri";
-
-const setMetaTag = (name, content) => {
-  let tag = document.querySelector(`meta[name="${name}"]`);
-  if (!tag) {
-    tag = document.createElement("meta");
-    tag.setAttribute("name", name);
-    document.head.appendChild(tag);
-  }
-  tag.setAttribute("content", content);
-};
+import { useSEO } from "../../hooks/useSEO";
 
 const TermsPage = () => {
-  useEffect(() => {
-    document.title = "Terms and Conditions | RoomBridge Pakistan";
-    setMetaTag(
-      "description",
-      "Read RoomBridge Terms and Conditions for users in Pakistan, including account use, listings, bookings, and legal responsibilities."
-    );
-    setMetaTag(
-      "keywords",
-      "RoomBridge terms, terms and conditions, rental platform terms, Pakistan room rental"
-    );
-  }, []);
+  useSEO({
+    title: "Terms and Conditions | RoomBridge Pakistan",
+    description: "Read RoomBridge Terms and Conditions for users in Pakistan, including account use, listings, bookings, and legal responsibilities on roombridge.site.",
+    keywords: "RoomBridge terms, terms and conditions, rental platform terms, Pakistan room rental, roombridge.site"
+  });
 
   const SECTIONS = [
     { id: "acceptance", title: "1. Acceptance of Terms", text: "By accessing or using RoomBridge, you agree to these Terms and Conditions. If you do not agree, please do not use the platform." },

@@ -16,7 +16,7 @@ import {
 import toast from "react-hot-toast";
 import api from "../../services/api";
 
-document.title = "Contact Us — RoomBridge";
+import { useSEO } from "../../hooks/useSEO";
 
 /* ─── Design tokens (match Figma) ──────────────────────────── */
 const C = {
@@ -29,6 +29,12 @@ const C = {
 };
 
 const ContactPage = () => {
+  useSEO({
+    title: "Contact Us | RoomBridge Pakistan",
+    description: "Get in touch with the RoomBridge support team. Submit inquiries, report issues, or contact us at contact.roombridge@gmail.com on roombridge.site.",
+    keywords: "contact roombridge, support team, rental query, host family support, roombridge.site"
+  });
+
   const [form, setForm] = useState({
     name: "",
     email: "",
