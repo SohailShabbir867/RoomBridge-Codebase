@@ -16,15 +16,102 @@ const PrivacyPage = () => {
   });
 
   const SECTIONS = [
-    { id: "collect", title: "1. Information We Collect", text: "We may collect account data (name, email, phone), profile information, listing details, booking activity, and messages exchanged within the platform." },
-    { id: "use", title: "2. How We Use Information", text: "We use information to provide platform features, improve security, process requests, communicate service updates, and support legal and moderation requirements under applicable Pakistani law." },
-    { id: "sharing", title: "3. Data Sharing", text: "We do not sell personal data. We may share data with service providers required to operate RoomBridge (for example, hosting, media, and communication providers) and where required by Pakistani law, regulatory process, or lawful authority." },
-    { id: "cookies", title: "4. Cookies and Sessions", text: "RoomBridge uses essential cookies/session mechanisms for login, security, and platform functionality. Disabling cookies may affect normal service behavior." },
-    { id: "security", title: "5. Data Security", text: "We apply technical and organizational safeguards to protect data. No internet-based system can guarantee absolute security, but we continuously improve controls and monitoring." },
-    { id: "location", title: "6. Data Location and Transfers", text: "Your data may be processed on servers in Pakistan or in other jurisdictions used by our service providers. Where transfers are needed, we apply reasonable safeguards consistent with applicable law." },
-    { id: "rights", title: "7. Your Rights", text: "You can request correction or deletion of account information, subject to legal and operational obligations. Contact our support team for privacy-related requests." },
-    { id: "updates", title: "8. Policy Updates", text: "We may revise this policy from time to time. Updates are posted on this page with the latest effective date." },
-    { id: "contact", title: "9. Contact Support", text: "For privacy questions, contact us at hello@roombridge.site." }
+    {
+      id: "collect",
+      title: "1. Information We Collect",
+      paragraphs: [
+        "We collect personal information that you provide directly to us when using the RoomBridge platform. This occurs during account registration, profile setup, listing creation, or when communicating with other users.",
+        "Specifically, the types of data we collect include:"
+      ],
+      bullets: [
+        "Account Credentials: Full name, email address, password, phone number, and account role (Seeker, Owner, or Admin).",
+        "Profile & Match Information: User bios, university details, room preferences, and roommate compatibility answers.",
+        "Listings Data: Room addresses, rent pricing, descriptions, facilities, and uploaded photos (restricted to 4 photos per listing).",
+        "Activity & Messages: Chat history, user reports, and newsletter/room alert subscription history."
+      ]
+    },
+    {
+      id: "use",
+      title: "2. How We Use Information",
+      paragraphs: [
+        "The information we collect is processed to run, improve, and secure RoomBridge.site, ensuring matching safety for roommates and tenants.",
+        "We utilize this data for the following purposes:"
+      ],
+      bullets: [
+        "Core App Service: Facilitating roommate matches, computing compatibility ratings, and managing booking reservations.",
+        "Communications & Updates: Distributing automated room alerts (when new listings match your criteria) and system notification updates.",
+        "Safety & Verification: Conducting manual listing reviews, maintaining security logs, and managing platform guidelines."
+      ]
+    },
+    {
+      id: "sharing",
+      title: "3. Data Sharing & Disclosure",
+      paragraphs: [
+        "RoomBridge.site is not in the business of selling user data. We share information only in specific circumstances to enable smooth operations:"
+      ],
+      bullets: [
+        "Direct User Contacts: Sharing listing details and landlord/seeker details when bookings are requested or approved.",
+        "Third-Party Services: External hosting, media management (Cloudinary), or secure transactional mailing integrations.",
+        "Legal Mandates: Cooperating with Pakistani law enforcement agencies, or in response to regulatory audits under the Prevention of Electronic Crimes Act (PECA)."
+      ]
+    },
+    {
+      id: "cookies",
+      title: "4. Cookies and Local Sessions",
+      paragraphs: [
+        "We utilize functional cookies and session tokens to preserve authentication sessions."
+      ],
+      bullets: [
+        "Authentication Cookies: Keeping your profile logged in securely without re-entering credentials on every tab.",
+        "Security Measures: Cross-Site Request Forgery (CSRF) tokens to protect forms from spoofing."
+      ]
+    },
+    {
+      id: "security",
+      title: "5. Data Security & Storage",
+      paragraphs: [
+        "We implement server-side safeguards to protect user records against unauthorized access, disclosure, or alteration.",
+        "While we apply SSL encryption and secure password hashing, no network transfer can be completely bulletproof. We recommend using unique passwords and enabling alert notifications."
+      ]
+    },
+    {
+      id: "location",
+      title: "6. Data Location & Retention",
+      paragraphs: [
+        "Your data is stored and processed securely. We retain account data as long as your profile is active.",
+        "You may request deletion or deactivation of your account and listing records at any time by contacting support."
+      ]
+    },
+    {
+      id: "rights",
+      title: "7. Your Choices & Privacy Rights",
+      paragraphs: [
+        "Users have total control over their data footprint:"
+      ],
+      bullets: [
+        "Data Access: Reviewing your active profile metadata, saved properties, and listings.",
+        "Alert Management: Instantly subscribing or unsubscribing from our footer alert dispatch system.",
+        "Account Purges: Submitting a request to clean personal logs and listing histories."
+      ]
+    },
+    {
+      id: "updates",
+      title: "8. Policy Updates",
+      paragraphs: [
+        "We reserve the right to modify this privacy policy to reflect platform updates or legal shifts. Any revisions will be accompanied by an updated effective date at the top."
+      ]
+    },
+    {
+      id: "contact",
+      title: "9. Contact Information",
+      paragraphs: [
+        "For questions, concerns, or data inquiries regarding this Privacy Policy, please reach out to our privacy compliance desk:"
+      ],
+      bullets: [
+        "Email Address: contact.roombridge@gmail.com",
+        "Mailing Address: Khanpur, Rahim Yar Khan, Punjab, Pakistan"
+      ]
+    }
   ];
 
   return (
@@ -93,10 +180,19 @@ const PrivacyPage = () => {
                 <h3 className="text-lg font-extrabold text-[#012D1D] tracking-tight">
                   {sec.title}
                 </h3>
-                <div className="bg-[#F9F7F2] rounded-2xl p-5 border border-gray-50/50">
-                  <p className="text-gray-600 text-sm leading-relaxed font-medium">
-                    {sec.text}
-                  </p>
+                <div className="bg-[#F9F7F2] rounded-2xl p-5 border border-gray-50/50 space-y-3">
+                  {sec.paragraphs.map((p, idx) => (
+                    <p key={idx} className="text-gray-600 text-sm leading-relaxed font-medium">
+                      {p}
+                    </p>
+                  ))}
+                  {sec.bullets && (
+                    <ul className="list-disc pl-5 text-gray-600 text-sm space-y-1.5 font-medium">
+                      {sec.bullets.map((b, idx) => (
+                        <li key={idx}>{b}</li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               </section>
             ))}
