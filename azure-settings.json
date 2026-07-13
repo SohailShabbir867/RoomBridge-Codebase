@@ -1,0 +1,21 @@
+[
+  { "name": "ADMIN_EMAIL", "value": "contact.roombridge@gmail.com", "slotSetting": false },
+  { "name": "ADMIN_PASSWORD", "value": "Roombridge@123", "slotSetting": false },
+  { "name": "ALLOWED_ORIGINS", "value": "https://roombridge.site,https://www.roombridge.site,https://roombridgefrontend.vercel.app", "slotSetting": false },
+  { "name": "CLIENT_URL", "value": "https://roombridge.site", "slotSetting": false },
+  { "name": "CLOUDINARY_API_KEY", "value": "318677874495369", "slotSetting": false },
+  { "name": "CLOUDINARY_API_SECRET", "value": "2fdFbWt9cEH5brhx_BaXOL9k1uo", "slotSetting": false },
+  { "name": "CLOUDINARY_CLOUD_NAME", "value": "r77j5mpl", "slotSetting": false },
+  { "name": "EMAIL_FROM", "value": "RoomBridge <contact.roombridge@gmail.com>", "slotSetting": false },
+  { "name": "EMAIL_HOST", "value": "smtp.gmail.com", "slotSetting": false },
+  { "name": "EMAIL_PASS", "value": "lizvnrvwwyizepop", "slotSetting": false },
+  { "name": "EMAIL_PORT", "value": "587", "slotSetting": false },
+  { "name": "EMAIL_USER", "value": "contact.roombridge@gmail.com", "slotSetting": false },
+  { "name": "JWT_EXPIRE", "value": "7d", "slotSetting": false },
+  { "name": "JWT_SECRET", "value": "rB$9xKm2vQ7pLw4nZjE8cYhT3dFgA6sU0iRoXbN5tW1", "slotSetting": false },
+  { "name": "MONGO_URI", "value": "mongodb+srv://roombridge:roombridge@roombridge.moxsf7k.mongodb.net/roombridge?retryWrites=true&w=majority&appName=RoomBridge", "slotSetting": false },
+  { "name": "NODE_ENV", "value": "production", "slotSetting": false },
+  { "name": "PORT", "value": "8080", "slotSetting": false },
+  { "name": "SCM_DO_BUILD_DURING_DEPLOYMENT", "value": "true", "slotSetting": false },
+  { "name": "WEBSITE_NODE_DEFAULT_VERSION", "value": "22-lts", "slotSetting": false }
+]
