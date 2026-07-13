@@ -172,12 +172,19 @@ app.get("/api/health", (_req, res) => {
 });
 
 /* ── Global rate limiter ───────────────────────────────── */
+/* Azure App Service forwards IPs as "x.x.x.x:port" — strip the port  */
+/* to avoid ERR_ERL_INVALID_IP_ADDRESS from express-rate-limit.         */
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 200,
   standardHeaders: "draft-7",
   legacyHeaders: false,
   skip: (req) => req.method === "OPTIONS",
+  keyGenerator: (req) => {
+    const raw = req.ip || req.socket?.remoteAddress || "unknown";
+    // strip port suffix e.g. "1.2.3.4:56789" → "1.2.3.4"
+    return raw.replace(/:\d+$/, "");
+  },
   message: {
     success: false,
     message: "Too many requests. Please try again later.",
