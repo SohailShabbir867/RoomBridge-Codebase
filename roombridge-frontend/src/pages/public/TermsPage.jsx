@@ -8,7 +8,7 @@ import {
   RiUserLine,
   RiHome4Line,
   RiMessage2Line,
-  RiBanLine,
+  RiProhibited2Line,
   RiAlertLine,
   RiScalesLine,
   RiRefreshLine,
@@ -53,7 +53,7 @@ const TermsPage = () => {
     },
     {
       id: "prohibited",
-      icon: <RiBanLine className="text-[#FFAB69] text-xl" />,
+      icon: <RiProhibited2Line className="text-[#FFAB69] text-xl" />,
       title: "5. Prohibited Activities",
       text: "Users of RoomBridge are strictly prohibited from engaging in the following activities: posting false, fraudulent, or misleading listings or profile information; impersonating any individual, organization, or authority; engaging in harassment, threats, abuse, or discriminatory conduct toward any user; uploading or distributing harmful, illegal, obscene, or defamatory content; scraping, copying, or reproducing platform data without express written consent from RoomBridge; attempting to gain unauthorized access to platform systems, databases, or user accounts; using RoomBridge to facilitate illegal sub-letting, money laundering, or any other unlawful activity; and circumventing or manipulating platform features, algorithms, or security systems. Violation of these prohibitions may result in immediate account termination, reporting to relevant Pakistani authorities, and potential legal action.",
     },
