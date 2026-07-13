@@ -10,10 +10,15 @@ const mongoose = require("mongoose");
 const connectDB = require("../src/config/db");
 const User = require("../src/models/User.model");
 
+if (!process.env.ADMIN_EMAIL || !process.env.ADMIN_PASSWORD) {
+  console.error("❌ Error: ADMIN_EMAIL and ADMIN_PASSWORD must be set in your environment variables (.env).");
+  process.exit(1);
+}
+
 const ADMIN = {
   name: "Admin",
-  email: process.env.ADMIN_EMAIL || "contact.roombridge@gmail.com",
-  password: process.env.ADMIN_PASSWORD || "Roombridge@123",
+  email: process.env.ADMIN_EMAIL,
+  password: process.env.ADMIN_PASSWORD,
   role: "admin",
   city: "Islamabad",
   isVerified: true,

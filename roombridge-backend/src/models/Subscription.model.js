@@ -20,6 +20,4 @@ const subscriptionSchema = new mongoose.Schema(
   }
 );
 
-subscriptionSchema.index({ email: 1 });
-
 module.exports = mongoose.model("Subscription", subscriptionSchema);
