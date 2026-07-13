@@ -149,6 +149,17 @@ if (process.env.NODE_ENV !== "production") {
   app.use(morgan("dev"));
 }
 
+/* ── Root status route ─────────────────────────────────── */
+app.get("/", (_req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "RoomBridge API is running",
+    version: "1.0.0",
+    environment: process.env.NODE_ENV || "development",
+    timestamp: new Date().toISOString(),
+  });
+});
+
 /* ── Health check ──────────────────────────────────────── */
 app.get("/api/health", (_req, res) => {
   res.status(200).json({
