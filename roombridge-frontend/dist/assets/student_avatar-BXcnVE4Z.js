@@ -1,1 +1,0 @@
-var e=`/assets/student_avatar-BRym99PL.png`;export{e as t};
