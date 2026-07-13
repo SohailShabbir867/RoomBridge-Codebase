@@ -1,0 +1,1 @@
+import{Lt as e,t}from"./jsx-runtime-BU-6EqXj.js";import{t as n}from"./MyReportsPage-UqFoN0bz.js";e();var r=t(),i=()=>(0,r.jsx)(n,{});export{i as default};

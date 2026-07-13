@@ -1,0 +1,1 @@
+import{i as e}from"./index-aLumqAKL.js";var t={submitReport:async t=>(await e.post(`/reports`,t)).data,getMyReports:async(t={})=>(await e.get(`/reports/my-reports`,{params:t})).data};export{t};
