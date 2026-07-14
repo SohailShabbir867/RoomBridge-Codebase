@@ -19,11 +19,11 @@ import { useSEO } from "../../hooks/useSEO";
 /* ─── Design tokens (match Figma) ──────────────────────────── */
 const C = {
   darkGreen: "#012D1D",
-  btnBrown:  "#8E4E14",
-  accent:    "#FFAB69",
-  cream:     "#F7F4EF",
-  promise:   "#F0EDE9",
-  white:     "#FFFFFF",
+  btnBrown: "#8E4E14",
+  accent: "#FFAB69",
+  cream: "#F7F4EF",
+  promise: "#F0EDE9",
+  white: "#FFFFFF",
 };
 
 const AboutUsPage = () => {
@@ -34,7 +34,7 @@ const AboutUsPage = () => {
   });
   return (
     <div className="min-h-screen flex flex-col font-sans" style={{ backgroundColor: C.cream }}>
-      
+
       {/* ─── Hero Section ───────────────────────────────────────── */}
       <section
         className="relative overflow-hidden pt-20 pb-24 px-4 sm:px-6 lg:px-8 text-white"
@@ -80,7 +80,7 @@ const AboutUsPage = () => {
 
           {/* Right Column: Premium Image Grid (2x2) */}
           <div className="lg:col-span-6 grid grid-cols-2 gap-4">
-            
+
             {/* Image 1: Students Studying */}
             <div className="rounded-2xl overflow-hidden aspect-[4/3] shadow-lg">
               <img
@@ -157,7 +157,7 @@ const AboutUsPage = () => {
       {/* ─── The Problems We Solve ──────────────────────────────── */}
       <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 bg-white">
         <div className="max-w-6xl mx-auto">
-          
+
           <div className="mb-14">
             <h2
               className="text-3xl font-extrabold tracking-tight font-serif"
@@ -171,10 +171,10 @@ const AboutUsPage = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
-            
+
             {/* Left: Problems List (Col span 7) */}
             <div className="lg:col-span-7 space-y-4">
-              
+
               {/* Problem 1 */}
               <div className="bg-[#FFF8F8] border border-[#FFEBEE] rounded-2xl p-5 flex items-start gap-4">
                 <div className="w-10 h-10 rounded-xl bg-[#FFEBEE] flex items-center justify-center shrink-0 text-[#C62828] font-bold text-sm">
@@ -299,7 +299,7 @@ const AboutUsPage = () => {
         style={{ backgroundColor: C.darkGreen }}
       >
         <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8">
-          
+
           <div>
             <p className="text-3xl sm:text-4xl font-extrabold font-serif" style={{ color: C.accent }}>
               1,200+
@@ -342,7 +342,7 @@ const AboutUsPage = () => {
       {/* ─── The People Behind RoomBridge ───────────────────────── */}
       <section id="team" className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 bg-white">
         <div className="max-w-6xl mx-auto">
-          
+
           <div className="text-center mb-16">
             <h2
               className="text-3xl font-extrabold tracking-tight font-serif"
@@ -356,7 +356,7 @@ const AboutUsPage = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-            
+
             {/* Founder 1 */}
             <div className="text-center space-y-4">
               <div className="w-36 h-36 rounded-full overflow-hidden mx-auto shadow-md border-4 border-[#F7F4EF]">
@@ -368,7 +368,7 @@ const AboutUsPage = () => {
               </div>
               <div>
                 <h3 className="font-extrabold text-base" style={{ color: C.darkGreen }}>
-                 Sohail Shabbir
+                  Sohail Shabbir
                 </h3>
                 <p className="text-xs font-semibold uppercase tracking-wider mt-0.5" style={{ color: C.btnBrown }}>
                   CEO & Co-founder
@@ -390,10 +390,10 @@ const AboutUsPage = () => {
               </div>
               <div>
                 <h3 className="font-extrabold text-base" style={{ color: C.darkGreen }}>
-                 Sohail Shabbir
+                  Sohail Shabbir
                 </h3>
                 <p className="text-xs font-semibold uppercase tracking-wider mt-0.5" style={{ color: C.btnBrown }}>
-                  CTO & Co-founder
+                  Full Stack Enginner
                 </p>
               </div>
               <p className="text-xs text-gray-500 italic px-4 font-light leading-relaxed">
@@ -415,7 +415,7 @@ const AboutUsPage = () => {
                   Radif Fiaz
                 </h3>
                 <p className="text-xs font-semibold uppercase tracking-wider mt-0.5" style={{ color: C.btnBrown }}>
-                  Frontend Developer & UI/UX Designer
+                  Frontend Developer ,CTO  & UI/UX Designer
                 </p>
               </div>
               <p className="text-xs text-gray-500 italic px-4 font-light leading-relaxed">
@@ -430,7 +430,7 @@ const AboutUsPage = () => {
       {/* ─── What We Stand For ──────────────────────────────────── */}
       <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: C.cream }}>
         <div className="max-w-6xl mx-auto">
-          
+
           <div className="mb-14">
             <h2
               className="text-3xl font-extrabold tracking-tight font-serif"
@@ -444,7 +444,7 @@ const AboutUsPage = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            
+
             {/* Value 1 */}
             <div className="bg-white rounded-2xl p-6 border border-gray-100/50 shadow-sm flex flex-col justify-between">
               <div>
