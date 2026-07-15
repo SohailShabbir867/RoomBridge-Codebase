@@ -405,6 +405,7 @@ const createListing = async (req, res, next) => {
       title,
       description,
       rent,
+      rentByType,
       city,
       address,
       area,
@@ -426,11 +427,18 @@ const createListing = async (req, res, next) => {
     const parsedFeatures = parseJSON(features, []);
     const parsedNearby = parseJSON(nearbyPlaces, []);
     const parsedRoommate = parseJSON(roommatePreferences, {});
+    // rentByType: JSON string from FormData, e.g. '{"1_person":15000,"2_person":12000}'
+    const parsedRentByType = parseJSON(rentByType, {});
+    // Use minimum of per-type rents as the top-level rent (for search/sort/display)
+    const rentVal = Object.keys(parsedRentByType).length > 0
+      ? Math.min(...Object.values(parsedRentByType).map(Number))
+      : Number(rent);
 
     const listing = await Listing.create({
       title,
       description,
-      rent: Number(rent),
+      rent: rentVal,
+      rentByType: parsedRentByType,
       city,
       address,
       area: area || "",
@@ -493,6 +501,7 @@ const updateListing = async (req, res, next) => {
       title,
       description,
       rent,
+      rentByType,
       city,
       address,
       area,
@@ -582,6 +591,15 @@ const updateListing = async (req, res, next) => {
     if (title !== undefined) listing.title = title;
     if (description !== undefined) listing.description = description;
     if (rent !== undefined) listing.rent = Number(rent);
+    // Parse and store rentByType; recompute minimum rent if it changed
+    if (rentByType !== undefined) {
+      const parsedRBT = parseJSON(rentByType, null);
+      if (parsedRBT && typeof parsedRBT === "object" && !Array.isArray(parsedRBT)) {
+        listing.rentByType = parsedRBT;
+        const vals = Object.values(parsedRBT).map(Number).filter((n) => !isNaN(n) && n > 0);
+        if (vals.length > 0) listing.rent = Math.min(...vals);
+      }
+    }
     if (city !== undefined) listing.city = city;
     if (address !== undefined) listing.address = address;
     if (area !== undefined) listing.area = area;

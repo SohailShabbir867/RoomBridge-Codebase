@@ -49,6 +49,18 @@ const EditListing = () => {
         */
         const l = res.data?.listing || res.listing || res.data;
         if (!l) throw new Error("Listing not found");
+        const roomTypeArr = Array.isArray(l.roomType)
+          ? l.roomType
+          : l.roomType
+            ? [l.roomType]
+            : [];
+        const initialRentByType = l.rentByType || {};
+        roomTypeArr.forEach((rt) => {
+          if (!initialRentByType[rt] && l.rent) {
+            initialRentByType[rt] = l.rent;
+          }
+        });
+
         setForm({
           title: l.title || "",
           description: l.description || "",
@@ -57,17 +69,13 @@ const EditListing = () => {
           address: l.address || "",
           area: l.area || "",
           nearbyUniversity: l.nearbyUniversity || "",
-          // Normalize roomType to an array (old listings may have a string value)
-          roomType: Array.isArray(l.roomType)
-            ? l.roomType
-            : l.roomType
-              ? [l.roomType]
-              : [],
+          roomType: roomTypeArr,
           genderPreference: l.genderPreference || "any",
           availableFrom: l.availableFrom ? l.availableFrom.split("T")[0] : "",
           furnished: l.furnished || false,
           amenities: Array.isArray(l.amenities) ? l.amenities : [],
           existingPhotos: Array.isArray(l.photos) ? l.photos : [],
+          rentByType: initialRentByType,
         });
       })
       .catch(() => {
@@ -171,12 +179,23 @@ const EditListing = () => {
       e.title = "Title must be at least 10 characters";
     if (!form.description || form.description.length < 50)
       e.description = "Description must be at least 50 characters";
-    if (!form.rent || Number(form.rent) < 1000)
-      e.rent = "Rent must be at least PKR 1,000";
     if (!form.city) e.city = "City is required";
     if (!form.address) e.address = "Address is required";
     if (!form.roomType || form.roomType.length === 0)
       e.roomType = "Select at least one room type";
+
+    // Validate per-type pricing
+    if (form.roomType && form.roomType.length > 0) {
+      const LABELS = ROOM_TYPES.reduce((acc, r) => { acc[r.value] = r.label; return acc; }, {});
+      form.roomType.forEach((rt) => {
+        const val = Number(form.rentByType?.[rt]);
+        if (!form.rentByType?.[rt] || isNaN(val) || val < 1000)
+          e[`rent_${rt}`] = `${LABELS[rt]}: min PKR 1,000`;
+        else if (val > 500000)
+          e[`rent_${rt}`] = `${LABELS[rt]}: max PKR 500,000`;
+      });
+    }
+
     const totalPhotos = form.existingPhotos.length + newPhotos.length;
     if (totalPhotos === 0) e.photos = "At least one photo is required";
     setErrors(e);
@@ -193,11 +212,10 @@ const EditListing = () => {
       setSaving(true);
       const fd = new FormData();
 
-      /* Scalar fields (exclude roomType — handled separately as array) */
+      /* Scalar fields (exclude roomType and rent — handled separately) */
       [
         "title",
         "description",
-        "rent",
         "city",
         "address",
         "area",
@@ -211,6 +229,12 @@ const EditListing = () => {
 
       // Send roomType as multiple FormData entries so multer parses as array
       (form.roomType || []).forEach((rt) => fd.append("roomType", rt));
+
+      // Compute minimum rent for display/search and send rentByType as JSON
+      const rentVals = (form.roomType || []).map((rt) => Number(form.rentByType?.[rt])).filter((n) => n >= 1000);
+      const minRent = rentVals.length > 0 ? Math.min(...rentVals) : 1000;
+      fd.append("rent", minRent);
+      fd.append("rentByType", JSON.stringify(form.rentByType || {}));
 
       /*
         amenities must be individual string appends (same as CreateListing).
@@ -448,21 +472,49 @@ const EditListing = () => {
             <h2 className="font-semibold text-primary">
               Pricing & Availability
             </h2>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-4">
+              {(!form.roomType || form.roomType.length === 0) ? (
+                <p className="text-sm text-error bg-error/5 border border-error/20 rounded-lg p-3">
+                  ⚠️ Please select at least one room type above first.
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {form.roomType.map((rt) => {
+                    const rtInfo = ROOM_TYPES.find((r) => r.value === rt);
+                    const errKey = `rent_${rt}`;
+                    return (
+                      <div key={rt} className="space-y-1">
+                        <label className="label font-bold text-xs uppercase tracking-wider text-text-secondary">
+                          Rent for {rtInfo?.label || rt} *
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-text-secondary pointer-events-none">
+                            ₨
+                          </span>
+                          <input
+                            type="number"
+                            min="1000"
+                            max="500000"
+                            value={form.rentByType?.[rt] || ""}
+                            onChange={(e) =>
+                              setForm((f) => ({
+                                ...f,
+                                rentByType: { ...f.rentByType, [rt]: e.target.value },
+                              }))
+                            }
+                            placeholder="e.g. 15000"
+                            className={`input pl-8 ${errors[errKey] ? "input-error" : ""}`}
+                          />
+                        </div>
+                        {errors[errKey] && <p className="error-msg text-xs text-error mt-0.5">{errors[errKey]}</p>}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
               <div>
-                <label className="label">Monthly Rent (PKR) *</label>
-                <input
-                  name="rent"
-                  type="number"
-                  min="1000"
-                  value={form.rent}
-                  onChange={handleChange}
-                  className={`input ${errors.rent ? "input-error" : ""}`}
-                />
-                {errors.rent && <p className="error-msg">{errors.rent}</p>}
-              </div>
-              <div>
-                <label className="label">Available From</label>
+                <label className="label">Available From *</label>
                 <input
                   name="availableFrom"
                   type="date"

@@ -864,12 +864,31 @@ const ListingDetailPage = () => {
               
               {/* Rent & rating */}
               <div className="border-b border-gray-100 pb-5">
-                <div className="flex items-baseline gap-1 mb-1">
-                  <span className="text-3xl font-extrabold font-serif text-[#8E4E14]">
-                    PKR {rent.toLocaleString()}
-                  </span>
-                  <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">/month</span>
-                </div>
+                {listing.rentByType && Object.keys(listing.rentByType).length > 0 ? (
+                  <div className="space-y-2 mb-3">
+                    <p className="text-2xs font-extrabold uppercase tracking-wider text-gray-400">Rates by Room Capacity</p>
+                    {listing.roomType.map((rt) => {
+                      const price = listing.rentByType[rt] || listing.rent;
+                      if (!price) return null;
+                      return (
+                        <div key={rt} className="flex items-center justify-between py-1 border-b border-gray-50 last:border-0">
+                          <span className="text-xs text-gray-500 font-semibold">{TYPE_LABELS[rt] || rt}</span>
+                          <span className="text-sm font-extrabold text-[#8E4E14]">
+                            PKR {Number(price).toLocaleString()}
+                            <span className="text-3xs font-medium text-gray-400 ml-0.5">/mo</span>
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="flex items-baseline gap-1 mb-1">
+                    <span className="text-3xl font-extrabold font-serif text-[#8E4E14]">
+                      PKR {rent.toLocaleString()}
+                    </span>
+                    <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">/month</span>
+                  </div>
+                )}
                 
                 {listing.averageRating > 0 && (
                   <div className="flex items-center gap-1.5 mt-2">

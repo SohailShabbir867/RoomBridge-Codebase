@@ -146,6 +146,16 @@ const listingSchema = new mongoose.Schema(
       min: [1000, "Rent must be at least PKR 1,000"],
       max: [500000, "Rent cannot exceed PKR 500,000"],
     },
+    // Per-capacity pricing — keys are room-type values (e.g. "1_person"), values are PKR/month
+    rentByType: {
+      type: Map,
+      of: {
+        type: Number,
+        min: [1000, "Rent must be at least PKR 1,000"],
+        max: [500000, "Rent cannot exceed PKR 500,000"],
+      },
+      default: {},
+    },
     city: {
       type: String,
       required: [true, "City is required"],
