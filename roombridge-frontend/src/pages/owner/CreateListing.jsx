@@ -32,7 +32,7 @@ const STEPS = [
   { id: 1, label: "Basic Info",         icon: RiHome4Line },
   { id: 2, label: "Room Details",       icon: RiStarLine },
   { id: 3, label: "Location",           icon: RiMapPin2Line },
-  { id: 4, label: "Pricing & Pricing",  icon: RiMoneyDollarCircleLine },
+  { id: 4, label: "Pricing & Availability",  icon: RiMoneyDollarCircleLine },
   { id: 5, label: "Photos",             icon: RiImageAddLine },
 ];
 
@@ -157,12 +157,26 @@ const CreateListing = () => {
 
   /* ── Room-type multi-select toggle ─────────────────────── */
   const handleRoomTypeToggle = (value) => {
-    setForm((f) => ({
-      ...f,
-      roomType: f.roomType.includes(value)
+    setForm((f) => {
+      const nextRoomType = f.roomType.includes(value)
         ? f.roomType.filter((v) => v !== value)
-        : [...f.roomType, value],
-    }));
+        : [...f.roomType, value];
+
+      const nextRentByType = { ...f.rentByType };
+      if (!nextRoomType.includes(value)) {
+        delete nextRentByType[value];
+      }
+
+      return {
+        ...f,
+        roomType: nextRoomType,
+        rentByType: nextRentByType,
+      };
+    });
+
+    // Clean up photos for unchecked room type
+    setPhotos((prev) => prev.filter((p) => p.roomType !== value));
+
     if (errors.roomType) setErrors((er) => ({ ...er, roomType: "" }));
   };
 
@@ -253,6 +267,56 @@ const CreateListing = () => {
     return Object.keys(e).length === 0;
   };
 
+  const validateAll = () => {
+    const e = {};
+
+    // Step 1
+    if (!form.title.trim() || form.title.length < 10)
+      e.title = "Title must be at least 10 characters";
+    if (!form.description.trim() || form.description.length < 50)
+      e.description = "Description must be at least 50 characters";
+
+    // Step 2
+    if (form.roomType.length === 0) {
+      e.roomType = "Select at least one room type";
+    }
+
+    // Step 3
+    if (!form.city) e.city = "City is required";
+    if (!form.address.trim()) e.address = "Address is required";
+
+    // Step 4
+    if (form.roomType.length > 0) {
+      const LABELS = ROOM_TYPES.reduce((acc, r) => { acc[r.value] = r.label; return acc; }, {});
+      form.roomType.forEach((rt) => {
+        const val = Number(form.rentByType?.[rt]);
+        if (!form.rentByType?.[rt] || isNaN(val) || val < 1000)
+          e[`rent_${rt}`] = `${LABELS[rt]}: min PKR 1,000`;
+        else if (val > 500000)
+          e[`rent_${rt}`] = `${LABELS[rt]}: max PKR 500,000`;
+      });
+      if (!form.availableFrom) e.availableFrom = "Available from date is required";
+    } else {
+      e.rent = "Select at least one room type first (Step 2)";
+    }
+
+    // Step 5
+    if (form.roomType.length > 0) {
+      const missing = form.roomType.filter(
+        (rt) => !photos.some((p) => p.roomType === rt && p.tag === "room")
+      );
+      if (photos.length === 0 || missing.length > 0) {
+        const labels = ROOM_TYPES.reduce((acc, r) => { acc[r.value] = r.label; return acc; }, {});
+        e.photos = missing.length > 0
+          ? `Add at least one room photo for: ${missing.map((v) => labels[v] || v).join(", ")}`
+          : "At least one photo is required";
+      }
+    }
+
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
   const goNext = () => {
     if (validateStep(step)) setStep((s) => Math.min(s + 1, STEPS.length));
   };
@@ -260,7 +324,10 @@ const CreateListing = () => {
 
   /* ── Submit ─────────────────────────────────────────────── */
   const handleSubmit = async () => {
-    if (!validateStep(5)) return;
+    if (!validateAll()) {
+      toast.error("Please fill in all required fields and upload correct photos.");
+      return;
+    }
     try {
       setLoading(true);
       const fd = new FormData();
