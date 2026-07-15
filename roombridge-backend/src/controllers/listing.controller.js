@@ -158,7 +158,14 @@ const getAllListings = async (req, res, next) => {
     const filter = { status: "active" }; // ALWAYS restrict to active on public route
 
     if (city) filter.city = city;
-    if (roomType) filter.roomType = roomType;
+    if (roomType) {
+      // roomType query param may be a single value or comma-separated list
+      const rtArr = Array.isArray(roomType)
+        ? roomType
+        : roomType.split(",").map((v) => v.trim()).filter(Boolean);
+      // Use $in: MongoDB matches any doc whose roomType array contains one of these
+      filter.roomType = { $in: rtArr };
+    }
 
     if (genderPreference) {
       if (genderPreference === "any") {
@@ -361,13 +368,31 @@ const createListing = async (req, res, next) => {
     }
 
     /* ── Upload photos to Cloudinary in parallel ─────────── */
+    // Parse per-photo metadata sent from the frontend as JSON strings
+    let photoMetaList = [];
+    if (req.body.photoMetadata) {
+      const rawMeta = Array.isArray(req.body.photoMetadata)
+        ? req.body.photoMetadata
+        : [req.body.photoMetadata];
+      photoMetaList = rawMeta.map((m) => {
+        try { return JSON.parse(m); } catch (_) { return {}; }
+      });
+    }
+
     let photos;
     try {
-      photos = await Promise.all(
+      const uploaded = await Promise.all(
         req.files.map((file) =>
           uploadToCloudinary(file.buffer, "roombridge/listings"),
         ),
       );
+      // Attach roomType + tag metadata to each uploaded photo object
+      photos = uploaded.map((up, i) => ({
+        url: up.url,
+        public_id: up.public_id,
+        roomType: photoMetaList[i]?.roomType || "",
+        tag:      photoMetaList[i]?.tag      || "",
+      }));
     } catch (uploadErr) {
       return errorResponse(
         res,
@@ -502,22 +527,39 @@ const updateListing = async (req, res, next) => {
     /* ── Step 2: Enforce maximum photo count AFTER removing ─ */
     if (req.files && req.files.length > 0) {
       const totalAfterAdd = listing.photos.length + req.files.length;
-      if (totalAfterAdd > 6) {
+      if (totalAfterAdd > 15) {
         return errorResponse(
           res,
           400,
-          `Maximum 6 photos allowed. After removal you have ${listing.photos.length}, trying to add ${req.files.length}.`,
+          `Maximum 15 photos allowed. After removal you have ${listing.photos.length}, trying to add ${req.files.length}.`,
         );
       }
 
       /* ── Step 3: Upload new photos ─────────────────────── */
+      // Parse per-photo metadata for newly uploaded photos
+      let photoMetaList = [];
+      if (req.body.photoMetadata) {
+        const rawMeta = Array.isArray(req.body.photoMetadata)
+          ? req.body.photoMetadata
+          : [req.body.photoMetadata];
+        photoMetaList = rawMeta.map((m) => {
+          try { return JSON.parse(m); } catch (_) { return {}; }
+        });
+      }
+
       let newPhotos;
       try {
-        newPhotos = await Promise.all(
+        const uploaded = await Promise.all(
           req.files.map((f) =>
             uploadToCloudinary(f.buffer, "roombridge/listings"),
           ),
         );
+        newPhotos = uploaded.map((up, i) => ({
+          url: up.url,
+          public_id: up.public_id,
+          roomType: photoMetaList[i]?.roomType || "",
+          tag:      photoMetaList[i]?.tag      || "",
+        }));
       } catch (uploadErr) {
         return errorResponse(
           res,
@@ -544,7 +586,23 @@ const updateListing = async (req, res, next) => {
     if (address !== undefined) listing.address = address;
     if (area !== undefined) listing.area = area;
     if (nearbyUniversity !== undefined) listing.nearbyUniversity = nearbyUniversity?.trim() || "";
-    if (roomType !== undefined) listing.roomType = roomType;
+    if (roomType !== undefined) {
+      // Normalise roomType to an array (FormData may send it as a single string or array)
+      let normalised;
+      if (Array.isArray(roomType)) {
+        normalised = roomType;
+      } else if (typeof roomType === "string") {
+        try {
+          const parsed = JSON.parse(roomType);
+          normalised = Array.isArray(parsed) ? parsed : [parsed];
+        } catch (_) {
+          normalised = [roomType];
+        }
+      } else {
+        normalised = [];
+      }
+      listing.roomType = normalised;
+    }
     if (genderPreference !== undefined)
       listing.genderPreference = genderPreference;
     if (availableFrom !== undefined) listing.availableFrom = availableFrom;

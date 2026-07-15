@@ -24,9 +24,22 @@ import {
 */
 
 const ROOM_TYPE_LABELS = {
-  single: "Single Room",
-  shared: "Shared Room",
-  apartment: "Apartment",
+  "1_person":           "1 Person Room",
+  "2_person":           "2 Person Room",
+  "3_person":           "3 Person Room",
+  "4_person":           "4 Person Room",
+  "more_than_4_person": "More than 4 Persons",
+  // legacy backwards-compat
+  single:    "Single Room",
+  shared:    "Shared Room",
+  apartment: "Full Apartment",
+};
+
+/** Resolve roomType (string or array) to a display string */
+const resolveRoomType = (roomType) => {
+  if (Array.isArray(roomType))
+    return roomType.map((v) => ROOM_TYPE_LABELS[v] || v).join(" / ");
+  return ROOM_TYPE_LABELS[roomType] || roomType || "Room";
 };
 
 const GENDER_LABELS = {
@@ -185,7 +198,7 @@ const ListingCard = ({
               </span>
             </span>
             <span className="text-xs text-text-secondary">
-              {ROOM_TYPE_LABELS[listing.roomType] || listing.roomType}
+              {resolveRoomType(listing.roomType)}
             </span>
           </div>
         </div>
@@ -218,7 +231,7 @@ const ListingCard = ({
             className="text-xs font-medium bg-primary/90 backdrop-blur-sm text-white
                            px-2.5 py-1 rounded-full"
           >
-            {ROOM_TYPE_LABELS[listing.roomType] || listing.roomType || "Room"}
+            {resolveRoomType(listing.roomType)}
           </span>
         </div>
 

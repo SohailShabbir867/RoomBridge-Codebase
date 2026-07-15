@@ -28,7 +28,7 @@ const CITIES = [
   "Murree",
 ];
 
-const ROOM_TYPES = ["single", "shared", "apartment"];
+const ROOM_TYPES = ["1_person", "2_person", "3_person", "4_person", "more_than_4_person"];
 const GENDER_PREFS = ["any", "male", "female"];
 const STATUSES = ["active", "pending", "inactive", "active", "rejected"];
 
@@ -248,7 +248,7 @@ const seed = async () => {
 
     for (let j = 0; j < 2; j += 1) {
       const idx = i * 2 + j;
-      const roomType = ROOM_TYPES[idx % ROOM_TYPES.length];
+      const roomType = [ROOM_TYPES[idx % ROOM_TYPES.length]]; // Array — matches new [String] schema
       const status = STATUSES[idx % STATUSES.length];
       const furnished = idx % 2 === 0;
       const rent = 12000 + idx * 1500;

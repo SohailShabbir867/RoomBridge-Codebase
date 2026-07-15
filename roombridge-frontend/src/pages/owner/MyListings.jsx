@@ -22,10 +22,17 @@ const BTN = "#8E4E14";
 const ACC = "#FFAB69";
 
 const ROOM_TYPE_LABELS = {
+  "1_person":           "1 Person Room",
+  "2_person":           "2 Person Room",
+  "3_person":           "3 Person Room",
+  "4_person":           "4 Person Room",
+  "more_than_4_person": "More than 4 Persons",
   single:    "Single Room",
   shared:    "Shared Room",
-  apartment: "Apartment",
+  apartment: "Full Apartment",
 };
+const resolveRoomType = (rt) =>
+  Array.isArray(rt) ? rt.map((v) => ROOM_TYPE_LABELS[v] || v).join(" / ") : ROOM_TYPE_LABELS[rt] || rt || "";
 
 const STATUS_COLOR = {
   active:   { bg: "#D1FAE5", text: "#065F46" },
@@ -208,7 +215,7 @@ const MyListings = () => {
                         <span className="font-medium text-xs text-gray-400">/mo</span>
                       </span>
                       <span className="text-xs text-gray-400">
-                        {ROOM_TYPE_LABELS[l.roomType] || l.roomType}
+                        {resolveRoomType(l.roomType)}
                       </span>
                     </div>
 

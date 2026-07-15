@@ -35,7 +35,7 @@ const C = {
 /* ─── Original content (unchanged) ─────────────────────────── */
 const TEAM = [
   { name: "Sohail Shabbir ", role: "CEO & Co-founder", bio: "Full-stack developer with 3+ years in MERN. Architect of RoomBridge." },
-  { name: "Radif Fiaz ", role: "CTO", bio: "Expert in UI design , Frontend Deveeloper and Marketing Specilist ." },
+  { name: "Radif Fiaz ", role: "CTO", bio: "Expert in UI design , Frontend Developer and Marketing Specilist ." },
   { name: "Radif Fiaz", role: "Frontend Developer  & UI/UX Designer", bio: "Frontend developer and UI/UX designer focused on accessible, beautiful product experiences." },
   { name: "Sohail Shabbir", role: "Product Manager & Full Stack Engennier ", bio: "Shapes strategy and roadmap. Passionate about Pakistan's housing market." },
 ];

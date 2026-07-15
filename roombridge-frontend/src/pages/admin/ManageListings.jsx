@@ -30,10 +30,17 @@ const STATUS_COLORS = {
 };
 
 const ROOM_TYPE_LABELS = {
+  "1_person":           "1 Person Room",
+  "2_person":           "2 Person Room",
+  "3_person":           "3 Person Room",
+  "4_person":           "4 Person Room",
+  "more_than_4_person": "More than 4 Persons",
   single:    "Single Room",
   shared:    "Shared Room",
-  apartment: "Apartment",
+  apartment: "Full Apartment",
 };
+const resolveRoomType = (rt) =>
+  Array.isArray(rt) ? rt.map((v) => ROOM_TYPE_LABELS[v] || v).join(" / ") : ROOM_TYPE_LABELS[rt] || rt || "";
 
 const FilterPill = ({ label, active, onClick }) => (
   <button
@@ -261,7 +268,7 @@ const ManageListings = () => {
                               <p className="font-bold text-xs truncate max-w-48" style={{ color: DK }}>{l.title}</p>
                               <p className="text-xs text-gray-400 flex items-center gap-1">
                                 <RiMapPin2Line style={{ color: ACC }} /> {l.city}
-                                {l.roomType && <span>· {ROOM_TYPE_LABELS[l.roomType] || l.roomType}</span>}
+                                {l.roomType && <span>· {resolveRoomType(l.roomType)}</span>}
                               </p>
                               {l.rejectionReason && (
                                 <p className="text-[10px] text-red-400 truncate max-w-48" title={l.rejectionReason}>

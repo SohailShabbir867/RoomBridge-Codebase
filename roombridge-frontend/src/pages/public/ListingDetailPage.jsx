@@ -46,10 +46,17 @@ const AMENITY_ICONS = {
 };
 
 const TYPE_LABELS = {
-  single: "Single Room",
-  shared: "Shared Room",
+  "1_person":           "1 Person Room",
+  "2_person":           "2 Person Room",
+  "3_person":           "3 Person Room",
+  "4_person":           "4 Person Room",
+  "more_than_4_person": "More than 4 Persons",
+  single:    "Single Room",
+  shared:    "Shared Room",
   apartment: "Full Apartment",
 };
+const resolveRoomType = (rt) =>
+  Array.isArray(rt) ? rt.map((v) => TYPE_LABELS[v] || v).join(" / ") : TYPE_LABELS[rt] || rt || "Room";
 
 /* ─── Design tokens (match Figma) ──────────────────────────── */
 const C = {
@@ -411,7 +418,7 @@ const ListingDetailPage = () => {
   const reviewList = Array.isArray(listing.reviews) ? listing.reviews : [];
 
   const rent = listing.rent || 0;
-  const typeLabel = TYPE_LABELS[listing.roomType] || listing.roomType || "Room";
+  const typeLabel = resolveRoomType(listing.roomType);
   const ownerName = listing.owner?.name || "Owner";
   const ownerId = listing.owner?._id || listing.owner;
   const canReportListing =

@@ -37,12 +37,32 @@ const FEATURE_NAMES = [
 
 /* ── Sub-schemas (no auto _id) ─────────────────────────── */
 
+const VALID_ROOM_TYPES = [
+  "1_person",
+  "2_person",
+  "3_person",
+  "4_person",
+  "more_than_4_person",
+  // legacy values kept for backwards-compat with old listings
+  "single",
+  "shared",
+  "apartment",
+];
+
 const photoSchema = new mongoose.Schema(
   {
     url: { type: String, required: [true, "Photo URL is required"] },
     public_id: {
       type: String,
       required: [true, "Cloudinary public_id is required"],
+    },
+    // Which room-type section this photo belongs to (e.g. "1_person", "2_person")
+    roomType: { type: String, default: "" },
+    // Whether this photo shows the "room" area or the "washroom" area
+    tag: {
+      type: String,
+      enum: { values: ["room", "washroom", ""], message: "Invalid photo tag" },
+      default: "",
     },
   },
   { _id: false },
@@ -157,11 +177,18 @@ const listingSchema = new mongoose.Schema(
     },
     furnished: { type: Boolean, default: false },
     roomType: {
-      type: String,
+      type: [String],
       required: [true, "Room type is required"],
-      enum: {
-        values: ["single", "shared", "apartment"],
-        message: "Invalid room type",
+      validate: {
+        validator: function (arr) {
+          return (
+            Array.isArray(arr) &&
+            arr.length > 0 &&
+            arr.every((v) => VALID_ROOM_TYPES.includes(v))
+          );
+        },
+        message:
+          "Invalid room type. Valid values: 1_person, 2_person, 3_person, 4_person, more_than_4_person",
       },
     },
     genderPreference: {
