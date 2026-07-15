@@ -32,34 +32,18 @@ const EditListing = () => {
   const fileRef = useRef();
 
   const [form, setForm] = useState(null);
-  const [newPhotos, setNewPhotos] = useState([]);   // [{ file, preview, roomType, tag }]
+  const [newPhotos, setNewPhotos] = useState([]);   // [{ file, preview }]
   const [toRemove, setToRemove] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
-  const uploadContextRef = useRef(null); // { roomType, tag, maxCount }
 
   useEffect(() => {
     listingService
       .getListingById(id)
       .then((res) => {
-        /*
-          Backend returns { success, listing } — res.listing is the correct path.
-          Fallback to res.data for robustness.
-        */
         const l = res.data?.listing || res.listing || res.data;
         if (!l) throw new Error("Listing not found");
-        const roomTypeArr = Array.isArray(l.roomType)
-          ? l.roomType
-          : l.roomType
-            ? [l.roomType]
-            : [];
-        const initialRentByType = l.rentByType || {};
-        roomTypeArr.forEach((rt) => {
-          if (!initialRentByType[rt] && l.rent) {
-            initialRentByType[rt] = l.rent;
-          }
-        });
 
         setForm({
           title: l.title || "",
@@ -69,13 +53,12 @@ const EditListing = () => {
           address: l.address || "",
           area: l.area || "",
           nearbyUniversity: l.nearbyUniversity || "",
-          roomType: roomTypeArr,
+          roomType: Array.isArray(l.roomType) ? l.roomType[0] : (l.roomType || ""),
           genderPreference: l.genderPreference || "any",
           availableFrom: l.availableFrom ? l.availableFrom.split("T")[0] : "",
           furnished: l.furnished || false,
           amenities: Array.isArray(l.amenities) ? l.amenities : [],
           existingPhotos: Array.isArray(l.photos) ? l.photos : [],
-          rentByType: initialRentByType,
         });
       })
       .catch(() => {
@@ -100,28 +83,7 @@ const EditListing = () => {
     }));
   };
 
-  /* ── Room-type multi-select toggle ── */
-  const handleRoomTypeToggle = (value) => {
-    setForm((f) => ({
-      ...f,
-      roomType: f.roomType.includes(value)
-        ? f.roomType.filter((v) => v !== value)
-        : [...f.roomType, value],
-    }));
-    if (errors.roomType) setErrors((er) => ({ ...er, roomType: "" }));
-  };
-
-  /* ── Categorized photo helpers for NEW uploads ── */
-  const newPhotosBySlot = (roomType, tag) =>
-    newPhotos.filter((p) => p.roomType === roomType && p.tag === tag);
-
-  const triggerUpload = (roomType, tag, maxCount) => {
-    uploadContextRef.current = { roomType, tag, maxCount };
-    fileRef.current.click();
-  };
-
   const handleNewPhotos = (e) => {
-    const ctx = uploadContextRef.current;
     const files = Array.from(e.target.files);
     const tooLarge = files.some((f) => f.size > 10 * 1024 * 1024);
     if (tooLarge) {
@@ -129,35 +91,17 @@ const EditListing = () => {
       e.target.value = "";
       return;
     }
-    if (ctx) {
-      // Categorized upload (from a specific slot button)
-      const { roomType, tag, maxCount } = ctx;
-      const existing = newPhotosBySlot(roomType, tag);
-      const remaining = maxCount - existing.length;
-      const toAdd = files.slice(0, Math.max(0, remaining));
-      if (files.length > remaining)
-        toast.error(`Max ${maxCount} ${tag} photo(s) here. Adding ${toAdd.length} only.`);
-      toAdd.forEach((file) => {
-        const reader = new FileReader();
-        reader.onload = (ev) =>
-          setNewPhotos((p) => [...p, { file, preview: ev.target.result, roomType, tag }]);
-        reader.readAsDataURL(file);
-      });
-      uploadContextRef.current = null;
-    } else {
-      // Fallback: uncategorized add (e.g., from generic add button)
-      const totalExisting = form.existingPhotos.length - toRemove.length;
-      const remaining = 15 - totalExisting - newPhotos.length;
-      const toAdd = files.slice(0, Math.max(0, remaining));
-      if (files.length > remaining)
-        toast.error(`Max 15 photos total. Adding ${toAdd.length} only.`);
-      toAdd.forEach((file) => {
-        const reader = new FileReader();
-        reader.onload = (ev) =>
-          setNewPhotos((p) => [...p, { file, preview: ev.target.result, roomType: "", tag: "" }]);
-        reader.readAsDataURL(file);
-      });
-    }
+    const totalExisting = form.existingPhotos.length - toRemove.length;
+    const remaining = 3 - totalExisting - newPhotos.length;
+    const toAdd = files.slice(0, Math.max(0, remaining));
+    if (files.length > remaining)
+      toast.error(`Max 3 photos total. Adding ${toAdd.length} only.`);
+    toAdd.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (ev) =>
+        setNewPhotos((p) => [...p, { file, preview: ev.target.result }]);
+      reader.readAsDataURL(file);
+    });
     e.target.value = "";
   };
 
@@ -181,21 +125,9 @@ const EditListing = () => {
       e.description = "Description must be at least 50 characters";
     if (!form.city) e.city = "City is required";
     if (!form.address) e.address = "Address is required";
-    if (!form.roomType || form.roomType.length === 0)
-      e.roomType = "Select at least one room type";
-
-    // Validate per-type pricing
-    if (form.roomType && form.roomType.length > 0) {
-      const LABELS = ROOM_TYPES.reduce((acc, r) => { acc[r.value] = r.label; return acc; }, {});
-      form.roomType.forEach((rt) => {
-        const val = Number(form.rentByType?.[rt]);
-        if (!form.rentByType?.[rt] || isNaN(val) || val < 1000)
-          e[`rent_${rt}`] = `${LABELS[rt]}: min PKR 1,000`;
-        else if (val > 500000)
-          e[`rent_${rt}`] = `${LABELS[rt]}: max PKR 500,000`;
-      });
-    }
-
+    if (!form.roomType) e.roomType = "Room type is required";
+    if (!form.rent || Number(form.rent) < 1000)
+      e.rent = "Rent must be at least PKR 1,000";
     const totalPhotos = form.existingPhotos.length + newPhotos.length;
     if (totalPhotos === 0) e.photos = "At least one photo is required";
     setErrors(e);
@@ -211,49 +143,32 @@ const EditListing = () => {
     try {
       setSaving(true);
       const fd = new FormData();
-
-      /* Scalar fields (exclude roomType and rent — handled separately) */
       [
         "title",
         "description",
+        "rent",
         "city",
         "address",
         "area",
         "nearbyUniversity",
+        "roomType",
         "genderPreference",
         "availableFrom",
       ].forEach((k) => {
         if (form[k] !== undefined && form[k] !== "") fd.append(k, form[k]);
       });
       fd.append("furnished", form.furnished);
-
-      // Send roomType as multiple FormData entries so multer parses as array
-      (form.roomType || []).forEach((rt) => fd.append("roomType", rt));
-
-      // Compute minimum rent for display/search and send rentByType as JSON
-      const rentVals = (form.roomType || []).map((rt) => Number(form.rentByType?.[rt])).filter((n) => n >= 1000);
-      const minRent = rentVals.length > 0 ? Math.min(...rentVals) : 1000;
-      fd.append("rent", minRent);
-      fd.append("rentByType", JSON.stringify(form.rentByType || {}));
-
-      /*
-        amenities must be individual string appends (same as CreateListing).
-      */
       (form.amenities || []).forEach((a) => fd.append("amenities", a));
-
       if (toRemove.length) fd.append("removePhotos", JSON.stringify(toRemove));
 
-      // New photos: send file + metadata as parallel FormData entries
       newPhotos.forEach((p) => {
         fd.append("photos", p.file);
-        fd.append("photoMetadata", JSON.stringify({ roomType: p.roomType, tag: p.tag }));
       });
 
       await listingService.updateListing(id, fd);
       toast.success("Listing updated! Re-submitted for review.");
       navigate("/owner/listings");
     } catch (err) {
-      /* err.message undefined on axios error */
       toast.error(err.response?.data?.message || "Failed to update listing.");
     } finally {
       setSaving(false);
@@ -292,7 +207,7 @@ const EditListing = () => {
               <RiImageAddLine className="text-secondary" /> Photos
             </h2>
             <p className="text-xs text-text-secondary mb-4">
-              Max 15 photos total (3 per room-type section). Click × to remove.
+              Max 3 photos total. Click × to remove.
             </p>
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-3">
               {/* Existing photos */}
@@ -346,7 +261,7 @@ const EditListing = () => {
                 </div>
               ))}
               {/* Add button */}
-              {form.existingPhotos.length + newPhotos.length < 15 && (
+              {form.existingPhotos.length + newPhotos.length < 3 && (
                 <button
                   type="button"
                   onClick={() => fileRef.current.click()}
@@ -402,44 +317,20 @@ const EditListing = () => {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="label">Room Type * (select all that apply)</label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
-                  {ROOM_TYPES.map(({ value, label, desc }) => {
-                    const sel = Array.isArray(form.roomType) && form.roomType.includes(value);
-                    return (
-                      <button
-                        key={value}
-                        type="button"
-                        onClick={() => handleRoomTypeToggle(value)}
-                        className="text-left p-3 rounded-input border transition-all"
-                        style={{
-                          borderColor: sel ? "var(--color-primary)" : "var(--color-border)",
-                          backgroundColor: sel ? "color-mix(in srgb, var(--color-primary) 6%, white)" : "white",
-                        }}
-                      >
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-all"
-                            style={{
-                              borderColor: sel ? "var(--color-primary)" : "#D1D5DB",
-                              backgroundColor: sel ? "var(--color-primary)" : "transparent",
-                            }}
-                          >
-                            {sel && (
-                              <svg viewBox="0 0 10 8" fill="none" className="w-2.5 h-2.5">
-                                <path d="M1 4l3 3 5-6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                              </svg>
-                            )}
-                          </div>
-                          <div>
-                            <p className="font-semibold text-sm">{label}</p>
-                            <p className="text-xs text-text-secondary">{desc}</p>
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
+                <label className="label">Room Type *</label>
+                <select
+                  name="roomType"
+                  value={form.roomType}
+                  onChange={handleChange}
+                  className={`input ${errors.roomType ? "input-error" : ""}`}
+                >
+                  <option value="">Select type</option>
+                  {ROOM_TYPES.map(({ value, label }) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
                 {errors.roomType && <p className="error-msg">{errors.roomType}</p>}
               </div>
               <div>
@@ -472,47 +363,19 @@ const EditListing = () => {
             <h2 className="font-semibold text-primary">
               Pricing & Availability
             </h2>
-            <div className="space-y-4">
-              {(!form.roomType || form.roomType.length === 0) ? (
-                <p className="text-sm text-error bg-error/5 border border-error/20 rounded-lg p-3">
-                  ⚠️ Please select at least one room type above first.
-                </p>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {form.roomType.map((rt) => {
-                    const rtInfo = ROOM_TYPES.find((r) => r.value === rt);
-                    const errKey = `rent_${rt}`;
-                    return (
-                      <div key={rt} className="space-y-1">
-                        <label className="label font-bold text-xs uppercase tracking-wider text-text-secondary">
-                          Rent for {rtInfo?.label || rt} *
-                        </label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-text-secondary pointer-events-none">
-                            ₨
-                          </span>
-                          <input
-                            type="number"
-                            min="1000"
-                            max="500000"
-                            value={form.rentByType?.[rt] || ""}
-                            onChange={(e) =>
-                              setForm((f) => ({
-                                ...f,
-                                rentByType: { ...f.rentByType, [rt]: e.target.value },
-                              }))
-                            }
-                            placeholder="e.g. 15000"
-                            className={`input pl-8 ${errors[errKey] ? "input-error" : ""}`}
-                          />
-                        </div>
-                        {errors[errKey] && <p className="error-msg text-xs text-error mt-0.5">{errors[errKey]}</p>}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="label">Monthly Rent (PKR) *</label>
+                <input
+                  name="rent"
+                  type="number"
+                  min="1000"
+                  value={form.rent}
+                  onChange={handleChange}
+                  className={`input ${errors.rent ? "input-error" : ""}`}
+                />
+                {errors.rent && <p className="error-msg">{errors.rent}</p>}
+              </div>
               <div>
                 <label className="label">Available From *</label>
                 <input

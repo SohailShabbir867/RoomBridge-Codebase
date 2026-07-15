@@ -427,44 +427,55 @@ const createListing = async (req, res, next) => {
     const parsedFeatures = parseJSON(features, []);
     const parsedNearby = parseJSON(nearbyPlaces, []);
     const parsedRoommate = parseJSON(roommatePreferences, {});
-    // rentByType: JSON string from FormData, e.g. '{"1_person":15000,"2_person":12000}'
     const parsedRentByType = parseJSON(rentByType, {});
-    // Use minimum of per-type rents as the top-level rent (for search/sort/display)
-    const rentVal = Object.keys(parsedRentByType).length > 0
-      ? Math.min(...Object.values(parsedRentByType).map(Number))
-      : Number(rent);
 
-    const listing = await Listing.create({
-      title,
-      description,
-      rent: rentVal,
-      rentByType: parsedRentByType,
-      city,
-      address,
-      area: area || "",
-      nearbyUniversity: nearbyUniversity?.trim() || "",
-      roomType,
-      genderPreference: genderPreference || "any",
-      availableFrom,
-      furnished: furnished === "true" || furnished === true,
-      photos,
-      features:
-        parsedAmenities !== null
-          ? parsedAmenities
-          : Array.isArray(parsedFeatures)
-            ? parsedFeatures
-            : [],
-      nearbyPlaces: Array.isArray(parsedNearby) ? parsedNearby : [],
-      roommatePreferences: parsedRoommate,
-      owner: req.user._id,
-      status: "pending",
-    });
+    const ROOM_TYPE_LABELS = {
+      "1_person": "1 Person Room",
+      "2_person": "2 Person Room",
+      "3_person": "3 Person Room",
+      "4_person": "4 Person Room",
+      "more_than_4_person": "More than 4 Persons",
+    };
+
+    const createdListings = [];
+    for (const rt of roomType) {
+      const rentVal = parsedRentByType[rt] ? Number(parsedRentByType[rt]) : Number(rent);
+      const rtPhotos = photos.filter((p) => p.roomType === rt);
+      const finalPhotos = rtPhotos.length > 0 ? rtPhotos : photos;
+      const finalTitle = roomType.length > 1 ? `${title} - ${ROOM_TYPE_LABELS[rt] || rt}` : title;
+
+      const listing = await Listing.create({
+        title: finalTitle,
+        description,
+        rent: rentVal,
+        city,
+        address,
+        area: area || "",
+        nearbyUniversity: nearbyUniversity?.trim() || "",
+        roomType: rt,
+        genderPreference: genderPreference || "any",
+        availableFrom,
+        furnished: furnished === "true" || furnished === true,
+        photos: finalPhotos,
+        features:
+          parsedAmenities !== null
+            ? parsedAmenities
+            : Array.isArray(parsedFeatures)
+              ? parsedFeatures
+              : [],
+        nearbyPlaces: Array.isArray(parsedNearby) ? parsedNearby : [],
+        roommatePreferences: parsedRoommate,
+        owner: req.user._id,
+        status: "pending",
+      });
+      createdListings.push(listing);
+    }
 
     return successResponse(
       res,
       201,
-      "Listing created successfully. It will be reviewed by an admin before going live.",
-      { listing: withAmenities(listing.toObject()) },
+      "Listings created successfully. They will be reviewed by an admin before going live.",
+      { listings: createdListings.map(l => withAmenities(l.toObject())) },
     );
   } catch (err) {
     next(err);
@@ -591,35 +602,19 @@ const updateListing = async (req, res, next) => {
     if (title !== undefined) listing.title = title;
     if (description !== undefined) listing.description = description;
     if (rent !== undefined) listing.rent = Number(rent);
-    // Parse and store rentByType; recompute minimum rent if it changed
-    if (rentByType !== undefined) {
-      const parsedRBT = parseJSON(rentByType, null);
-      if (parsedRBT && typeof parsedRBT === "object" && !Array.isArray(parsedRBT)) {
-        listing.rentByType = parsedRBT;
-        const vals = Object.values(parsedRBT).map(Number).filter((n) => !isNaN(n) && n > 0);
-        if (vals.length > 0) listing.rent = Math.min(...vals);
-      }
-    }
+
     if (city !== undefined) listing.city = city;
     if (address !== undefined) listing.address = address;
     if (area !== undefined) listing.area = area;
     if (nearbyUniversity !== undefined) listing.nearbyUniversity = nearbyUniversity?.trim() || "";
     if (roomType !== undefined) {
-      // Normalise roomType to an array (FormData may send it as a single string or array)
-      let normalised;
-      if (Array.isArray(roomType)) {
-        normalised = roomType;
-      } else if (typeof roomType === "string") {
-        try {
-          const parsed = JSON.parse(roomType);
-          normalised = Array.isArray(parsed) ? parsed : [parsed];
-        } catch (_) {
-          normalised = [roomType];
-        }
-      } else {
-        normalised = [];
-      }
-      listing.roomType = normalised;
+      // Normalise roomType to a single string (from validator array normalization)
+      const rt = Array.isArray(roomType)
+        ? roomType[0]
+        : typeof roomType === "string"
+          ? roomType
+          : "";
+      if (rt) listing.roomType = rt;
     }
     if (genderPreference !== undefined)
       listing.genderPreference = genderPreference;
