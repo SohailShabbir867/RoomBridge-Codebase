@@ -390,7 +390,7 @@ const HomePage = () => {
             {/* Headline — typewriter */}
             <TypewriterHeadline />
             <p className="text-white/90 text-sm sm:text-base lg:text-lg mb-12 max-w-3xl mx-auto font-medium leading-relaxed">
-              Find verified hostels near your university, anywhere in Pakistan. The curated sanctuary for your academic journey.
+              Find and Rent  verified hostels and rooms near your university, anywhere in Pakistan. The curated sanctuary for your academic and business journey.
             </p>
 
             {/* Search Box */}
