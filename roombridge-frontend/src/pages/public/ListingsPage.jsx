@@ -36,19 +36,19 @@ import { useSEO } from "../../hooks/useSEO";
 /* ─── Design tokens (match Figma) ──────────────────────────── */
 const C = {
   darkGreen: "#012D1D",
-  btnBrown:  "#8E4E14",
-  accent:    "#FFAB69",
-  cream:     "#F7F4EF",
-  promise:   "#F0EDE9",
-  white:     "#FFFFFF",
+  btnBrown: "#8E4E14",
+  accent: "#FFAB69",
+  cream: "#F7F4EF",
+  promise: "#F0EDE9",
+  white: "#FFFFFF",
 };
 
 /* Room types — must match Listing.model.js VALID_ROOM_TYPES */
 const ROOM_TYPES = [
-  { value: "1_person",           label: "1 Person Room" },
-  { value: "2_person",           label: "2 Person Room" },
-  { value: "3_person",           label: "3 Person Room" },
-  { value: "4_person",           label: "4 Person Room" },
+  { value: "1_person", label: "1 Person Room" },
+  { value: "2_person", label: "2 Person Room" },
+  { value: "3_person", label: "3 Person Room" },
+  { value: "4_person", label: "4 Person Room" },
   { value: "more_than_4_person", label: "More than 4 Persons" },
 ];
 
@@ -99,15 +99,13 @@ const ListingCard = ({ listing, view, onToggleSave }) => {
 
   return (
     <div
-      className={`bg-white rounded-[24px] overflow-hidden border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between ${
-        isGrid ? "w-full" : "sm:flex-row sm:h-56"
-      }`}
+      className={`bg-white rounded-[24px] overflow-hidden border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between ${isGrid ? "w-full" : "sm:flex-row sm:h-56"
+        }`}
     >
       {/* Image Area */}
       <div
-        className={`relative overflow-hidden shrink-0 ${
-          isGrid ? "h-56 w-full" : "w-full sm:w-64 h-52 sm:h-auto"
-        }`}
+        className={`relative overflow-hidden shrink-0 ${isGrid ? "h-56 w-full" : "w-full sm:w-64 h-52 sm:h-auto"
+          }`}
       >
         <img
           src={photo}
@@ -129,8 +127,8 @@ const ListingCard = ({ listing, view, onToggleSave }) => {
             {listing.genderPreference === "male"
               ? "BOYS"
               : listing.genderPreference === "female"
-              ? "GIRLS"
-              : "MIXED"}
+                ? "GIRLS"
+                : "MIXED"}
           </span>
         </div>
 
@@ -194,9 +192,8 @@ const ListingCard = ({ listing, view, onToggleSave }) => {
               return (
                 <div
                   key={amenityKey}
-                  className={`flex flex-col items-center gap-1 text-[9px] font-bold tracking-wide w-10 text-center transition-colors ${
-                    matched ? "text-[#012D1D]" : "text-gray-300"
-                  }`}
+                  className={`flex flex-col items-center gap-1 text-[9px] font-bold tracking-wide w-10 text-center transition-colors ${matched ? "text-[#012D1D]" : "text-gray-300"
+                    }`}
                 >
                   <Icon className="text-sm" />
                   <span>{amenityKey}</span>
@@ -254,18 +251,22 @@ const ListingsPage = () => {
   const searchDebounceRef = useRef(null);
 
   const [filters, setFilters] = useState({
-    city:             searchParams.get("city")             || "",
-    roomType:         searchParams.get("roomType")         || "",
+    city: searchParams.get("city") || "",
+    roomType: searchParams.get("roomType") || "",
     genderPreference: searchParams.get("genderPreference") || "",
-    budget:           "",
-    amenities:        [],
-    sortBy:           "newest",
-    search:           searchParams.get("search")           || "",
-    location:         searchParams.get("location")         || "",
+    budget: "",
+    amenities: [],
+    sortBy: "newest",
+    search: searchParams.get("search") || "",
+    location: searchParams.get("location") || "",
   });
 
-  // Set page title on mount
-  React.useEffect(() => { document.title = "Browse Rooms — RoomBridge"; }, []);
+  // Set dynamic SEO meta tags and page title
+  useSEO({
+    title: "Browse Verified Hostels & Rooms for Rent",
+    description: "Find single and shared rooms, girls and boys hostels, and university student housing for rent in Lahore, Karachi, Islamabad, and across Pakistan. Filter by budget, city, or amenities.",
+    keywords: "hostels in pakistan, rooms for rent lahore, girls hostel rawalpindi, boys hostel islamabad, student housing, flatmates, single room for rent, affordable hostels, roombridge"
+  });
 
   const handleFilter = (key, val) => {
     setFilters((f) => ({ ...f, [key]: val }));
@@ -289,14 +290,14 @@ const ListingsPage = () => {
 
   const clearFilters = () => {
     setFilters({
-      city:             "",
-      roomType:         "",
+      city: "",
+      roomType: "",
       genderPreference: "",
-      budget:           "",
-      amenities:        [],
-      sortBy:           "newest",
-      search:           "",
-      location:         "",
+      budget: "",
+      amenities: [],
+      sortBy: "newest",
+      search: "",
+      location: "",
     });
     setPage(1);
   };
@@ -306,13 +307,13 @@ const ListingsPage = () => {
       setLoading(true);
       setError("");
       const params = { page, limit: PER_PAGE };
-      if (filters.city)             params.city             = filters.city;
-      if (filters.roomType)         params.roomType         = filters.roomType;
+      if (filters.city) params.city = filters.city;
+      if (filters.roomType) params.roomType = filters.roomType;
       if (filters.genderPreference) params.genderPreference = filters.genderPreference;
-      if (filters.search)           params.search           = filters.search;
-      if (filters.location)         params.location         = filters.location;
-      if (filters.sortBy)           params.sortBy           = filters.sortBy;
-      if (filters.amenities.length) params.amenities        = filters.amenities.join(",");
+      if (filters.search) params.search = filters.search;
+      if (filters.location) params.location = filters.location;
+      if (filters.sortBy) params.sortBy = filters.sortBy;
+      if (filters.amenities.length) params.amenities = filters.amenities.join(",");
       if (filters.budget) {
         const range = PRICE_RANGES.find((r) => r.value === filters.budget);
         if (range?.min) params.minRent = range.min;
@@ -324,8 +325,8 @@ const ListingsPage = () => {
         Array.isArray(res.listings)
           ? res.listings
           : Array.isArray(res.data)
-          ? res.data
-          : []
+            ? res.data
+            : []
       );
       setTotal(res.pagination?.total ?? 0);
       setTotalPages(res.pagination?.totalPages ?? 1);
@@ -354,7 +355,7 @@ const ListingsPage = () => {
       {/* ── Page Header / Search Bar ── */}
       <div className="bg-white border-b border-gray-100 sticky top-[60px] z-30 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between gap-4">
-          
+
           <div className="flex items-center gap-3 flex-1">
             {/* Search Input */}
             <div className="relative flex-1 max-w-sm">
@@ -416,15 +417,14 @@ const ListingsPage = () => {
             <span className="text-xs font-bold text-gray-400 hidden sm:block">
               {loading ? "..." : `${total} host${total !== 1 ? "els" : "el"} found`}
             </span>
-            
+
             <div className="flex border border-gray-200/80 rounded-xl overflow-hidden shadow-sm bg-white">
               <button
                 onClick={() => setView("grid")}
                 aria-label="Grid view"
                 aria-pressed={view === "grid"}
-                className={`p-2 transition-colors cursor-pointer ${
-                  view === "grid" ? "text-white" : "text-gray-400 hover:text-[#012D1D]"
-                }`}
+                className={`p-2 transition-colors cursor-pointer ${view === "grid" ? "text-white" : "text-gray-400 hover:text-[#012D1D]"
+                  }`}
                 style={{ backgroundColor: view === "grid" ? C.darkGreen : undefined }}
               >
                 <RiGridLine className="text-base" />
@@ -433,9 +433,8 @@ const ListingsPage = () => {
                 onClick={() => setView("list")}
                 aria-label="List view"
                 aria-pressed={view === "list"}
-                className={`p-2 transition-colors cursor-pointer ${
-                  view === "list" ? "text-white" : "text-gray-400 hover:text-[#012D1D]"
-                }`}
+                className={`p-2 transition-colors cursor-pointer ${view === "list" ? "text-white" : "text-gray-400 hover:text-[#012D1D]"
+                  }`}
                 style={{ backgroundColor: view === "list" ? C.darkGreen : undefined }}
               >
                 <RiListCheck className="text-base" />
@@ -449,15 +448,15 @@ const ListingsPage = () => {
 
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
+
         {/* ── Listings Results Grid (now at the top) ── */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start mb-16">
-          
+
           {/* ── Filters Sidebar ── */}
           {showFilters && (
             <aside className="col-span-1" aria-label="Listing filters">
               <div className="bg-white rounded-3xl border border-gray-100 p-6 sticky top-36 space-y-6 shadow-sm">
-                
+
                 {/* Header */}
                 <div className="flex items-center justify-between border-b border-gray-100 pb-4">
                   <div>
@@ -687,7 +686,7 @@ const ListingsPage = () => {
 
           {/* ── Main Results Content ── */}
           <div className={`${showFilters ? "col-span-1 lg:col-span-3" : "col-span-1 lg:col-span-4"}`}>
-            
+
             {/* Upper Info Row */}
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
               <div>
@@ -695,18 +694,18 @@ const ListingsPage = () => {
                   {filters.university
                     ? `Hostels near ${PAKISTAN_UNIVERSITIES.find(u => u.value === filters.university)?.label || filters.university}`
                     : filters.search
-                    ? `Results for "${filters.search}"`
-                    : filters.location
-                    ? `Hostels in "${filters.location}"`
-                    : `Showing ${total} hostel${total !== 1 ? "s" : ""}${filters.city ? ` in ${filters.city}` : ""}`
+                      ? `Results for "${filters.search}"`
+                      : filters.location
+                        ? `Hostels in "${filters.location}"`
+                        : `Showing ${total} hostel${total !== 1 ? "s" : ""}${filters.city ? ` in ${filters.city}` : ""}`
                   }
                 </h1>
                 <p className="text-xs text-gray-400 mt-1 font-light">
                   {filters.university
                     ? `${total} curated hostel${total !== 1 ? "s" : ""} found near this university`
                     : filters.search || filters.location
-                    ? `${total} result${total !== 1 ? "s" : ""} found — sorted by relevance`
-                    : "Curated verified stays across Pakistan"}
+                      ? `${total} result${total !== 1 ? "s" : ""} found — sorted by relevance`
+                      : "Curated verified stays across Pakistan"}
                 </p>
               </div>
 
@@ -836,11 +835,10 @@ const ListingsPage = () => {
                       onClick={() => setPage(p)}
                       aria-label={`Page ${p}`}
                       aria-current={page === p ? "page" : undefined}
-                      className={`w-10 h-10 rounded-xl text-xs font-extrabold transition-all duration-200 cursor-pointer active:scale-95 ${
-                        page === p
-                          ? "text-white shadow-sm"
-                          : "border border-gray-200/80 bg-white text-gray-500 hover:border-gray-400 hover:text-gray-700"
-                      }`}
+                      className={`w-10 h-10 rounded-xl text-xs font-extrabold transition-all duration-200 cursor-pointer active:scale-95 ${page === p
+                        ? "text-white shadow-sm"
+                        : "border border-gray-200/80 bg-white text-gray-500 hover:border-gray-400 hover:text-gray-700"
+                        }`}
                       style={{
                         backgroundColor: page === p ? C.darkGreen : undefined,
                       }}
@@ -869,7 +867,7 @@ const ListingsPage = () => {
 
         {/* ── Figma Selectors Section (now at the bottom) ── */}
         <div className="max-w-4xl mx-auto mt-24 space-y-16 border-t border-gray-200/60 pt-16">
-          
+
           {/* Categories: Find Your Type of Hostel */}
           <div>
             <p className="text-[10px] font-extrabold uppercase tracking-widest text-[#8E4E14] text-center">
@@ -878,7 +876,7 @@ const ListingsPage = () => {
             <h2 className="font-serif text-3xl font-black text-[#012D1D] text-center mt-1.5 mb-8">
               Find Your Type of Hostel
             </h2>
-            
+
             <div className="flex flex-col gap-4">
               {[
                 {
@@ -908,9 +906,8 @@ const ListingsPage = () => {
                   <div
                     key={cat.id}
                     onClick={() => handleFilter("genderPreference", isActive ? "" : cat.id)}
-                    className={`relative h-28 w-full rounded-2xl overflow-hidden cursor-pointer shadow-sm hover:shadow-md hover:scale-[1.005] active:scale-[0.995] transition-all duration-300 border-2 ${
-                      isActive ? "border-[#FFAB69] ring-2 ring-[#FFAB69]/30" : "border-transparent"
-                    }`}
+                    className={`relative h-28 w-full rounded-2xl overflow-hidden cursor-pointer shadow-sm hover:shadow-md hover:scale-[1.005] active:scale-[0.995] transition-all duration-300 border-2 ${isActive ? "border-[#FFAB69] ring-2 ring-[#FFAB69]/30" : "border-transparent"
+                      }`}
                   >
                     {/* Background Image */}
                     <img
@@ -920,7 +917,7 @@ const ListingsPage = () => {
                     />
                     {/* Overlay */}
                     <div className={`absolute inset-0 bg-gradient-to-r ${cat.overlay} flex items-center justify-between px-8 sm:px-12 text-white`} />
-                    
+
                     {/* Content */}
                     <div className="absolute inset-0 flex items-center justify-between px-8 sm:px-12 text-white z-10 pointer-events-none">
                       <div>
@@ -931,14 +928,13 @@ const ListingsPage = () => {
                           {cat.desc}
                         </p>
                       </div>
-                      
+
                       {/* Circle plus/arrow button */}
                       <div
-                        className={`w-8 h-8 rounded-full flex items-center justify-center border transition-all pointer-events-auto ${
-                          isActive
-                            ? "bg-white text-[#012D1D] border-white font-bold"
-                            : "bg-white/10 text-white border-white/30 hover:bg-white hover:text-[#012D1D]"
-                        }`}
+                        className={`w-8 h-8 rounded-full flex items-center justify-center border transition-all pointer-events-auto ${isActive
+                          ? "bg-white text-[#012D1D] border-white font-bold"
+                          : "bg-white/10 text-white border-white/30 hover:bg-white hover:text-[#012D1D]"
+                          }`}
                       >
                         {isActive ? <RiCheckLine className="text-sm font-extrabold" /> : "+"}
                       </div>

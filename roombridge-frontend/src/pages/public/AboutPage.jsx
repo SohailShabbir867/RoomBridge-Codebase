@@ -154,9 +154,9 @@ const FAQItem = ({ q, a }) => {
 ════════════════════════════════════════════════════════════════ */
 const AboutPage = () => {
   useSEO({
-    title: "How It Works | RoomBridge Pakistan",
-    description: "Learn how RoomBridge works for room seekers and hostel owners in Pakistan. Steps to find rooms, match roommates, and list properties on roombridge.site.",
-    keywords: "how roombridge works, room rental guide, list room Pakistan, room rental steps, roombridge.site"
+    title: "How It Works & Renting Guide",
+    description: "Step-by-step guide to finding hostels, matching roommates, and listing rooms for rent in Pakistan on RoomBridge. Clean, transparent, and direct.",
+    keywords: "how to find hostel, rent room guide, list hostel pakistan, student roommate finder, roombridge guide, room rental steps"
   });
 
   return (

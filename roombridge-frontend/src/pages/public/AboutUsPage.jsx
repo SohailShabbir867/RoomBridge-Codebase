@@ -30,9 +30,9 @@ const C = {
 
 const AboutUsPage = () => {
   useSEO({
-    title: "About Us | RoomBridge Pakistan",
-    description: "Learn more about RoomBridge, Pakistan's curated room rental and roommate matching platform connecting students and owners on roombridge.site.",
-    keywords: "about roombridge, rental team, student housing Pakistan, roombridge.site"
+    title: "About Our Mission & Team",
+    description: "Learn about RoomBridge, Pakistan's leading curated student housing and roommate matching network. Meet the team bridging the gap in the rental market.",
+    keywords: "about roombridge, roombridge team, founders of roombridge, student housing network pakistan, room rental platform"
   });
   return (
     <div className="min-h-screen flex flex-col font-sans" style={{ backgroundColor: C.cream }}>
