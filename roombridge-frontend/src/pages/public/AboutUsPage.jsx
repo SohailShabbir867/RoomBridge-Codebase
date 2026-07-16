@@ -373,7 +373,7 @@ const AboutUsPage = () => {
                   Sohail Shabbir
                 </h3>
                 <p className="text-xs font-semibold uppercase tracking-wider mt-0.5" style={{ color: C.btnBrown }}>
-                  CEO , Full Stack and Architecture Engennier  & Co-founder
+                  CEO ,Co-founder & Full Stack and Architecture Engennier
                 </p>
               </div>
               <p className="text-xs text-gray-500 italic px-4 font-light leading-relaxed">
