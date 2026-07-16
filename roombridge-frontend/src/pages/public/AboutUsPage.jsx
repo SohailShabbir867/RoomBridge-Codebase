@@ -14,6 +14,8 @@ import {
 // imporing image from the assets images folder 
 import sohailImage from "../../assets/images/sohail.jpg";
 import radifImage from "../../assets/images/radif.jpg";
+// image of the roombridge team 
+import teamImage from "../../assets/images/roombridgeTeam.jpg";
 import { useSEO } from "../../hooks/useSEO";
 
 /* ─── Design tokens (match Figma) ──────────────────────────── */
@@ -371,7 +373,7 @@ const AboutUsPage = () => {
                   Sohail Shabbir
                 </h3>
                 <p className="text-xs font-semibold uppercase tracking-wider mt-0.5" style={{ color: C.btnBrown }}>
-                  CEO & Co-founder
+                  CEO , Full Stack and Architecture Engennier  & Co-founder
                 </p>
               </div>
               <p className="text-xs text-gray-500 italic px-4 font-light leading-relaxed">
@@ -383,21 +385,21 @@ const AboutUsPage = () => {
             <div className="text-center space-y-4">
               <div className="w-36 h-36 rounded-full overflow-hidden mx-auto shadow-md border-4 border-[#F7F4EF]">
                 <img
-                  src={sohailImage}
+                  src={teamImage}
                   alt="Sohail Shabbir"
                   className="w-full h-full object-cover"
                 />
               </div>
               <div>
                 <h3 className="font-extrabold text-base" style={{ color: C.darkGreen }}>
-                  Sohail Shabbir
+                  RoomBridge Team
                 </h3>
                 <p className="text-xs font-semibold uppercase tracking-wider mt-0.5" style={{ color: C.btnBrown }}>
-                  Full Stack Enginner
+                  Marketing and Financial Support
                 </p>
               </div>
               <p className="text-xs text-gray-500 italic px-4 font-light leading-relaxed">
-                "Coding solutions that build community."
+                "Supporting the next generation of leaders."
               </p>
             </div>
 
@@ -412,14 +414,14 @@ const AboutUsPage = () => {
               </div>
               <div>
                 <h3 className="font-extrabold text-base" style={{ color: C.darkGreen }}>
-                  Radif Fiaz
+                  Muhammad Radif Fiaz
                 </h3>
                 <p className="text-xs font-semibold uppercase tracking-wider mt-0.5" style={{ color: C.btnBrown }}>
-                  Frontend Developer ,CTO  & UI/UX Designer
+                  Founder, CTO, Frontend Developer & UI/UX Designer
                 </p>
               </div>
               <p className="text-xs text-gray-500 italic px-4 font-light leading-relaxed">
-                "Designing experiences that feel like home."
+                "Bridging the gap between code and design.."
               </p>
             </div>
 
