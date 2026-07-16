@@ -48,14 +48,27 @@ export const PAKISTAN_UNIVERSITIES = [
 
 
 // ── Listing / Room Types ────────────────────────────────
-// MUST match Listing.model.js enum exactly: 'single' | 'shared' | 'apartment'
-// Previous session incorrectly changed these to single_room/shared_room/full_apartment/hostel
-// which do NOT exist in the backend schema and were SILENTLY REJECTED by Mongoose validation.
+// MUST match Listing.model.js VALID_ROOM_TYPES exactly
 export const ROOM_TYPES = [
-  { value: "single", label: "Single Room" },
-  { value: "shared", label: "Shared Room" },
-  { value: "apartment", label: "Full Apartment" },
+  { value: "1_person",           label: "1 Person Room",      desc: "Private room for one person" },
+  { value: "2_person",           label: "2 Person Room",      desc: "Shared room for two persons" },
+  { value: "3_person",           label: "3 Person Room",      desc: "Shared room for three persons" },
+  { value: "4_person",           label: "4 Person Room",      desc: "Shared room for four persons" },
+  { value: "more_than_4_person", label: "More than 4 Persons", desc: "Large room or dormitory" },
 ];
+
+/** Flat key → human label map for display components */
+export const ROOM_TYPE_LABELS = {
+  "1_person":           "1 Person Room",
+  "2_person":           "2 Person Room",
+  "3_person":           "3 Person Room",
+  "4_person":           "4 Person Room",
+  "more_than_4_person": "More than 4 Persons",
+  // legacy backwards-compat labels
+  single:    "Single Room",
+  shared:    "Shared Room",
+  apartment: "Full Apartment",
+};
 
 /** @deprecated Use ROOM_TYPES instead */
 export const LISTING_TYPES = ROOM_TYPES;

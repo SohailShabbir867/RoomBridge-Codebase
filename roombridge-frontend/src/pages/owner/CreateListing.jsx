@@ -32,14 +32,16 @@ const STEPS = [
   { id: 1, label: "Basic Info",         icon: RiHome4Line },
   { id: 2, label: "Room Details",       icon: RiStarLine },
   { id: 3, label: "Location",           icon: RiMapPin2Line },
-  { id: 4, label: "Pricing & Pricing",  icon: RiMoneyDollarCircleLine },
+  { id: 4, label: "Pricing & Availability",  icon: RiMoneyDollarCircleLine },
   { id: 5, label: "Photos",             icon: RiImageAddLine },
 ];
 
 const ROOM_TYPES = [
-  { value: "single",    label: "Single Room",    desc: "Private room for one person" },
-  { value: "shared",    label: "Shared Room",    desc: "Shared space with others" },
-  { value: "apartment", label: "Full Apartment", desc: "Entire apartment" },
+  { value: "1_person",           label: "1 Person Room",       desc: "Private room for one person" },
+  { value: "2_person",           label: "2 Person Room",       desc: "Shared room for two persons" },
+  { value: "3_person",           label: "3 Person Room",       desc: "Shared room for three persons" },
+  { value: "4_person",           label: "4 Person Room",       desc: "Shared room for four persons" },
+  { value: "more_than_4_person", label: "More than 4 Persons", desc: "Large room or dormitory" },
 ];
 
 const GENDER_OPTIONS = [
@@ -112,7 +114,8 @@ const StepBar = ({ current, total }) => (
 /* ════════════════════════════════════════════════════════════ */
 const CreateListing = () => {
   const navigate = useNavigate();
-  const fileRef  = useRef();
+  const fileRef          = useRef();
+  const uploadContextRef = useRef(null); // { roomType, tag, maxCount }
   const [step, setStep]       = useState(1);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -126,14 +129,15 @@ const CreateListing = () => {
     address:          "",
     area:             "",
     nearbyUniversity: "",
-    roomType:         "",
+    roomType:         [],   // ← now an ARRAY
     genderPreference: "any",
     availableFrom:    "",
     furnished:        false,
     amenities:        [],
+    rentByType:       {},   // { "1_person": 15000, "2_person": 12000, ... }
   });
-  const [photos, setPhotos]   = useState([]);
-  const [previews, setPreviews] = useState([]);
+  // Unified photo store: [{ file, preview, roomType, tag }]
+  const [photos, setPhotos] = useState([]);
 
   /* ── Field handlers ─────────────────────────────────────── */
   const handleChange = (e) => {
@@ -151,29 +155,71 @@ const CreateListing = () => {
     }));
   };
 
+  /* ── Room-type multi-select toggle ─────────────────────── */
+  const handleRoomTypeToggle = (value) => {
+    setForm((f) => {
+      const nextRoomType = f.roomType.includes(value)
+        ? f.roomType.filter((v) => v !== value)
+        : [...f.roomType, value];
+
+      const nextRentByType = { ...f.rentByType };
+      if (!nextRoomType.includes(value)) {
+        delete nextRentByType[value];
+      }
+
+      return {
+        ...f,
+        roomType: nextRoomType,
+        rentByType: nextRentByType,
+      };
+    });
+
+    // Clean up photos for unchecked room type
+    setPhotos((prev) => prev.filter((p) => p.roomType !== value));
+
+    if (errors.roomType) setErrors((er) => ({ ...er, roomType: "" }));
+  };
+
+  /* ── Categorized photo helpers ─────────────────────────── */
+  const photosBySlot = (roomType, tag) =>
+    photos.filter((p) => p.roomType === roomType && p.tag === tag);
+
+  const triggerUpload = (roomType, tag, maxCount) => {
+    uploadContextRef.current = { roomType, tag, maxCount };
+    fileRef.current.click();
+  };
+
   const handlePhotos = (e) => {
+    const ctx = uploadContextRef.current;
+    if (!ctx) return;
+    const { roomType, tag, maxCount } = ctx;
+    const existing = photosBySlot(roomType, tag);
+    const remaining = maxCount - existing.length;
     const files = Array.from(e.target.files);
-    const tooLarge = files.some(file => file.size > 10 * 1024 * 1024);
-    if (tooLarge) {
+    const toAdd = files.slice(0, remaining);
+    if (files.some((f) => f.size > 10 * 1024 * 1024)) {
       toast.error("Image size should be less than 10MB");
       e.target.value = "";
       return;
     }
-    const remaining = 4 - photos.length;
-    const toAdd = files.slice(0, remaining);
-    if (files.length > remaining) toast.error(`Max 4 photos. Only adding ${remaining}.`);
-    setPhotos((p) => [...p, ...toAdd]);
-    toAdd.forEach((f) => {
+    if (files.length > remaining)
+      toast.error(`Max ${maxCount} ${tag} photo(s) for this section. Adding ${remaining} only.`);
+    toAdd.forEach((file) => {
       const reader = new FileReader();
-      reader.onload = (ev) => setPreviews((p) => [...p, ev.target.result]);
-      reader.readAsDataURL(f);
+      reader.onload = (ev) =>
+        setPhotos((p) => [...p, { file, preview: ev.target.result, roomType, tag }]);
+      reader.readAsDataURL(file);
     });
     e.target.value = "";
+    uploadContextRef.current = null;
   };
 
-  const removePhoto = (i) => {
-    setPhotos((p) => p.filter((_, idx) => idx !== i));
-    setPreviews((p) => p.filter((_, idx) => idx !== i));
+  const removePhoto = (roomType, tag, slotIdx) => {
+    setPhotos((prev) => {
+      const matching = prev.filter((p) => p.roomType === roomType && p.tag === tag);
+      const toRemove = matching[slotIdx];
+      return prev.filter((p) => p !== toRemove);
+    });
   };
 
   /* ── Per-step validation ────────────────────────────────── */
@@ -186,21 +232,87 @@ const CreateListing = () => {
         e.description = "Description must be at least 50 characters";
     }
     if (s === 2) {
-      if (!form.roomType) e.roomType = "Room type is required";
+      if (form.roomType.length === 0) e.roomType = "Select at least one room type";
     }
     if (s === 3) {
       if (!form.city)             e.city    = "City is required";
       if (!form.address.trim())   e.address = "Address is required";
     }
     if (s === 4) {
-      if (!form.rent || Number(form.rent) < 1000)
-        e.rent = "Rent must be at least PKR 1,000";
-      if (!form.availableFrom)
-        e.availableFrom = "Available from date is required";
+      // Every selected room type must have a valid rent price
+      const LABELS = ROOM_TYPES.reduce((acc, r) => { acc[r.value] = r.label; return acc; }, {});
+      form.roomType.forEach((rt) => {
+        const val = Number(form.rentByType?.[rt]);
+        if (!form.rentByType?.[rt] || isNaN(val) || val < 1000)
+          e[`rent_${rt}`] = `${LABELS[rt]}: min PKR 1,000`;
+        else if (val > 500000)
+          e[`rent_${rt}`] = `${LABELS[rt]}: max PKR 500,000`;
+      });
+      if (form.roomType.length === 0) e.rent = "Select at least one room type first (Step 2)";
+      if (!form.availableFrom) e.availableFrom = "Available from date is required";
     }
     if (s === 5) {
-      if (photos.length === 0) e.photos = "At least one photo is required";
+      // Every selected room type must have at least one room photo
+      const missing = form.roomType.filter(
+        (rt) => !photos.some((p) => p.roomType === rt && p.tag === "room")
+      );
+      if (photos.length === 0 || missing.length > 0) {
+        const labels = ROOM_TYPES.reduce((acc, r) => { acc[r.value] = r.label; return acc; }, {});
+        e.photos = missing.length > 0
+          ? `Add at least one room photo for: ${missing.map((v) => labels[v] || v).join(", ")}`
+          : "At least one photo is required";
+      }
     }
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const validateAll = () => {
+    const e = {};
+
+    // Step 1
+    if (!form.title.trim() || form.title.length < 10)
+      e.title = "Title must be at least 10 characters";
+    if (!form.description.trim() || form.description.length < 50)
+      e.description = "Description must be at least 50 characters";
+
+    // Step 2
+    if (form.roomType.length === 0) {
+      e.roomType = "Select at least one room type";
+    }
+
+    // Step 3
+    if (!form.city) e.city = "City is required";
+    if (!form.address.trim()) e.address = "Address is required";
+
+    // Step 4
+    if (form.roomType.length > 0) {
+      const LABELS = ROOM_TYPES.reduce((acc, r) => { acc[r.value] = r.label; return acc; }, {});
+      form.roomType.forEach((rt) => {
+        const val = Number(form.rentByType?.[rt]);
+        if (!form.rentByType?.[rt] || isNaN(val) || val < 1000)
+          e[`rent_${rt}`] = `${LABELS[rt]}: min PKR 1,000`;
+        else if (val > 500000)
+          e[`rent_${rt}`] = `${LABELS[rt]}: max PKR 500,000`;
+      });
+      if (!form.availableFrom) e.availableFrom = "Available from date is required";
+    } else {
+      e.rent = "Select at least one room type first (Step 2)";
+    }
+
+    // Step 5
+    if (form.roomType.length > 0) {
+      const missing = form.roomType.filter(
+        (rt) => !photos.some((p) => p.roomType === rt && p.tag === "room")
+      );
+      if (photos.length === 0 || missing.length > 0) {
+        const labels = ROOM_TYPES.reduce((acc, r) => { acc[r.value] = r.label; return acc; }, {});
+        e.photos = missing.length > 0
+          ? `Add at least one room photo for: ${missing.map((v) => labels[v] || v).join(", ")}`
+          : "At least one photo is required";
+      }
+    }
+
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -212,14 +324,33 @@ const CreateListing = () => {
 
   /* ── Submit ─────────────────────────────────────────────── */
   const handleSubmit = async () => {
-    if (!validateStep(5)) return;
+    if (!validateAll()) {
+      toast.error("Please fill in all required fields and upload correct photos.");
+      return;
+    }
     try {
       setLoading(true);
       const fd = new FormData();
-      const { amenities, ...rest } = form;
-      Object.entries(rest).forEach(([k, v]) => fd.append(k, v));
+      const { amenities, roomType, rentByType, ...rest } = form;
+      // Send remaining scalar fields (excludes rent — computed below)
+      const { availableFrom, furnished, genderPreference, ...textFields } = rest;
+      Object.entries(textFields).forEach(([k, v]) => { if (v !== "") fd.append(k, v); });
+      fd.append("availableFrom", availableFrom);
+      fd.append("furnished", furnished);
+      fd.append("genderPreference", genderPreference);
       amenities.forEach((a) => fd.append("amenities", a));
-      photos.forEach((f) => fd.append("photos", f));
+      // Send each selected room type as a separate FormData entry
+      roomType.forEach((rt) => fd.append("roomType", rt));
+      // Compute minimum rent for display/search and send rentByType as JSON
+      const rentVals = roomType.map((rt) => Number(rentByType[rt])).filter((n) => n >= 1000);
+      const minRent = rentVals.length > 0 ? Math.min(...rentVals) : 1000;
+      fd.append("rent", minRent);
+      fd.append("rentByType", JSON.stringify(rentByType));
+      // Send each photo file + its metadata
+      photos.forEach((p) => {
+        fd.append("photos", p.file);
+        fd.append("photoMetadata", JSON.stringify({ roomType: p.roomType, tag: p.tag }));
+      });
       await listingService.createListing(fd);
       setSuccess(true);
       toast.success("Listing submitted for review! 🎉");
@@ -235,10 +366,10 @@ const CreateListing = () => {
     setStep(1);
     setForm({
       title: "", description: "", rent: "", city: "", address: "", area: "",
-      nearbyUniversity: "", roomType: "", genderPreference: "any",
-      availableFrom: "", furnished: false, amenities: [],
+      nearbyUniversity: "", roomType: [], genderPreference: "any",
+      availableFrom: "", furnished: false, amenities: [], rentByType: {},
     });
-    setPhotos([]); setPreviews([]); setErrors({});
+    setPhotos([]); setErrors({});
   };
 
   /* ── Success screen ─────────────────────────────────────── */
@@ -368,36 +499,36 @@ const CreateListing = () => {
             {step === 2 && (
               <>
                 <div>
-                  <Label required>Room Type</Label>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-1">
+                  <Label required>Room Type (select all that apply)</Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-1">
                     {ROOM_TYPES.map(({ value, label, desc }) => {
-                      const sel = form.roomType === value;
+                      const sel = form.roomType.includes(value);
                       return (
                         <button
                           key={value}
                           type="button"
-                          onClick={() => {
-                            setForm((f) => ({ ...f, roomType: value }));
-                            if (errors.roomType) setErrors((e) => ({ ...e, roomType: "" }));
-                          }}
+                          onClick={() => handleRoomTypeToggle(value)}
                           className="text-left p-4 rounded-xl border transition-all"
                           style={{
                             borderColor: sel ? DK : "#E8E2D9",
                             backgroundColor: sel ? `${DK}08` : "#fff",
                           }}
                         >
-                          <p className="font-bold text-sm" style={{ color: sel ? DK : "#374151" }}>
-                            {label}
-                          </p>
-                          <p className="text-xs text-gray-400 mt-0.5">{desc}</p>
-                          {sel && (
+                          <div className="flex items-start gap-3">
                             <div
-                              className="mt-2 w-5 h-5 rounded-full flex items-center justify-center"
-                              style={{ backgroundColor: DK }}
+                              className="mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-all"
+                              style={{
+                                borderColor: sel ? DK : "#D1D5DB",
+                                backgroundColor: sel ? DK : "transparent",
+                              }}
                             >
-                              <RiCheckLine className="text-white text-xs" />
+                              {sel && <RiCheckLine className="text-white text-[11px]" />}
                             </div>
-                          )}
+                            <div>
+                              <p className="font-bold text-sm" style={{ color: sel ? DK : "#374151" }}>{label}</p>
+                              <p className="text-xs text-gray-400 mt-0.5">{desc}</p>
+                            </div>
+                          </div>
                         </button>
                       );
                     })}
@@ -548,26 +679,64 @@ const CreateListing = () => {
             {/* ── STEP 4: Pricing & Availability ────────────── */}
             {step === 4 && (
               <>
-                <div>
-                  <Label required>Monthly Rent (PKR)</Label>
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400 pointer-events-none">
-                      ₨
-                    </span>
-                    <InputField
-                      name="rent"
-                      type="number"
-                      min="1000"
-                      max="500000"
-                      value={form.rent}
-                      onChange={handleChange}
-                      placeholder="15000"
-                      error={errors.rent}
-                      className="pl-9"
-                    />
+                {/* Per-type rent inputs */}
+                {form.roomType.length === 0 ? (
+                  <p className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-xl p-3">
+                    ⚠️ Please go back to Step 2 and select at least one room type first.
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">
+                      Monthly Rent per Room Type (PKR) *
+                    </p>
+                    {form.roomType.map((rt) => {
+                      const rtInfo = ROOM_TYPES.find((r) => r.value === rt);
+                      const errKey = `rent_${rt}`;
+                      return (
+                        <div
+                          key={rt}
+                          className="rounded-xl border overflow-hidden"
+                          style={{ borderColor: errors[errKey] ? "#EF4444" : "#E8E2D9" }}
+                        >
+                          <div
+                            className="px-4 py-2.5 border-b flex items-center justify-between"
+                            style={{ borderColor: "#F3EFE9", backgroundColor: `${DK}08` }}
+                          >
+                            <p className="font-bold text-sm" style={{ color: DK }}>
+                              👤 {rtInfo?.label || rt}
+                            </p>
+                            <p className="text-xs text-gray-400">{rtInfo?.desc}</p>
+                          </div>
+                          <div className="px-4 py-3">
+                            <div className="relative">
+                              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400 pointer-events-none">
+                                ₨
+                              </span>
+                              <InputField
+                                type="number"
+                                min="1000"
+                                max="500000"
+                                value={form.rentByType?.[rt] || ""}
+                                onChange={(e) =>
+                                  setForm((f) => ({
+                                    ...f,
+                                    rentByType: { ...f.rentByType, [rt]: e.target.value },
+                                  }))
+                                }
+                                placeholder="e.g. 15000"
+                                error={!!errors[errKey]}
+                                className="pl-9"
+                              />
+                            </div>
+                            {errors[errKey] && <ErrMsg msg={errors[errKey]} />}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                  <ErrMsg msg={errors.rent} />
-                </div>
+                )}
+
+                {errors.rent && <ErrMsg msg={errors.rent} />}
 
                 <div>
                   <Label required>Available From</Label>
@@ -583,18 +752,30 @@ const CreateListing = () => {
                 </div>
 
                 {/* Rent summary card */}
-                {form.rent && Number(form.rent) >= 1000 && (
+                {form.roomType.some((rt) => Number(form.rentByType?.[rt]) >= 1000) && (
                   <div
                     className="rounded-xl p-4 border"
                     style={{ backgroundColor: `${DK}08`, borderColor: `${DK}20` }}
                   >
-                    <p className="text-xs text-gray-400 font-medium mb-1">Rent Summary</p>
-                    <p className="text-2xl font-extrabold" style={{ color: DK }}>
-                      PKR {Number(form.rent).toLocaleString()}
-                      <span className="text-sm font-medium text-gray-400">/month</span>
-                    </p>
+                    <p className="text-xs text-gray-400 font-medium mb-2">Rent Summary</p>
+                    <div className="space-y-1.5">
+                      {form.roomType.map((rt) => {
+                        const val = Number(form.rentByType?.[rt]);
+                        if (!val || val < 1000) return null;
+                        const rtLabel = ROOM_TYPES.find((r) => r.value === rt)?.label || rt;
+                        return (
+                          <div key={rt} className="flex items-center justify-between">
+                            <span className="text-sm text-gray-500">{rtLabel}</span>
+                            <span className="font-extrabold text-lg" style={{ color: DK }}>
+                              PKR {val.toLocaleString()}
+                              <span className="text-xs font-medium text-gray-400">/mo</span>
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
                     {form.availableFrom && (
-                      <p className="text-xs text-gray-400 mt-1">
+                      <p className="text-xs text-gray-400 mt-3 border-t pt-2" style={{ borderColor: `${DK}20` }}>
                         Available from {new Date(form.availableFrom).toLocaleDateString("en-PK", { year: "numeric", month: "long", day: "numeric" })}
                       </p>
                     )}
@@ -606,75 +787,147 @@ const CreateListing = () => {
             {/* ── STEP 5: Photos ─────────────────────────────── */}
             {step === 5 && (
               <>
-                <div>
-                  <p className="text-sm text-gray-400 mb-4">
-                    Upload up to <strong>4 photos</strong>. The first photo will be the cover image shown in listings.
+                <p className="text-sm text-gray-400 mb-4">
+                  Upload photos for each room type you selected.
+                  Each section allows <strong>2 room photos</strong> and <strong>1 washroom photo</strong>.
+                </p>
+
+                {/* Hidden file input — shared across all slots */}
+                <input
+                  ref={fileRef}
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handlePhotos}
+                />
+
+                {form.roomType.length === 0 && (
+                  <p className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-xl p-3">
+                    ⚠️ Go back to Step 2 and select at least one room type first.
                   </p>
+                )}
 
-                  {/* Photo grid */}
-                  <div className="grid grid-cols-3 gap-3 mb-4">
-                    {previews.map((src, i) => (
+                {form.roomType.map((rt) => {
+                  const rtLabel = ROOM_TYPES.find((r) => r.value === rt)?.label || rt;
+                  const roomPhotos = photosBySlot(rt, "room");
+                  const washPhotos = photosBySlot(rt, "washroom");
+                  return (
+                    <div
+                      key={rt}
+                      className="mb-6 border rounded-xl overflow-hidden"
+                      style={{ borderColor: "#E8E2D9" }}
+                    >
+                      {/* Section header */}
                       <div
-                        key={i}
-                        className="relative aspect-square rounded-xl overflow-hidden border"
-                        style={{ borderColor: "#E8E2D9" }}
+                        className="px-4 py-3 border-b"
+                        style={{ borderColor: "#F3EFE9", backgroundColor: `${DK}08` }}
                       >
-                        <img src={src} alt="" className="w-full h-full object-cover" />
-                        <button
-                          type="button"
-                          onClick={() => removePhoto(i)}
-                          aria-label="Remove photo"
-                          className="absolute top-2 right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center shadow-md"
-                        >
-                          <RiCloseLine className="text-white text-xs" />
-                        </button>
-                        {i === 0 && (
-                          <span
-                            className="absolute bottom-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full text-white"
-                            style={{ backgroundColor: DK }}
-                          >
-                            Cover
-                          </span>
-                        )}
+                        <p className="font-bold text-sm" style={{ color: DK }}>
+                          📷 {rtLabel}
+                        </p>
                       </div>
-                    ))}
 
-                    {/* Add photo slot */}
-                    {photos.length < 4 && (
-                      <button
-                        type="button"
-                        onClick={() => fileRef.current.click()}
-                        className="aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center
-                                   cursor-pointer transition-all hover:border-opacity-60"
-                        style={{ borderColor: `${DK}40`, backgroundColor: `${DK}05` }}
-                      >
-                        <RiImageAddLine className="text-2xl mb-1" style={{ color: DK }} />
-                        <span className="text-xs font-semibold" style={{ color: DK }}>
-                          Add Photo
-                        </span>
-                        <span className="text-[10px] text-gray-400 mt-0.5">
-                          {photos.length}/4
-                        </span>
-                      </button>
-                    )}
-                  </div>
+                      <div className="p-4 space-y-4">
+                        {/* Room photos (max 2) */}
+                        <div>
+                          <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                            Room Photos <span className="text-gray-400 font-normal">(max 2)</span>
+                          </p>
+                          <div className="flex gap-3">
+                            {roomPhotos.map((p, i) => (
+                              <div
+                                key={i}
+                                className="relative w-28 h-28 rounded-xl overflow-hidden border"
+                                style={{ borderColor: "#E8E2D9" }}
+                              >
+                                <img src={p.preview} alt="" className="w-full h-full object-cover" />
+                                {i === 0 && (
+                                  <span
+                                    className="absolute bottom-1 left-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full text-white"
+                                    style={{ backgroundColor: DK }}
+                                  >
+                                    Cover
+                                  </span>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => removePhoto(rt, "room", i)}
+                                  aria-label="Remove"
+                                  className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center"
+                                >
+                                  <RiCloseLine className="text-white text-[10px]" />
+                                </button>
+                              </div>
+                            ))}
+                            {roomPhotos.length < 2 && (
+                              <button
+                                type="button"
+                                onClick={() => triggerUpload(rt, "room", 2)}
+                                className="w-28 h-28 rounded-xl border-2 border-dashed flex flex-col items-center justify-center
+                                           cursor-pointer transition-all hover:border-opacity-70"
+                                style={{ borderColor: `${DK}40`, backgroundColor: `${DK}05` }}
+                              >
+                                <RiImageAddLine className="text-xl mb-0.5" style={{ color: DK }} />
+                                <span className="text-[10px] font-semibold" style={{ color: DK }}>
+                                  Add ({roomPhotos.length}/2)
+                                </span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
 
-                  <input
-                    ref={fileRef}
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handlePhotos}
-                  />
-                  <ErrMsg msg={errors.photos} />
+                        {/* Washroom photo (max 1) */}
+                        <div>
+                          <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                            Washroom Photo <span className="text-gray-400 font-normal">(max 1)</span>
+                          </p>
+                          <div className="flex gap-3">
+                            {washPhotos.map((p, i) => (
+                              <div
+                                key={i}
+                                className="relative w-28 h-28 rounded-xl overflow-hidden border"
+                                style={{ borderColor: "#E8E2D9" }}
+                              >
+                                <img src={p.preview} alt="" className="w-full h-full object-cover" />
+                                <button
+                                  type="button"
+                                  onClick={() => removePhoto(rt, "washroom", i)}
+                                  aria-label="Remove"
+                                  className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center"
+                                >
+                                  <RiCloseLine className="text-white text-[10px]" />
+                                </button>
+                              </div>
+                            ))}
+                            {washPhotos.length < 1 && (
+                              <button
+                                type="button"
+                                onClick={() => triggerUpload(rt, "washroom", 1)}
+                                className="w-28 h-28 rounded-xl border-2 border-dashed flex flex-col items-center justify-center
+                                           cursor-pointer transition-all hover:border-opacity-70"
+                                style={{ borderColor: `${ACC}80`, backgroundColor: `${ACC}10` }}
+                              >
+                                <RiImageAddLine className="text-xl mb-0.5" style={{ color: BTN }} />
+                                <span className="text-[10px] font-semibold" style={{ color: BTN }}>
+                                  Washroom
+                                </span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
 
-                  {photos.length > 0 && (
-                    <p className="text-xs text-gray-400 mt-2">
-                      ✓ {photos.length} photo{photos.length !== 1 ? "s" : ""} selected. Drag the first slot to change the cover.
-                    </p>
-                  )}
-                </div>
+                <ErrMsg msg={errors.photos} />
+
+                {photos.length > 0 && (
+                  <p className="text-xs text-gray-400 mt-2">
+                    ✓ {photos.length} photo{photos.length !== 1 ? "s" : ""} selected across all room types.
+                  </p>
+                )}
               </>
             )}
 

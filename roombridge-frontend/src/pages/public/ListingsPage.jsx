@@ -43,11 +43,13 @@ const C = {
   white:     "#FFFFFF",
 };
 
-/* Room types — must match Listing.model.js enum: single | shared | apartment */
+/* Room types — must match Listing.model.js VALID_ROOM_TYPES */
 const ROOM_TYPES = [
-  { value: "single", label: "Single Room" },
-  { value: "shared", label: "Shared Room" },
-  { value: "apartment", label: "Full Apartment" },
+  { value: "1_person",           label: "1 Person Room" },
+  { value: "2_person",           label: "2 Person Room" },
+  { value: "3_person",           label: "3 Person Room" },
+  { value: "4_person",           label: "4 Person Room" },
+  { value: "more_than_4_person", label: "More than 4 Persons" },
 ];
 
 /* Price ranges */

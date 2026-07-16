@@ -158,7 +158,14 @@ const getAllListings = async (req, res, next) => {
     const filter = { status: "active" }; // ALWAYS restrict to active on public route
 
     if (city) filter.city = city;
-    if (roomType) filter.roomType = roomType;
+    if (roomType) {
+      // roomType query param may be a single value or comma-separated list
+      const rtArr = Array.isArray(roomType)
+        ? roomType
+        : roomType.split(",").map((v) => v.trim()).filter(Boolean);
+      // Use $in: MongoDB matches any doc whose roomType array contains one of these
+      filter.roomType = { $in: rtArr };
+    }
 
     if (genderPreference) {
       if (genderPreference === "any") {
@@ -361,13 +368,31 @@ const createListing = async (req, res, next) => {
     }
 
     /* ── Upload photos to Cloudinary in parallel ─────────── */
+    // Parse per-photo metadata sent from the frontend as JSON strings
+    let photoMetaList = [];
+    if (req.body.photoMetadata) {
+      const rawMeta = Array.isArray(req.body.photoMetadata)
+        ? req.body.photoMetadata
+        : [req.body.photoMetadata];
+      photoMetaList = rawMeta.map((m) => {
+        try { return JSON.parse(m); } catch (_) { return {}; }
+      });
+    }
+
     let photos;
     try {
-      photos = await Promise.all(
+      const uploaded = await Promise.all(
         req.files.map((file) =>
           uploadToCloudinary(file.buffer, "roombridge/listings"),
         ),
       );
+      // Attach roomType + tag metadata to each uploaded photo object
+      photos = uploaded.map((up, i) => ({
+        url: up.url,
+        public_id: up.public_id,
+        roomType: photoMetaList[i]?.roomType || "",
+        tag:      photoMetaList[i]?.tag      || "",
+      }));
     } catch (uploadErr) {
       return errorResponse(
         res,
@@ -380,6 +405,7 @@ const createListing = async (req, res, next) => {
       title,
       description,
       rent,
+      rentByType,
       city,
       address,
       area,
@@ -401,37 +427,55 @@ const createListing = async (req, res, next) => {
     const parsedFeatures = parseJSON(features, []);
     const parsedNearby = parseJSON(nearbyPlaces, []);
     const parsedRoommate = parseJSON(roommatePreferences, {});
+    const parsedRentByType = parseJSON(rentByType, {});
 
-    const listing = await Listing.create({
-      title,
-      description,
-      rent: Number(rent),
-      city,
-      address,
-      area: area || "",
-      nearbyUniversity: nearbyUniversity?.trim() || "",
-      roomType,
-      genderPreference: genderPreference || "any",
-      availableFrom,
-      furnished: furnished === "true" || furnished === true,
-      photos,
-      features:
-        parsedAmenities !== null
-          ? parsedAmenities
-          : Array.isArray(parsedFeatures)
-            ? parsedFeatures
-            : [],
-      nearbyPlaces: Array.isArray(parsedNearby) ? parsedNearby : [],
-      roommatePreferences: parsedRoommate,
-      owner: req.user._id,
-      status: "pending",
-    });
+    const ROOM_TYPE_LABELS = {
+      "1_person": "1 Person Room",
+      "2_person": "2 Person Room",
+      "3_person": "3 Person Room",
+      "4_person": "4 Person Room",
+      "more_than_4_person": "More than 4 Persons",
+    };
+
+    const createdListings = [];
+    for (const rt of roomType) {
+      const rentVal = parsedRentByType[rt] ? Number(parsedRentByType[rt]) : Number(rent);
+      const rtPhotos = photos.filter((p) => p.roomType === rt);
+      const finalPhotos = rtPhotos.length > 0 ? rtPhotos : photos;
+      const finalTitle = roomType.length > 1 ? `${title} - ${ROOM_TYPE_LABELS[rt] || rt}` : title;
+
+      const listing = await Listing.create({
+        title: finalTitle,
+        description,
+        rent: rentVal,
+        city,
+        address,
+        area: area || "",
+        nearbyUniversity: nearbyUniversity?.trim() || "",
+        roomType: rt,
+        genderPreference: genderPreference || "any",
+        availableFrom,
+        furnished: furnished === "true" || furnished === true,
+        photos: finalPhotos,
+        features:
+          parsedAmenities !== null
+            ? parsedAmenities
+            : Array.isArray(parsedFeatures)
+              ? parsedFeatures
+              : [],
+        nearbyPlaces: Array.isArray(parsedNearby) ? parsedNearby : [],
+        roommatePreferences: parsedRoommate,
+        owner: req.user._id,
+        status: "pending",
+      });
+      createdListings.push(listing);
+    }
 
     return successResponse(
       res,
       201,
-      "Listing created successfully. It will be reviewed by an admin before going live.",
-      { listing: withAmenities(listing.toObject()) },
+      "Listings created successfully. They will be reviewed by an admin before going live.",
+      { listings: createdListings.map(l => withAmenities(l.toObject())) },
     );
   } catch (err) {
     next(err);
@@ -468,6 +512,7 @@ const updateListing = async (req, res, next) => {
       title,
       description,
       rent,
+      rentByType,
       city,
       address,
       area,
@@ -502,22 +547,39 @@ const updateListing = async (req, res, next) => {
     /* ── Step 2: Enforce maximum photo count AFTER removing ─ */
     if (req.files && req.files.length > 0) {
       const totalAfterAdd = listing.photos.length + req.files.length;
-      if (totalAfterAdd > 6) {
+      if (totalAfterAdd > 15) {
         return errorResponse(
           res,
           400,
-          `Maximum 6 photos allowed. After removal you have ${listing.photos.length}, trying to add ${req.files.length}.`,
+          `Maximum 15 photos allowed. After removal you have ${listing.photos.length}, trying to add ${req.files.length}.`,
         );
       }
 
       /* ── Step 3: Upload new photos ─────────────────────── */
+      // Parse per-photo metadata for newly uploaded photos
+      let photoMetaList = [];
+      if (req.body.photoMetadata) {
+        const rawMeta = Array.isArray(req.body.photoMetadata)
+          ? req.body.photoMetadata
+          : [req.body.photoMetadata];
+        photoMetaList = rawMeta.map((m) => {
+          try { return JSON.parse(m); } catch (_) { return {}; }
+        });
+      }
+
       let newPhotos;
       try {
-        newPhotos = await Promise.all(
+        const uploaded = await Promise.all(
           req.files.map((f) =>
             uploadToCloudinary(f.buffer, "roombridge/listings"),
           ),
         );
+        newPhotos = uploaded.map((up, i) => ({
+          url: up.url,
+          public_id: up.public_id,
+          roomType: photoMetaList[i]?.roomType || "",
+          tag:      photoMetaList[i]?.tag      || "",
+        }));
       } catch (uploadErr) {
         return errorResponse(
           res,
@@ -540,11 +602,20 @@ const updateListing = async (req, res, next) => {
     if (title !== undefined) listing.title = title;
     if (description !== undefined) listing.description = description;
     if (rent !== undefined) listing.rent = Number(rent);
+
     if (city !== undefined) listing.city = city;
     if (address !== undefined) listing.address = address;
     if (area !== undefined) listing.area = area;
     if (nearbyUniversity !== undefined) listing.nearbyUniversity = nearbyUniversity?.trim() || "";
-    if (roomType !== undefined) listing.roomType = roomType;
+    if (roomType !== undefined) {
+      // Normalise roomType to a single string (from validator array normalization)
+      const rt = Array.isArray(roomType)
+        ? roomType[0]
+        : typeof roomType === "string"
+          ? roomType
+          : "";
+      if (rt) listing.roomType = rt;
+    }
     if (genderPreference !== undefined)
       listing.genderPreference = genderPreference;
     if (availableFrom !== undefined) listing.availableFrom = availableFrom;

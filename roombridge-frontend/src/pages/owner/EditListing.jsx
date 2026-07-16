@@ -15,12 +15,15 @@ import { CITIES, AMENITIES } from "../../utils/constants";
 document.title = "Edit Listing — RoomBridge";
 
 /*
-  Values must match Listing.model.js enum: 'single' | 'shared' | 'apartment'
+  Values must match Listing.model.js VALID_ROOM_TYPES.
+  roomType is now stored as an array on the listing.
 */
 const ROOM_TYPES = [
-  { value: "single", label: "Single Room" },
-  { value: "shared", label: "Shared Room" },
-  { value: "apartment", label: "Full Apartment" },
+  { value: "1_person",           label: "1 Person Room",       desc: "Private room for one person" },
+  { value: "2_person",           label: "2 Person Room",       desc: "Shared room for two persons" },
+  { value: "3_person",           label: "3 Person Room",       desc: "Shared room for three persons" },
+  { value: "4_person",           label: "4 Person Room",       desc: "Shared room for four persons" },
+  { value: "more_than_4_person", label: "More than 4 Persons", desc: "Large room or dormitory" },
 ];
 
 const EditListing = () => {
@@ -29,8 +32,7 @@ const EditListing = () => {
   const fileRef = useRef();
 
   const [form, setForm] = useState(null);
-  const [newPhotos, setNewPhotos] = useState([]);
-  const [previews, setPreviews] = useState([]);
+  const [newPhotos, setNewPhotos] = useState([]);   // [{ file, preview }]
   const [toRemove, setToRemove] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -40,12 +42,9 @@ const EditListing = () => {
     listingService
       .getListingById(id)
       .then((res) => {
-        /*
-          Backend returns { success, listing } — res.listing is the correct path.
-          Fallback to res.data for robustness.
-        */
         const l = res.data?.listing || res.listing || res.data;
         if (!l) throw new Error("Listing not found");
+
         setForm({
           title: l.title || "",
           description: l.description || "",
@@ -54,7 +53,7 @@ const EditListing = () => {
           address: l.address || "",
           area: l.area || "",
           nearbyUniversity: l.nearbyUniversity || "",
-          roomType: l.roomType || "",
+          roomType: Array.isArray(l.roomType) ? l.roomType[0] : (l.roomType || ""),
           genderPreference: l.genderPreference || "any",
           availableFrom: l.availableFrom ? l.availableFrom.split("T")[0] : "",
           furnished: l.furnished || false,
@@ -86,22 +85,22 @@ const EditListing = () => {
 
   const handleNewPhotos = (e) => {
     const files = Array.from(e.target.files);
-    const tooLarge = files.some(file => file.size > 10 * 1024 * 1024);
+    const tooLarge = files.some((f) => f.size > 10 * 1024 * 1024);
     if (tooLarge) {
       toast.error("Image size should be less than 10MB");
       e.target.value = "";
       return;
     }
-    const remaining =
-      4 - (form.existingPhotos.length - toRemove.length) - newPhotos.length;
+    const totalExisting = form.existingPhotos.length - toRemove.length;
+    const remaining = 3 - totalExisting - newPhotos.length;
     const toAdd = files.slice(0, Math.max(0, remaining));
     if (files.length > remaining)
-      toast.error(`Max 4 photos total. Adding ${toAdd.length} only.`);
-    setNewPhotos((p) => [...p, ...toAdd]);
-    toAdd.forEach((f) => {
+      toast.error(`Max 3 photos total. Adding ${toAdd.length} only.`);
+    toAdd.forEach((file) => {
       const reader = new FileReader();
-      reader.onload = (ev) => setPreviews((p) => [...p, ev.target.result]);
-      reader.readAsDataURL(f);
+      reader.onload = (ev) =>
+        setNewPhotos((p) => [...p, { file, preview: ev.target.result }]);
+      reader.readAsDataURL(file);
     });
     e.target.value = "";
   };
@@ -114,9 +113,8 @@ const EditListing = () => {
     }));
   };
 
-  const removeNew = (i) => {
-    setNewPhotos((p) => p.filter((_, idx) => idx !== i));
-    setPreviews((p) => p.filter((_, idx) => idx !== i));
+  const removeNew = (idx) => {
+    setNewPhotos((p) => p.filter((_, i) => i !== idx));
   };
 
   const validate = () => {
@@ -125,11 +123,11 @@ const EditListing = () => {
       e.title = "Title must be at least 10 characters";
     if (!form.description || form.description.length < 50)
       e.description = "Description must be at least 50 characters";
-    if (!form.rent || Number(form.rent) < 1000)
-      e.rent = "Rent must be at least PKR 1,000";
     if (!form.city) e.city = "City is required";
     if (!form.address) e.address = "Address is required";
     if (!form.roomType) e.roomType = "Room type is required";
+    if (!form.rent || Number(form.rent) < 1000)
+      e.rent = "Rent must be at least PKR 1,000";
     const totalPhotos = form.existingPhotos.length + newPhotos.length;
     if (totalPhotos === 0) e.photos = "At least one photo is required";
     setErrors(e);
@@ -145,8 +143,6 @@ const EditListing = () => {
     try {
       setSaving(true);
       const fd = new FormData();
-
-      /* Scalar fields */
       [
         "title",
         "description",
@@ -162,21 +158,17 @@ const EditListing = () => {
         if (form[k] !== undefined && form[k] !== "") fd.append(k, form[k]);
       });
       fd.append("furnished", form.furnished);
-
-      /*
-        amenities must be individual string appends (same as CreateListing).
-        Old code didn't include amenities in EditListing at all.
-      */
       (form.amenities || []).forEach((a) => fd.append("amenities", a));
-
       if (toRemove.length) fd.append("removePhotos", JSON.stringify(toRemove));
-      newPhotos.forEach((f) => fd.append("photos", f));
+
+      newPhotos.forEach((p) => {
+        fd.append("photos", p.file);
+      });
 
       await listingService.updateListing(id, fd);
       toast.success("Listing updated! Re-submitted for review.");
       navigate("/owner/listings");
     } catch (err) {
-      /* err.message undefined on axios error */
       toast.error(err.response?.data?.message || "Failed to update listing.");
     } finally {
       setSaving(false);
@@ -215,7 +207,7 @@ const EditListing = () => {
               <RiImageAddLine className="text-secondary" /> Photos
             </h2>
             <p className="text-xs text-text-secondary mb-4">
-              Max 4 photos total. Click × to remove.
+              Max 3 photos total. Click × to remove.
             </p>
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-3">
               {/* Existing photos */}
@@ -245,13 +237,13 @@ const EditListing = () => {
                 </div>
               ))}
               {/* New photo previews */}
-              {previews.map((src, i) => (
+              {newPhotos.map((p, i) => (
                 <div
                   key={`new-${i}`}
                   className="relative aspect-square rounded-lg overflow-hidden border-2 border-secondary/30"
                 >
                   <img
-                    src={src}
+                    src={p.preview}
                     alt=""
                     className="w-full h-full object-cover"
                   />
@@ -269,7 +261,7 @@ const EditListing = () => {
                 </div>
               ))}
               {/* Add button */}
-              {form.existingPhotos.length + newPhotos.length < 4 && (
+              {form.existingPhotos.length + newPhotos.length < 3 && (
                 <button
                   type="button"
                   onClick={() => fileRef.current.click()}
@@ -326,7 +318,6 @@ const EditListing = () => {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="label">Room Type *</label>
-                {/* Values now match backend enum */}
                 <select
                   name="roomType"
                   value={form.roomType}
@@ -340,9 +331,7 @@ const EditListing = () => {
                     </option>
                   ))}
                 </select>
-                {errors.roomType && (
-                  <p className="error-msg">{errors.roomType}</p>
-                )}
+                {errors.roomType && <p className="error-msg">{errors.roomType}</p>}
               </div>
               <div>
                 <label className="label">Gender Preference</label>
@@ -388,7 +377,7 @@ const EditListing = () => {
                 {errors.rent && <p className="error-msg">{errors.rent}</p>}
               </div>
               <div>
-                <label className="label">Available From</label>
+                <label className="label">Available From *</label>
                 <input
                   name="availableFrom"
                   type="date"

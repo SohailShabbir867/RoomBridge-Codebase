@@ -28,7 +28,7 @@ const CITIES = [
   "Murree",
 ];
 
-const ROOM_TYPES = ["single", "shared", "apartment"];
+const ROOM_TYPES = ["1_person", "2_person", "3_person", "4_person", "more_than_4_person"];
 const GENDER_PREFS = ["any", "male", "female"];
 const STATUSES = ["active", "pending", "inactive", "active", "rejected"];
 
@@ -248,15 +248,16 @@ const seed = async () => {
 
     for (let j = 0; j < 2; j += 1) {
       const idx = i * 2 + j;
-      const roomType = ROOM_TYPES[idx % ROOM_TYPES.length];
+      const rtVal = ROOM_TYPES[idx % ROOM_TYPES.length];
+      const roomType = rtVal; // Single String — matches original schema
       const status = STATUSES[idx % STATUSES.length];
       const furnished = idx % 2 === 0;
       const rent = 12000 + idx * 1500;
       const availableFrom = new Date(Date.now() + (idx % 10) * 86400000);
 
       const listingPayload = {
-        title: `Demo ${city} ${roomType} Listing ${j + 1}`,
-        description: buildDescription(city, roomType, furnished),
+        title: `Demo ${city} ${rtVal.replace("_", " ")} Listing ${j + 1}`,
+        description: buildDescription(city, rtVal, furnished),
         rent,
         city,
         address: `House ${20 + idx}, Block ${String.fromCharCode(65 + (idx % 5))}, ${city}`,

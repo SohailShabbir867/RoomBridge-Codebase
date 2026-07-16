@@ -20,10 +20,17 @@ const BTN = "#8E4E14";
 const ACC = "#FFAB69";
 
 const ROOM_TYPE_LABELS = {
+  "1_person":           "1 Person Room",
+  "2_person":           "2 Person Room",
+  "3_person":           "3 Person Room",
+  "4_person":           "4 Person Room",
+  "more_than_4_person": "More than 4 Persons",
   single:    "Single Room",
   shared:    "Shared Room",
-  apartment: "Apartment",
+  apartment: "Full Apartment",
 };
+const resolveRoomType = (rt) =>
+  Array.isArray(rt) ? rt.map((v) => ROOM_TYPE_LABELS[v] || v).join(" / ") : ROOM_TYPE_LABELS[rt] || rt || "Room";
 
 const SavedListings = () => {
   const [listings, setListings] = useState([]);
@@ -127,7 +134,7 @@ const SavedListings = () => {
                     className="absolute top-3 left-3 text-[11px] font-bold px-2.5 py-0.5 rounded-full text-white"
                     style={{ backgroundColor: `${DK}CC` }}
                   >
-                    {ROOM_TYPE_LABELS[l.roomType] || l.roomType || "Room"}
+                    {resolveRoomType(l.roomType)}
                   </span>
                 </div>
 

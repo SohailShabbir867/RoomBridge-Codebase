@@ -161,10 +161,30 @@ const listingRules = [
   body("address").trim().notEmpty().withMessage("Address is required"),
 
   body("roomType")
-    .notEmpty()
-    .withMessage("Room type is required")
-    .isIn(["single", "shared", "apartment"])
-    .withMessage("Room type must be single, shared, or apartment"),
+    /* Normalise to a proper JS array regardless of how FormData sent it */
+    .customSanitizer((value) => {
+      if (Array.isArray(value)) return value.map((v) => String(v).trim()).filter(Boolean);
+      if (typeof value === "string") {
+        // multer might pass a single value like '["1_person","2_person"]' or just "1_person"
+        if (value.trim().startsWith("[")) {
+          try {
+            const parsed = JSON.parse(value);
+            if (Array.isArray(parsed)) return parsed.map((v) => String(v).trim()).filter(Boolean);
+          } catch (_) { /* fall through */ }
+        }
+        return [value.trim()].filter(Boolean);
+      }
+      return [];
+    })
+    .isArray({ min: 1 })
+    .withMessage("At least one room type must be selected")
+    .custom((arr) => {
+      const VALID = ["1_person", "2_person", "3_person", "4_person", "more_than_4_person"];
+      return Array.isArray(arr) && arr.every((v) => VALID.includes(v));
+    })
+    .withMessage(
+      "Invalid room type. Valid values: 1 Person, 2 Person, 3 Person, 4 Person, More than 4 Persons",
+    ),
 
   body("genderPreference")
     .optional()
