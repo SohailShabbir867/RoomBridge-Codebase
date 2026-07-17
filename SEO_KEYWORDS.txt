@@ -1,0 +1,415 @@
+# RoomBridge — Complete SEO Keyword Research Report
+# Generated: July 2026 | Tool: MCP Blogs Automation Server
+# Website: roombridge.site | Market: Pakistan (Students + Young Professionals)
+# ============================================================
+
+## HOW TO USE THIS FILE
+# - Use PRIMARY keywords in: Page titles, H1 headings, meta descriptions, URLs
+# - Use SECONDARY keywords in: H2 headings, intro paragraphs, image alt text
+# - Use LONG-TAIL keywords in: Blog posts, FAQ pages, landing page body copy
+# - Use LOCATION keywords in: City-specific landing pages, local SEO
+# - Use FEATURE keywords in: Feature pages, dashboard copy, listing descriptions
+# ============================================================
+
+
+## ── SECTION 1: PRIMARY KEYWORDS (Highest Priority) ──────────────────────────
+## Use these on your homepage, main meta tags, and core landing pages.
+## These are the terms users type most when looking for what RoomBridge offers.
+
+PRIMARY_KEYWORDS:
+  - room for rent in Pakistan            # Trend: GROWING (+12.4%) | 14,500 views/30 days
+  - roommate finder Pakistan             # Trend: GROWING (+10.5%) | High volume
+  - roommate matching app Pakistan       # Trend: GROWING (+12.4%) | Direct competitor gap
+  - online room booking Pakistan         # Trend: GROWING (+16.6%) | Intent: book now
+  - room rental Pakistan                 # Trend: GROWING | Core product keyword
+  - verified room listings Pakistan      # Trend: GROWING | RoomBridge unique selling point
+  - student accommodation Pakistan       # Trend: GROWING (+17.9%) | Core audience
+  - hostel near me Pakistan             # Trend: GROWING (+33.2%) | High local intent
+  - rent a room Karachi                  # Trend: GROWING | City-specific high demand
+  - affordable hostel Pakistan           # Trend: GROWING | Price-sensitive audience
+
+
+## ── SECTION 2: SECONDARY KEYWORDS (Supporting) ──────────────────────────────
+## Use in H2 headings, feature descriptions, and supporting page copy.
+
+SECONDARY_KEYWORDS:
+  - find roommate online Pakistan
+  - shared room for rent Pakistan
+  - hostel for students Pakistan
+  - furnished room for rent Pakistan
+  - room for boys Pakistan
+  - room for girls Pakistan
+  - hostel booking Pakistan
+  - single room for rent Pakistan
+  - double room for rent Pakistan
+  - co-living space Pakistan
+  - student housing Pakistan
+  - safe room rental Pakistan
+  - room with wifi Pakistan
+  - monthly room rental Pakistan
+  - private room for rent Pakistan
+
+
+## ── SECTION 3: LONG-TAIL KEYWORDS (Blog + FAQ + Feature Pages) ──────────────
+## Lower competition, higher conversion. Use in blog posts and FAQ sections.
+## Each one can be a separate blog post topic on dailyblogs.website.
+
+LONG_TAIL_KEYWORDS:
+  # -- Student / University focus --
+  - room for rent near university Pakistan
+  - student hostel near COMSATS Pakistan
+  - student accommodation near Punjab University Lahore
+  - cheap hostel for students in Islamabad
+  - how to find a roommate as a student in Pakistan
+  - best areas to rent a room as a student in Lahore
+  - furnished hostel rooms near IUB Bahawalpur
+  - affordable student housing in Karachi 2026
+  - shared accommodation for university students Pakistan
+  - student-friendly hostels near NUST Islamabad
+
+  # -- Roommate matching focus --
+  - how to find a compatible roommate in Pakistan
+  - roommate matching algorithm Pakistan
+  - lifestyle compatible roommate Pakistan
+  - how to verify a roommate in Pakistan
+  - roommate agreement template Pakistan
+  - safe roommate finding app Pakistan
+  - find female roommate Lahore
+  - find male roommate Karachi
+  - co-living for professionals Pakistan
+  - roommate matching based on lifestyle habits
+
+  # -- Owner / Listing focus --
+  - how to list a room for rent online Pakistan
+  - best website to advertise room for rent Pakistan
+  - how to attract tenants online Pakistan
+  - verified room listing platform Pakistan
+  - property listing for hostel owners Pakistan
+  - post room for rent free Pakistan
+  - hostel owner management dashboard Pakistan
+  - how to manage room bookings online Pakistan
+
+  # -- Safety / Trust focus --
+  - safe room rental website Pakistan
+  - physically verified room listings Pakistan
+  - how to avoid scams in online room rental Pakistan
+  - trusted roommate finder Pakistan
+  - background verified hostel listings Pakistan
+
+  # -- Booking / Process focus --
+  - how to book a room online in Pakistan
+  - online room reservation Pakistan
+  - secure room booking platform Pakistan
+  - real-time room availability Pakistan
+  - room booking without agent Pakistan
+
+
+## ── SECTION 4: CITY-SPECIFIC KEYWORDS (Local SEO) ───────────────────────────
+## Create separate landing pages for each city for maximum local SEO impact.
+## URL structure suggestion: roombridge.site/rooms/lahore, /rooms/karachi etc.
+
+CITY_KEYWORDS:
+
+  LAHORE:
+    - room for rent Lahore
+    - roommate finder Lahore
+    - student hostel Lahore
+    - affordable room Gulberg Lahore
+    - room for rent DHA Lahore
+    - shared accommodation Lahore
+    - hostel near Punjab University Lahore
+    - room for girls Lahore
+    - room for boys Lahore
+    - co-living space Lahore
+
+  KARACHI:
+    - room for rent Karachi
+    - roommate finder Karachi
+    - student hostel Karachi
+    - affordable room Karachi
+    - room for rent Defence Karachi
+    - shared room Karachi
+    - hostel near University of Karachi
+    - cheap room Gulshan Karachi
+    - room for girls Karachi
+    - co-living Karachi
+
+  ISLAMABAD:
+    - room for rent Islamabad
+    - roommate finder Islamabad
+    - student hostel Islamabad
+    - furnished room Islamabad
+    - hostel near COMSATS Islamabad
+    - hostel near NUST Islamabad
+    - room for rent F-10 Islamabad
+    - shared room I-8 Islamabad
+    - affordable hostel Islamabad
+    - room for professionals Islamabad
+
+  RAWALPINDI:
+    - room for rent Rawalpindi
+    - hostel Rawalpindi
+    - student accommodation Rawalpindi
+    - roommate Rawalpindi
+    - shared room Saddar Rawalpindi
+
+  FAISALABAD:
+    - room for rent Faisalabad
+    - student hostel Faisalabad
+    - hostel near UET Faisalabad
+    - roommate finder Faisalabad
+
+  BAHAWALPUR:
+    - room for rent Bahawalpur
+    - hostel near Islamia University Bahawalpur
+    - student hostel Bahawalpur IUB
+    - roommate Bahawalpur
+    - affordable hostel Bahawalpur
+
+  PESHAWAR:
+    - room for rent Peshawar
+    - student hostel Peshawar
+    - hostel near UET Peshawar
+    - roommate finder Peshawar
+
+  MULTAN:
+    - room for rent Multan
+    - student hostel Multan
+    - hostel near BZU Multan
+    - roommate Multan
+
+  QUETTA:
+    - room for rent Quetta
+    - student hostel Quetta
+    - affordable room Quetta
+
+
+## ── SECTION 5: FEATURE-SPECIFIC KEYWORDS (Product Pages) ────────────────────
+## Use these on your feature/how-it-works pages and in-app copy.
+
+FEATURE_KEYWORDS:
+  - roommate compatibility matching
+  - lifestyle-based roommate algorithm
+  - real-time chat with landlord
+  - verified hostel listings
+  - room booking request system
+  - owner dashboard analytics
+  - hostel image upload platform
+  - noise tolerance roommate filter
+  - study hours roommate preference
+  - smoking preference filter room
+  - instant booking confirmation room
+  - report a listing Pakistan
+  - safe housing platform Pakistan
+  - community room rental Pakistan
+
+
+## ── SECTION 6: COMPETITOR KEYWORDS (Gap Opportunities) ─────────────────────
+## These are terms used by competitor platforms. RoomBridge can target these
+## by creating comparison pages and better content.
+## Key competitors found: OLX.pk, Zameen.com, PakHome.com.pk, HostelX.pk,
+## CityHostels.com.pk, Lamudi.pk, Roomster.com
+
+COMPETITOR_GAP_KEYWORDS:
+  - OLX room for rent Pakistan alternative
+  - Zameen room rental alternative Pakistan
+  - better than OLX for room rental
+  - hostelx.pk alternative Pakistan
+  - pakhome alternative roommate
+  - safe alternative to OLX for rooms
+  - verified room listing unlike OLX
+  - roommate app better than classified ads
+  - room rental without agent Pakistan
+  - no broker room for rent Pakistan
+
+
+## ── SECTION 7: QUESTION-BASED KEYWORDS (FAQ + Featured Snippets) ────────────
+## Use these as H3 FAQ questions on your website.
+## Google shows these as Featured Snippets — free traffic boost.
+
+QUESTION_KEYWORDS:
+  - how to find a room for rent in Pakistan?
+  - how to find a roommate online in Pakistan?
+  - what is the average room rent in Lahore?
+  - what is the average room rent in Karachi?
+  - how to verify a room listing in Pakistan?
+  - is it safe to rent a room online in Pakistan?
+  - how to post a room for rent in Pakistan?
+  - what documents are needed to rent a room in Pakistan?
+  - how to find a roommate compatible with my lifestyle?
+  - what is co-living and is it available in Pakistan?
+  - how much does a student hostel cost in Islamabad?
+  - can girls find safe hostels online in Pakistan?
+  - how to avoid room rental scams in Pakistan?
+  - what is the best room rental website in Pakistan?
+  - how to book a hostel online in Pakistan?
+
+
+## ── SECTION 8: SEMANTIC / LSI KEYWORDS (Natural Language) ──────────────────
+## Weave these naturally into your page copy to boost topic relevance.
+## Google uses these to understand your page is comprehensive.
+
+LSI_SEMANTIC_KEYWORDS:
+  - tenant
+  - landlord
+  - lease agreement
+  - monthly rent
+  - security deposit
+  - furnished accommodation
+  - unfurnished room
+  - amenities included
+  - wifi included room
+  - meals included hostel
+  - separate bathroom
+  - attached bathroom
+  - ground floor room
+  - upper floor room
+  - near metro station
+  - near bus stop
+  - near university
+  - near office
+  - safe neighbourhood
+  - gated community
+  - CCTV security
+  - 24 hour access
+  - female only hostel
+  - male only hostel
+  - mixed gender co-living
+  - short term rental
+  - long term rental
+  - 3 month rental
+  - 6 month rental
+  - 1 year lease
+
+
+## ── SECTION 9: META TAGS — READY TO USE ────────────────────────────────────
+## Copy-paste these directly into your React Helmet or meta tags.
+
+META_TAGS:
+
+  HOMEPAGE:
+    title: "RoomBridge — Find Verified Rooms & Roommates in Pakistan"
+    description: "Pakistan's #1 verified room rental and roommate matching platform. Find safe, affordable rooms for students and professionals in Lahore, Karachi, Islamabad and more."
+    keywords: "room for rent Pakistan, roommate finder Pakistan, verified room listings, student accommodation Pakistan, hostel booking Pakistan"
+
+  LISTINGS_PAGE:
+    title: "Browse Verified Room Listings in Pakistan | RoomBridge"
+    description: "Search hundreds of verified rooms for rent across Lahore, Karachi, Islamabad, and all major Pakistani cities. Filter by budget, city, and amenities."
+    keywords: "rooms for rent Pakistan, room listings Pakistan, affordable rooms Pakistan, verified hostels Pakistan"
+
+  ROOMMATE_MATCHING_PAGE:
+    title: "Find Your Perfect Roommate in Pakistan | RoomBridge Matching"
+    description: "RoomBridge's smart lifestyle-based roommate matching algorithm connects you with the most compatible roommate based on your habits, study hours, and preferences."
+    keywords: "roommate matching Pakistan, find roommate online Pakistan, compatible roommate finder, lifestyle roommate algorithm"
+
+  LAHORE_PAGE:
+    title: "Rooms for Rent in Lahore — Verified Listings | RoomBridge"
+    description: "Find verified rooms for rent in Lahore's top neighbourhoods. Safe, affordable, and hassle-free room rental for students and professionals in Lahore."
+    keywords: "room for rent Lahore, hostel Lahore, student accommodation Lahore, roommate Lahore"
+
+  KARACHI_PAGE:
+    title: "Rooms for Rent in Karachi — Verified Listings | RoomBridge"
+    description: "Browse verified rooms in Karachi. Find safe and affordable student hostels, shared rooms, and co-living spaces in Karachi's top neighbourhoods."
+    keywords: "room for rent Karachi, hostel Karachi, student accommodation Karachi, roommate Karachi"
+
+  ISLAMABAD_PAGE:
+    title: "Rooms for Rent in Islamabad — Verified Listings | RoomBridge"
+    description: "Find verified rooms near NUST, COMSATS, and other universities in Islamabad. Affordable hostels, shared rooms, and co-living for students and professionals."
+    keywords: "room for rent Islamabad, hostel Islamabad, student accommodation Islamabad, roommate Islamabad"
+
+
+## ── SECTION 10: BLOG POST IDEAS (Keyword-Driven) ───────────────────────────
+## Write these on dailyblogs.website and link back to roombridge.site
+## Each post targets a high-value long-tail keyword cluster.
+
+BLOG_POST_IDEAS:
+  1.  "How to Find a Safe Room for Rent in Pakistan Without Getting Scammed (2026 Guide)"
+      → Target: safe room rental Pakistan, avoid scams room rental Pakistan
+
+  2.  "Top 10 Affordable Student Hostels Near Punjab University Lahore"
+      → Target: student hostel Lahore, cheap hostel near Punjab University
+
+  3.  "Roommate Finder Apps in Pakistan: Complete Comparison 2026"
+      → Target: roommate finder app Pakistan, best roommate app Pakistan
+
+  4.  "How Much Does It Cost to Rent a Room in Lahore, Karachi & Islamabad in 2026?"
+      → Target: average room rent Lahore, room rent Karachi 2026
+
+  5.  "How to Find a Compatible Roommate Based on Your Lifestyle in Pakistan"
+      → Target: compatible roommate Pakistan, lifestyle roommate matching
+
+  6.  "Co-Living in Pakistan: Is It Worth It for Students and Young Professionals?"
+      → Target: co-living Pakistan, shared living space Pakistan
+
+  7.  "How to List Your Room for Rent Online in Pakistan and Get Tenants Fast"
+      → Target: post room for rent Pakistan, list room online Pakistan
+
+  8.  "Student Housing Guide: Finding Accommodation Near COMSATS, NUST & IUB"
+      → Target: hostel near NUST, accommodation COMSATS, IUB hostel Bahawalpur
+
+  9.  "Girls Hostel in Islamabad: Safe, Verified, and Affordable Options (2026)"
+      → Target: girls hostel Islamabad, safe hostel for girls Pakistan
+
+  10. "Why Verified Room Listings Are Better Than OLX for Renting in Pakistan"
+      → Target: OLX room rental alternative, verified room listings Pakistan
+
+
+## ── SECTION 11: URL STRUCTURE RECOMMENDATIONS ──────────────────────────────
+## Implement these URL slugs for maximum SEO impact on room listing pages.
+
+URL_STRUCTURE:
+  Homepage:         roombridge.site
+  All Listings:     roombridge.site/listings
+  Lahore:           roombridge.site/rooms/lahore
+  Karachi:          roombridge.site/rooms/karachi
+  Islamabad:        roombridge.site/rooms/islamabad
+  Rawalpindi:       roombridge.site/rooms/rawalpindi
+  Bahawalpur:       roombridge.site/rooms/bahawalpur
+  Faisalabad:       roombridge.site/rooms/faisalabad
+  Roommate Match:   roombridge.site/roommate-matching
+  Post a Listing:   roombridge.site/post-listing
+  How it Works:     roombridge.site/how-it-works
+  Safety Tips:      roombridge.site/safe-renting-guide
+  About:            roombridge.site/about
+  Contact:          roombridge.site/contact
+
+
+## ── SECTION 12: KEYWORD PRIORITY MATRIX ────────────────────────────────────
+## Use this to decide which keywords to tackle first.
+## Priority = Volume x Intent x Competition Score (Low competition = better)
+
+PRIORITY_MATRIX:
+  RANK 1 — HIGHEST PRIORITY (Start here):
+    - room for rent in Pakistan           [Volume: HIGH | Competition: MEDIUM | Trend: GROWING]
+    - hostel near me Pakistan             [Volume: MEDIUM | Competition: LOW | Trend: +33%]
+    - verified room listings Pakistan     [Volume: MEDIUM | Competition: LOW | Trend: GROWING]
+    - roommate matching app Pakistan      [Volume: MEDIUM | Competition: LOW | Trend: GROWING]
+
+  RANK 2 — HIGH PRIORITY:
+    - student accommodation Pakistan      [Volume: MEDIUM | Competition: LOW | Trend: +17.9%]
+    - online room booking Pakistan        [Volume: MEDIUM | Competition: LOW | Trend: +16.6%]
+    - affordable hostel Pakistan          [Volume: MEDIUM | Competition: LOW | Trend: GROWING]
+    - room for rent Islamabad             [Volume: HIGH | Competition: MEDIUM | Trend: STABLE]
+    - room for rent Lahore                [Volume: HIGH | Competition: MEDIUM | Trend: STABLE]
+    - room for rent Karachi               [Volume: HIGH | Competition: MEDIUM | Trend: STABLE]
+
+  RANK 3 — MEDIUM PRIORITY (Long-tail wins):
+    - how to find a roommate Pakistan     [Volume: LOW | Competition: VERY LOW | Trend: GROWING]
+    - girls hostel Islamabad              [Volume: LOW | Competition: VERY LOW | Trend: GROWING]
+    - hostel near NUST Islamabad          [Volume: LOW | Competition: VERY LOW | Trend: GROWING]
+    - co-living space Pakistan            [Volume: LOW | Competition: VERY LOW | Trend: GROWING]
+    - no broker room for rent Pakistan    [Volume: LOW | Competition: VERY LOW | Trend: GROWING]
+
+
+## ── RESEARCH SOURCES ────────────────────────────────────────────────────────
+## Keywords researched using:
+##   - MCP Blogs Automation: get_keyword_trends (Wikipedia Pageviews API)
+##   - MCP Blogs Automation: analyze_competitors (Google Custom Search + DDG)
+##   - MCP Blogs Automation: search_web (live web research)
+##   - Live web search: Competitor sites analysed
+##   - Competitors found: OLX.pk, Zameen.com, PakHome.com.pk, HostelX.pk,
+##     CityHostels.com.pk, Lamudi.pk, Roomster.com, Coliving.com
+## ============================================================
+## File: SEO_KEYWORDS.txt
+## Project: RoomBridge — roombridge.site
+## Generated by: MCP Blogs Automation Server v2.0
