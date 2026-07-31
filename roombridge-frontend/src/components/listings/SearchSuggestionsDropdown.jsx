@@ -36,6 +36,10 @@ const SearchSuggestionsDropdown = ({
         return <RiHome4Line className="text-indigo-600 text-sm shrink-0" />;
       case "area":
         return <RiCompass3Line className="text-rose-500 text-sm shrink-0" />;
+      case "category":
+        return <RiHome4Line className="text-purple-600 text-sm shrink-0" />;
+      case "combination":
+        return <RiCompass3Line className="text-teal-600 text-sm shrink-0" />;
       default:
         return <RiSearchLine className="text-gray-400 text-sm shrink-0" />;
     }
@@ -51,6 +55,10 @@ const SearchSuggestionsDropdown = ({
         return "bg-indigo-50 text-indigo-700 border-indigo-200/60";
       case "area":
         return "bg-rose-50 text-rose-700 border-rose-200/60";
+      case "category":
+        return "bg-purple-50 text-purple-700 border-purple-200/60";
+      case "combination":
+        return "bg-teal-50 text-teal-700 border-teal-200/60";
       default:
         return "bg-gray-50 text-gray-600 border-gray-200";
     }

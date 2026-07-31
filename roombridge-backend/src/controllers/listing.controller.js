@@ -206,17 +206,47 @@ const getAllListings = async (req, res, next) => {
     const andClauses = [];
 
     if (search && search.trim()) {
-      const re = { $regex: search.trim(), $options: "i" };
-      andClauses.push({
-        $or: [
-          { title:            re },
-          { description:      re },
-          { nearbyUniversity: re },
-          { address:          re },
-          { area:             re },
-          { city:             re },
-        ],
-      });
+      const rawSearch = search.trim();
+      const lowerSearch = rawSearch.toLowerCase();
+      const re = { $regex: rawSearch, $options: "i" };
+
+      const searchOrBranches = [
+        { title: re },
+        { description: re },
+        { nearbyUniversity: re },
+        { address: re },
+        { area: re },
+        { city: re },
+      ];
+
+      // Smart synonym mapping for Room Types
+      if (/\b(single|1\s*person|one\s*room|1\s*room|1\s*bed|private)\b/i.test(lowerSearch)) {
+        searchOrBranches.push({ roomType: "1_person" });
+      }
+      if (/\b(double|two\s*rooms?|2\s*persons?|2\s*rooms?|2\s*beds?|shared)\b/i.test(lowerSearch)) {
+        searchOrBranches.push({ roomType: "2_person" });
+      }
+      if (/\b(triple|three\s*rooms?|3\s*persons?|3\s*rooms?|3\s*beds?)\b/i.test(lowerSearch)) {
+        searchOrBranches.push({ roomType: "3_person" });
+      }
+      if (/\b(quad|four\s*rooms?|4\s*persons?|4\s*rooms?|4\s*beds?)\b/i.test(lowerSearch)) {
+        searchOrBranches.push({ roomType: "4_person" });
+      }
+
+      // Smart synonym mapping for Gender
+      if (/\b(boy|boys|male|gents)\b/i.test(lowerSearch)) {
+        searchOrBranches.push({ genderPreference: { $in: ["male", "any"] } });
+      }
+      if (/\b(girl|girls|female|ladies)\b/i.test(lowerSearch)) {
+        searchOrBranches.push({ genderPreference: { $in: ["female", "any"] } });
+      }
+
+      // Fuzzy mapping for Faisalabad
+      if (/faisalbe|faislabad|faisalabad/i.test(lowerSearch)) {
+        searchOrBranches.push({ city: { $regex: "Faisalabad", $options: "i" } });
+      }
+
+      andClauses.push({ $or: searchOrBranches });
     }
 
     if (location && location.trim()) {
@@ -925,40 +955,127 @@ const getSearchSuggestions = async (req, res, next) => {
       return successResponse(res, 200, "Search suggestions", { suggestions: [] });
     }
 
+    const lowerQ = q.toLowerCase();
     const escapedQ = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const re = new RegExp(escapedQ, "i");
 
-    // Fetch matching active listings
-    const listings = await Listing.find({
-      status: "active",
-      $or: [
-        { title: re },
-        { nearbyUniversity: re },
-        { city: re },
-        { area: re },
-        { address: re },
-      ],
-    })
-      .select("title city nearbyUniversity area _id")
-      .limit(20)
-      .lean();
-
     const suggestionsMap = new Map();
 
-    const KNOWN_CITIES = [
-      "Lahore",
-      "Islamabad",
-      "Rawalpindi",
-      "Multan",
-      "Peshawar",
-      "Karachi",
-      "Faisalabad",
-      "Quetta",
-      "Bahawalpur",
-      "Sialkot",
-      "Gujranwala",
+    // 1. Room Type Category Suggestions
+    const ROOM_TYPES_LIST = [
+      {
+        keywords: ["single", "1 person", "one room", "1 room", "private", "1 bed"],
+        text: "Single Person Room (1 Person)",
+        subtext: "Private / Single occupancy room",
+      },
+      {
+        keywords: ["double", "2 person", "two room", "two rooms", "2 room", "2 rooms", "shared", "2 bed"],
+        text: "2 Person Room (Double)",
+        subtext: "2 persons sharing room",
+      },
+      {
+        keywords: ["triple", "3 person", "three room", "three rooms", "3 room", "3 rooms", "3 bed"],
+        text: "3 Person Room (Triple)",
+        subtext: "3 persons sharing room",
+      },
+      {
+        keywords: ["quad", "4 person", "four room", "four rooms", "4 room", "4 rooms", "4 bed"],
+        text: "4 Person Room (Quad)",
+        subtext: "4 persons sharing room",
+      },
     ];
 
+    ROOM_TYPES_LIST.forEach((item) => {
+      if (item.keywords.some((kw) => lowerQ.includes(kw) || kw.includes(lowerQ))) {
+        suggestionsMap.set(`category:${item.text}`, {
+          type: "category",
+          text: item.text,
+          subtext: item.subtext,
+        });
+      }
+    });
+
+    // 2. Gender Preference Suggestions
+    if (/boy|boys|male|gents/i.test(lowerQ)) {
+      suggestionsMap.set("gender:boys", {
+        type: "category",
+        text: "Boys Hostels",
+        subtext: "Male student & professional accommodations",
+      });
+    }
+    if (/girl|girls|female|ladies/i.test(lowerQ)) {
+      suggestionsMap.set("gender:girls", {
+        type: "category",
+        text: "Girls Hostels",
+        subtext: "Female student & professional accommodations",
+      });
+    }
+
+    // 3. Known Cities & Fuzzy Matching (e.g., Faisalabad, Faisalbe abad, Lahore, Islamabad, etc.)
+    const KNOWN_CITIES = [
+      { name: "Faisalabad", aliases: ["faisalabad", "faisalbe abad", "faislabad", "faisal"] },
+      { name: "Lahore", aliases: ["lahore", "lhr"] },
+      { name: "Islamabad", aliases: ["islamabad", "isb"] },
+      { name: "Rawalpindi", aliases: ["rawalpindi", "pindi"] },
+      { name: "Multan", aliases: ["multan"] },
+      { name: "Peshawar", aliases: ["peshawar"] },
+      { name: "Karachi", aliases: ["karachi", "khi"] },
+      { name: "Sialkot", aliases: ["sialkot"] },
+      { name: "Gujranwala", aliases: ["gujranwala"] },
+      { name: "Bahawalpur", aliases: ["bahawalpur"] },
+      { name: "Quetta", aliases: ["quetta"] },
+      { name: "Abbottabad", aliases: ["abbottabad"] },
+    ];
+
+    let matchedCities = [];
+    KNOWN_CITIES.forEach((cityObj) => {
+      const isMatch = cityObj.aliases.some((alias) =>
+        lowerQ.includes(alias) || alias.includes(lowerQ)
+      );
+      if (isMatch) {
+        matchedCities.push(cityObj.name);
+        suggestionsMap.set(`city:${cityObj.name.toLowerCase()}`, {
+          type: "city",
+          text: cityObj.name,
+          subtext: "City in Pakistan",
+        });
+      }
+    });
+
+    // 4. Smart Combination Suggestions (e.g. "Single Room in Lahore", "Boys Hostel in Faisalabad")
+    if (matchedCities.length > 0) {
+      const targetCity = matchedCities[0];
+      if (/single|1\s*person|one\s*room/i.test(lowerQ)) {
+        suggestionsMap.set(`combined:single_${targetCity}`, {
+          type: "combination",
+          text: `Single Room in ${targetCity}`,
+          subtext: `1 Person rooms in ${targetCity}`,
+        });
+      }
+      if (/double|two\s*rooms?|2\s*persons?/i.test(lowerQ)) {
+        suggestionsMap.set(`combined:two_${targetCity}`, {
+          type: "combination",
+          text: `Two Rooms in ${targetCity}`,
+          subtext: `2 Person sharing rooms in ${targetCity}`,
+        });
+      }
+      if (/boy|boys|male/i.test(lowerQ)) {
+        suggestionsMap.set(`combined:boys_${targetCity}`, {
+          type: "combination",
+          text: `Boys Hostel in ${targetCity}`,
+          subtext: `Boys hostels in ${targetCity}`,
+        });
+      }
+      if (/girl|girls|female/i.test(lowerQ)) {
+        suggestionsMap.set(`combined:girls_${targetCity}`, {
+          type: "combination",
+          text: `Girls Hostel in ${targetCity}`,
+          subtext: `Girls hostels in ${targetCity}`,
+        });
+      }
+    }
+
+    // 5. Known Universities
     const KNOWN_UNIVERSITIES = [
       "FAST NUCES",
       "FAST University",
@@ -978,20 +1095,8 @@ const getSearchSuggestions = async (req, res, next) => {
       "UMT",
     ];
 
-    // Match known cities
-    KNOWN_CITIES.forEach((city) => {
-      if (re.test(city) && !suggestionsMap.has(`city:${city.toLowerCase()}`)) {
-        suggestionsMap.set(`city:${city.toLowerCase()}`, {
-          type: "city",
-          text: city,
-          subtext: "City in Pakistan",
-        });
-      }
-    });
-
-    // Match known universities
     KNOWN_UNIVERSITIES.forEach((uni) => {
-      if (re.test(uni) && !suggestionsMap.has(`uni:${uni.toLowerCase()}`)) {
+      if (uni.toLowerCase().includes(lowerQ) || lowerQ.includes(uni.toLowerCase().substring(0, 4))) {
         suggestionsMap.set(`uni:${uni.toLowerCase()}`, {
           type: "university",
           text: uni,
@@ -1000,40 +1105,23 @@ const getSearchSuggestions = async (req, res, next) => {
       }
     });
 
-    // Extract from matching database listings
+    // 6. Active Database Listings
+    const listings = await Listing.find({
+      status: "active",
+      $or: [
+        { title: re },
+        { nearbyUniversity: re },
+        { city: re },
+        { area: re },
+        { address: re },
+      ],
+    })
+      .select("title city nearbyUniversity area _id")
+      .limit(10)
+      .lean();
+
     listings.forEach((item) => {
-      // City from listing
-      if (
-        item.city &&
-        re.test(item.city) &&
-        !suggestionsMap.has(`city:${item.city.toLowerCase()}`)
-      ) {
-        suggestionsMap.set(`city:${item.city.toLowerCase()}`, {
-          type: "city",
-          text: item.city,
-          subtext: "City",
-        });
-      }
-
-      // Nearby university from listing
-      if (
-        item.nearbyUniversity &&
-        re.test(item.nearbyUniversity) &&
-        !suggestionsMap.has(`uni:${item.nearbyUniversity.toLowerCase()}`)
-      ) {
-        suggestionsMap.set(`uni:${item.nearbyUniversity.toLowerCase()}`, {
-          type: "university",
-          text: item.nearbyUniversity,
-          subtext: "Nearby University",
-        });
-      }
-
-      // Area from listing
-      if (
-        item.area &&
-        re.test(item.area) &&
-        !suggestionsMap.has(`area:${item.area.toLowerCase()}`)
-      ) {
+      if (item.area && re.test(item.area) && !suggestionsMap.has(`area:${item.area.toLowerCase()}`)) {
         suggestionsMap.set(`area:${item.area.toLowerCase()}`, {
           type: "area",
           text: item.area,
@@ -1041,12 +1129,7 @@ const getSearchSuggestions = async (req, res, next) => {
         });
       }
 
-      // Hostel Title
-      if (
-        item.title &&
-        re.test(item.title) &&
-        !suggestionsMap.has(`hostel:${item._id}`)
-      ) {
+      if (item.title && re.test(item.title) && !suggestionsMap.has(`hostel:${item._id}`)) {
         suggestionsMap.set(`hostel:${item._id}`, {
           type: "hostel",
           text: item.title,
