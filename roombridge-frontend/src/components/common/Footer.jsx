@@ -18,6 +18,7 @@ import {
 const QUICK_LINKS = [
   { to: "/explore", label: "Browse Rooms" },
   { to: "/how-it-works", label: "How It Works" },
+  { to: "/blog", label: "Housing & Blog Guides" },
   { to: "/about", label: "About Us" },
   { to: "/terms-and-conditions", label: "Terms & Conditions" },
   { to: "/privacy-policy", label: "Privacy Policy" },

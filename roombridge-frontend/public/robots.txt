@@ -1,24 +1,19 @@
-# robots.txt for RoomBridge
-# http://www.robotstxt.org/
-
 User-agent: *
 Allow: /
 Allow: /explore
+Allow: /blog
+Allow: /blog/*
 Allow: /how-it-works
 Allow: /about
-Allow: /contact
+Allow: /community
 Allow: /privacy-policy
 Allow: /terms-and-conditions
+Allow: /contact
 
-# Block search engine crawlers from indexing private app spaces
-Disallow: /admin/
 Disallow: /owner/
 Disallow: /seeker/
-Disallow: /login
-Disallow: /register
-Disallow: /forgot-password
+Disallow: /admin/
 Disallow: /reset-password/
+Disallow: /verify-email/
 
-# Host and Sitemap locations
-Host: roombridge.site
 Sitemap: https://roombridge.site/sitemap.xml

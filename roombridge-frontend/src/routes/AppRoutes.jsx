@@ -19,6 +19,8 @@ const CommunityRoomPage = lazy(() => import("../pages/public/CommunityRoomPage")
 const ContactPage  = lazy(() => import("../pages/public/ContactPage"));
 const TermsPage = lazy(() => import("../pages/public/TermsPage"));
 const PrivacyPage = lazy(() => import("../pages/public/PrivacyPage"));
+const BlogPage = lazy(() => import("../pages/public/BlogPage"));
+const BlogDetailPage = lazy(() => import("../pages/public/BlogDetailPage"));
 const NotFoundPage = lazy(() => import("../pages/public/NotFoundPage"));
 
 // ── Auth Pages ────────────────────────────────────────────────────
@@ -135,6 +137,8 @@ const AppRoutes = () => {
           <Route path="/contact"   element={<ContactPage />} />
           <Route path="/terms-and-conditions" element={<TermsPage />} />
           <Route path="/privacy-policy" element={<PrivacyPage />} />
+          <Route path="/blog" element={<BlogPage />} />
+          <Route path="/blog/:slug" element={<BlogDetailPage />} />
         </Route>
 
         {/* ── Auth Pages (Navbar only, redirect if already logged in) ── */}
