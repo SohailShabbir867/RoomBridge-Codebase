@@ -54,7 +54,9 @@ const REPORT_PENALTY_CAP = 0.8;
 
 /** Exponential recency decay. Score of 1 = brand new, decays toward 0. */
 function freshnessScore(createdAt) {
-  const ageDays = (Date.now() - new Date(createdAt).getTime()) / 86_400_000;
+  const dateVal = createdAt ? new Date(createdAt) : new Date();
+  const validDate = isNaN(dateVal.getTime()) ? new Date() : dateVal;
+  const ageDays = (Date.now() - validDate.getTime()) / 86_400_000;
   return Math.exp(-DECAY_LAMBDA * Math.max(ageDays, 0));
 }
 
@@ -74,7 +76,10 @@ function popularityScore(views, savedCount, cityMaxViews, cityMaxSaves) {
 
 /** Bumps listings that are actually rentable soon; tapers over 30 days. */
 function availabilityScore(availableFrom) {
-  const daysUntil = (new Date(availableFrom).getTime() - Date.now()) / 86_400_000;
+  if (!availableFrom) return 1;
+  const d = new Date(availableFrom);
+  if (isNaN(d.getTime())) return 1;
+  const daysUntil = (d.getTime() - Date.now()) / 86_400_000;
   if (daysUntil <= 0) return 1; // available now
   if (daysUntil > 30) return 0.3; // far out, low urgency
   return 1 - daysUntil / 30;
@@ -164,7 +169,9 @@ function combineScore({ F, P, T, Q, A, penalty, featured, featuredUntil }) {
 
   let score = Math.max(raw - penalty, 0);
 
-  const isFeaturedNow = featured && featuredUntil && featuredUntil > new Date();
+  const isFeaturedNow =
+    Boolean(featured) &&
+    (!featuredUntil || new Date(featuredUntil) > new Date());
   if (isFeaturedNow) {
     score *= 1 + FEATURED_BOOST;
   }

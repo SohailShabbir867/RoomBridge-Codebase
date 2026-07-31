@@ -79,7 +79,7 @@ async function run() {
     buildReportMaps(),
   ]);
 
-  const cities = await Listing.distinct("city", { status: "active" });
+  const cities = (await Listing.distinct("city", { status: "active" })).filter(Boolean);
   let totalScored = 0;
 
   for (const city of cities) {
@@ -116,11 +116,15 @@ async function run() {
       const Q = qualityScore(listing);
       const A = availabilityScore(listing.availableFrom);
 
-      const { rankingScore, scoreBreakdown } = combineScore({
+      let { rankingScore, scoreBreakdown } = combineScore({
         F, P, T, Q, A, penalty,
         featured: listing.featured,
         featuredUntil: listing.featuredUntil,
       });
+
+      if (listing.isDeranked) {
+        rankingScore = Math.min(rankingScore, 0.10);
+      }
 
       bulkOps.push({
         updateOne: {
