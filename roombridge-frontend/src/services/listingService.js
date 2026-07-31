@@ -17,6 +17,8 @@ const listingService = {
   getSavedListings: async (params = {}) =>
     (await api.get("/listings/seeker/saved", { params })).data,
   incrementViews: async (id) => (await api.post(`/listings/${id}/views`)).data,
+  getSearchSuggestions: async (query) =>
+    (await api.get("/listings/suggestions", { params: { q: query } })).data,
 };
 
 export default listingService;

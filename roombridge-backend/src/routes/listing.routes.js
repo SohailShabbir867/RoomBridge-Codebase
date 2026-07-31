@@ -12,6 +12,7 @@ const {
   unsaveListing,
   getSavedListings,
   incrementViews,
+  getSearchSuggestions,
 } = require("../controllers/listing.controller");
 
 const { protect, optionalAuth } = require("../middleware/auth.middleware");
@@ -23,6 +24,14 @@ const {
 } = require("../middleware/validation.middleware");
 
 /* ── PUBLIC ROUTES ── */
+
+/**
+ * @route   GET /api/v1/listings/suggestions
+ * @desc    Get live search autocomplete suggestions (cities, universities, hostels, areas)
+ * @access  Public
+ * NOTE: must be defined BEFORE /:id
+ */
+router.get("/suggestions", getSearchSuggestions);
 
 /**
  * @route   GET /api/v1/listings

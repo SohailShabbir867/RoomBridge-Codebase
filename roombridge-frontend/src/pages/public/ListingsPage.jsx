@@ -30,6 +30,7 @@ import {
 } from "react-icons/ri";
 import { CITIES, AMENITIES } from "../../utils/constants";
 import listingService from "../../services/listingService";
+import SearchSuggestionsDropdown from "../../components/listings/SearchSuggestionsDropdown";
 import toast from "react-hot-toast";
 import { useSEO } from "../../hooks/useSEO";
 
@@ -252,6 +253,14 @@ const ListingsPage = () => {
   const PER_PAGE = 9;
 
   const searchDebounceRef = useRef(null);
+  const suggestionDebounceRef = useRef(null);
+  const searchContainerRef = useRef(null);
+
+  // Search Suggestions State
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
   const [filters, setFilters] = useState({
     city:             searchParams.get("city")             || "",
@@ -267,6 +276,69 @@ const ListingsPage = () => {
   // Set page title on mount
   React.useEffect(() => { document.title = "Browse Rooms — RoomBridge"; }, []);
 
+  // Close suggestions when clicking outside search container
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        searchContainerRef.current &&
+        !searchContainerRef.current.contains(event.target)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Fetch live search suggestions
+  const fetchSuggestions = useCallback(async (query) => {
+    const trimmed = query.trim();
+    if (!trimmed) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    try {
+      setLoadingSuggestions(true);
+      setShowSuggestions(true);
+
+      // Local matches from CITIES
+      const localMatches = [];
+      const lowerQ = trimmed.toLowerCase();
+
+      CITIES.forEach((c) => {
+        if (c.toLowerCase().includes(lowerQ)) {
+          localMatches.push({
+            type: "city",
+            text: c,
+            subtext: "City in Pakistan",
+          });
+        }
+      });
+
+      // Call API endpoint
+      const res = await listingService.getSearchSuggestions(trimmed);
+      const apiSuggestions = res.data?.suggestions || res.suggestions || [];
+
+      // Combine local & API suggestions, deduplicating by type:text
+      const map = new Map();
+      [...localMatches, ...apiSuggestions].forEach((item) => {
+        const key = `${item.type}:${item.text.toLowerCase()}`;
+        if (!map.has(key)) {
+          map.set(key, item);
+        }
+      });
+
+      setSuggestions(Array.from(map.values()).slice(0, 8));
+      setActiveSuggestionIndex(-1);
+    } catch (err) {
+      console.error("Failed to fetch search suggestions:", err);
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  }, []);
+
   const handleFilter = (key, val) => {
     setFilters((f) => ({ ...f, [key]: val }));
     setPage(1);
@@ -275,8 +347,61 @@ const ListingsPage = () => {
   const handleSearchChange = (e) => {
     const val = e.target.value;
     setFilters((f) => ({ ...f, search: val }));
+
     clearTimeout(searchDebounceRef.current);
     searchDebounceRef.current = setTimeout(() => setPage(1), 500);
+
+    clearTimeout(suggestionDebounceRef.current);
+    suggestionDebounceRef.current = setTimeout(() => {
+      fetchSuggestions(val);
+    }, 200);
+  };
+
+  const handleSelectSuggestion = (suggestion) => {
+    if (suggestion.type === "city") {
+      setFilters((f) => ({ ...f, city: suggestion.text, search: "" }));
+    } else {
+      setFilters((f) => ({ ...f, search: suggestion.text }));
+    }
+    setPage(1);
+    setShowSuggestions(false);
+    setActiveSuggestionIndex(-1);
+  };
+
+  const handleSearchKeyDown = (e) => {
+    if (!showSuggestions || suggestions.length === 0) {
+      if (e.key === "Enter") {
+        setShowSuggestions(false);
+        setPage(1);
+      }
+      return;
+    }
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveSuggestionIndex((prev) =>
+        prev < suggestions.length - 1 ? prev + 1 : 0
+      );
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveSuggestionIndex((prev) =>
+        prev > 0 ? prev - 1 : suggestions.length - 1
+      );
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (
+        activeSuggestionIndex >= 0 &&
+        activeSuggestionIndex < suggestions.length
+      ) {
+        handleSelectSuggestion(suggestions[activeSuggestionIndex]);
+      } else {
+        setShowSuggestions(false);
+        setPage(1);
+      }
+    } else if (e.key === "Escape") {
+      setShowSuggestions(false);
+      setActiveSuggestionIndex(-1);
+    }
   };
 
   const handleAmenityToggle = (amenity) =>
@@ -356,31 +481,56 @@ const ListingsPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between gap-4">
           
           <div className="flex items-center gap-3 flex-1">
-            {/* Search Input */}
-            <div className="relative flex-1 max-w-sm">
-              <RiSearchLine className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            {/* Search Input Container */}
+            <div ref={searchContainerRef} className="relative flex-1 max-w-sm">
+              <RiSearchLine className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10" />
               <input
                 type="text"
                 placeholder="Search by hostel name, university, area..."
                 value={filters.search}
                 onChange={handleSearchChange}
+                onFocus={() => {
+                  if (filters.search.trim()) fetchSuggestions(filters.search);
+                }}
+                onKeyDown={handleSearchKeyDown}
                 aria-label="Search listings"
                 className="w-full bg-[#F5F2EB] border-0 rounded-xl py-2.5 pl-10 pr-8 text-xs font-semibold focus:ring-1 focus:ring-[#8E4E14] outline-none text-gray-800 placeholder-gray-400/80"
               />
               {filters.search && (
                 <button
-                  onClick={() => handleFilter("search", "")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  onClick={() => {
+                    handleFilter("search", "");
+                    setSuggestions([]);
+                    setShowSuggestions(false);
+                  }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 z-10"
                   aria-label="Clear search"
                 >
                   <RiCloseLine />
                 </button>
               )}
               {/* Hint: university search */}
-              {filters.search && (
+              {filters.search && !showSuggestions && (
                 <div className="absolute top-full left-0 mt-1 text-[9px] font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap">
                   🎓 Searching across hostels, addresses &amp; nearby universities
                 </div>
+              )}
+
+              {/* Live Search Suggestions Dropdown */}
+              {showSuggestions && (
+                <SearchSuggestionsDropdown
+                  suggestions={suggestions}
+                  query={filters.search}
+                  onSelectSuggestion={handleSelectSuggestion}
+                  activeIndex={activeSuggestionIndex}
+                  setActiveIndex={setActiveSuggestionIndex}
+                  isLoading={loadingSuggestions}
+                  onSearchSubmit={(q) => {
+                    setFilters((f) => ({ ...f, search: q }));
+                    setPage(1);
+                    setShowSuggestions(false);
+                  }}
+                />
               )}
             </div>
 

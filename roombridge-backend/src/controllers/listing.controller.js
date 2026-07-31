@@ -913,6 +913,157 @@ const incrementViews = async (req, res, next) => {
   }
 };
 
+/* ══════════════════════════════════════════════════════════
+   GET SEARCH SUGGESTIONS (public)
+   GET /api/v1/listings/suggestions?q=...
+   Returns matching cities, universities, areas, and hostel titles.
+══════════════════════════════════════════════════════════ */
+const getSearchSuggestions = async (req, res, next) => {
+  try {
+    const q = (req.query.q || "").trim();
+    if (!q || q.length < 1) {
+      return successResponse(res, 200, "Search suggestions", { suggestions: [] });
+    }
+
+    const escapedQ = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const re = new RegExp(escapedQ, "i");
+
+    // Fetch matching active listings
+    const listings = await Listing.find({
+      status: "active",
+      $or: [
+        { title: re },
+        { nearbyUniversity: re },
+        { city: re },
+        { area: re },
+        { address: re },
+      ],
+    })
+      .select("title city nearbyUniversity area _id")
+      .limit(20)
+      .lean();
+
+    const suggestionsMap = new Map();
+
+    const KNOWN_CITIES = [
+      "Lahore",
+      "Islamabad",
+      "Rawalpindi",
+      "Multan",
+      "Peshawar",
+      "Karachi",
+      "Faisalabad",
+      "Quetta",
+      "Bahawalpur",
+      "Sialkot",
+      "Gujranwala",
+    ];
+
+    const KNOWN_UNIVERSITIES = [
+      "FAST NUCES",
+      "FAST University",
+      "NUST",
+      "LUMS",
+      "COMSATS University",
+      "Punjab University",
+      "Quaid-i-Azam University",
+      "GIKI",
+      "UET Lahore",
+      "Air University",
+      "Bahria University",
+      "Riphah International University",
+      "Islamia University Bahawalpur",
+      "Bahauddin Zakariya University",
+      "UCP",
+      "UMT",
+    ];
+
+    // Match known cities
+    KNOWN_CITIES.forEach((city) => {
+      if (re.test(city) && !suggestionsMap.has(`city:${city.toLowerCase()}`)) {
+        suggestionsMap.set(`city:${city.toLowerCase()}`, {
+          type: "city",
+          text: city,
+          subtext: "City in Pakistan",
+        });
+      }
+    });
+
+    // Match known universities
+    KNOWN_UNIVERSITIES.forEach((uni) => {
+      if (re.test(uni) && !suggestionsMap.has(`uni:${uni.toLowerCase()}`)) {
+        suggestionsMap.set(`uni:${uni.toLowerCase()}`, {
+          type: "university",
+          text: uni,
+          subtext: "University / Institute",
+        });
+      }
+    });
+
+    // Extract from matching database listings
+    listings.forEach((item) => {
+      // City from listing
+      if (
+        item.city &&
+        re.test(item.city) &&
+        !suggestionsMap.has(`city:${item.city.toLowerCase()}`)
+      ) {
+        suggestionsMap.set(`city:${item.city.toLowerCase()}`, {
+          type: "city",
+          text: item.city,
+          subtext: "City",
+        });
+      }
+
+      // Nearby university from listing
+      if (
+        item.nearbyUniversity &&
+        re.test(item.nearbyUniversity) &&
+        !suggestionsMap.has(`uni:${item.nearbyUniversity.toLowerCase()}`)
+      ) {
+        suggestionsMap.set(`uni:${item.nearbyUniversity.toLowerCase()}`, {
+          type: "university",
+          text: item.nearbyUniversity,
+          subtext: "Nearby University",
+        });
+      }
+
+      // Area from listing
+      if (
+        item.area &&
+        re.test(item.area) &&
+        !suggestionsMap.has(`area:${item.area.toLowerCase()}`)
+      ) {
+        suggestionsMap.set(`area:${item.area.toLowerCase()}`, {
+          type: "area",
+          text: item.area,
+          subtext: item.city ? `Area in ${item.city}` : "Neighborhood / Area",
+        });
+      }
+
+      // Hostel Title
+      if (
+        item.title &&
+        re.test(item.title) &&
+        !suggestionsMap.has(`hostel:${item._id}`)
+      ) {
+        suggestionsMap.set(`hostel:${item._id}`, {
+          type: "hostel",
+          text: item.title,
+          subtext: [item.area, item.city].filter(Boolean).join(", ") || "Hostel",
+          id: item._id,
+        });
+      }
+    });
+
+    const suggestions = Array.from(suggestionsMap.values()).slice(0, 8);
+
+    return successResponse(res, 200, "Search suggestions", { suggestions });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getAllListings,
   getListingById,
@@ -924,4 +1075,5 @@ module.exports = {
   unsaveListing,
   getSavedListings,
   incrementViews,
+  getSearchSuggestions,
 };
