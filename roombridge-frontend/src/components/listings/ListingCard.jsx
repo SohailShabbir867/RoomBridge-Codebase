@@ -127,10 +127,13 @@ const ListingCard = ({
                        hover:shadow-hover transition-all duration-300 group overflow-hidden"
       >
         {/* Image */}
-        <div className="relative w-48 shrink-0 overflow-hidden">
+        <div className="relative w-48 h-36 shrink-0 overflow-hidden bg-gray-100 aspect-[4/3]">
           <img
             src={thumb}
             alt={listing.title}
+            width="192"
+            height="144"
+            decoding="async"
             className="w-48 h-full object-cover group-hover:scale-105 transition-transform duration-500"
             onError={(e) => {
               e.target.src = FALLBACK_IMG;
@@ -214,10 +217,13 @@ const ListingCard = ({
                      hover:shadow-hover transition-all duration-300 group overflow-hidden"
     >
       {/* Image */}
-      <div className="relative overflow-hidden">
+      <div className="relative overflow-hidden w-full aspect-[4/3] bg-gray-100">
         <img
           src={thumb}
           alt={listing.title}
+          width="400"
+          height="300"
+          decoding="async"
           className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
           onError={(e) => {
             e.target.src = FALLBACK_IMG;

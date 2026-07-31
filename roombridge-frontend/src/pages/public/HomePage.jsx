@@ -402,6 +402,7 @@ const HomePage = () => {
               <div className="flex-1 relative" ref={cityRef}>
                 <button
                   type="button"
+                  aria-label="Select City or University Area"
                   onClick={() => setOpenDropdown(openDropdown === "city" ? null : "city")}
                   className="w-full flex items-center gap-2.5 px-4.5 py-3 bg-[#F5F2EB] rounded-[18px] min-h-[52px] text-left transition-all hover:bg-[#ebdcc8]/20"
                 >
@@ -453,6 +454,7 @@ const HomePage = () => {
               <div className="flex-1 relative" ref={genderRef}>
                 <button
                   type="button"
+                  aria-label="Select Gender Preference"
                   onClick={() => setOpenDropdown(openDropdown === "gender" ? null : "gender")}
                   className="w-full flex items-center gap-2.5 px-4.5 py-3 bg-[#F5F2EB] rounded-[18px] min-h-[52px] text-left transition-all hover:bg-[#ebdcc8]/20"
                 >
@@ -501,6 +503,7 @@ const HomePage = () => {
               <div className="flex-1 relative" ref={budgetRef}>
                 <button
                   type="button"
+                  aria-label="Select Budget Range"
                   onClick={() => setOpenDropdown(openDropdown === "budget" ? null : "budget")}
                   className="w-full flex items-center gap-2.5 px-4.5 py-3 bg-[#F5F2EB] rounded-[18px] min-h-[52px] text-left transition-all hover:bg-[#ebdcc8]/20"
                 >
@@ -539,6 +542,7 @@ const HomePage = () => {
 
               <button
                 type="submit"
+                aria-label="Search Hostels"
                 className="text-white font-bold text-sm px-8 py-3.5 min-h-[52px] rounded-[18px]
                            hover:opacity-95 active:scale-95 transition-all duration-200 shrink-0
                            flex items-center justify-center gap-2 shadow-md cursor-pointer"

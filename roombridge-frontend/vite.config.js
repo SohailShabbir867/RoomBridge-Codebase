@@ -18,4 +18,19 @@ export default defineConfig({
     strictPort: false,
     open: false,
   },
+  build: {
+    target: "esnext",
+    cssMinify: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes("node_modules")) {
+            if (id.includes("react-icons")) return "vendor-icons";
+            if (id.includes("react") || id.includes("react-dom") || id.includes("react-router-dom")) return "vendor-react";
+            if (id.includes("@reduxjs") || id.includes("react-redux")) return "vendor-redux";
+          }
+        },
+      },
+    },
+  },
 });
