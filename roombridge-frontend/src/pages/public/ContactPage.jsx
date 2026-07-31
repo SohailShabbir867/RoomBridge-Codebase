@@ -30,9 +30,9 @@ const C = {
 
 const ContactPage = () => {
   useSEO({
-    title: "Contact Us | RoomBridge Pakistan",
-    description: "Get in touch with the RoomBridge support team. Submit inquiries, report issues, or contact us at contact.roombridge@gmail.com on roombridge.site.",
-    keywords: "contact roombridge, support team, rental query, host family support, roombridge.site"
+    title: "Contact Support & General Inquiries",
+    description: "Get in touch with the RoomBridge support team. For host listings, roommate matching support, or feedback, submit an inquiry or email us at contact.roombridge@gmail.com.",
+    keywords: "contact roombridge, roombridge support, hostel support pakistan, room rental inquiries, support team"
   });
 
   const [form, setForm] = useState({

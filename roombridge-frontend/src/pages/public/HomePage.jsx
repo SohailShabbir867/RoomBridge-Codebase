@@ -289,9 +289,9 @@ const HomePage = () => {
   const [stats, setStats] = useState(STATS_FALLBACK);
 
   useSEO({
-    title: "RoomBridge — Pakistan's #1 Room Rental Platform",
-    description: "Find verified host family rooms, student hostels, flatmates, and compatible roommates across Pakistan. Search by budget, city, or gender preference on roombridge.site.",
-    keywords: "room rental Pakistan, student hostel, roommate finder, flatmates Lahore, rooms for rent Karachi, roombridge.site, roommate matching"
+    title: "RoomBridge — Find Hostels, Rooms for Rent & Roommates in Pakistan",
+    description: "Search verified student hostels, single/shared rooms for rent, and compatible roommates across Pakistan. Compare rent and find student housing in Lahore, Karachi, Islamabad & more.",
+    keywords: "hostels in pakistan, room rent lahore, boys hostel lahore, girls hostel islamabad, student accommodation, single room for rent, flatmates pakistan, roommate finder, cheap hostel room, find roommates, roombridge"
   });
 
   /* Fetch real-time count of listings to populate stats */
@@ -390,7 +390,7 @@ const HomePage = () => {
             {/* Headline — typewriter */}
             <TypewriterHeadline />
             <p className="text-white/90 text-sm sm:text-base lg:text-lg mb-12 max-w-3xl mx-auto font-medium leading-relaxed">
-              Find verified hostels near your university, anywhere in Pakistan. The curated sanctuary for your academic journey.
+              Find and Rent  verified hostels and rooms near your university, anywhere in Pakistan. The curated sanctuary for your academic and business journey.
             </p>
 
             {/* Search Box */}
@@ -607,7 +607,7 @@ const HomePage = () => {
                 className="text-3xl md:text-4xl font-bold"
                 style={{ color: C.darkGreen }}
               >
-                Handpicked Recommendations
+                Featured Hostels & Rooms for Rent in Pakistan
               </h2>
               <p className="text-gray-500 mt-2">
                 Freshly posted, verified rooms across Pakistan

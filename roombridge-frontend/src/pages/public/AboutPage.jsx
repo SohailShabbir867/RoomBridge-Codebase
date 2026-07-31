@@ -34,10 +34,8 @@ const C = {
 
 /* ─── Original content (unchanged) ─────────────────────────── */
 const TEAM = [
-  { name: "Sohail Shabbir ", role: "CEO & Co-founder", bio: "Full-stack developer with 3+ years in MERN. Architect of RoomBridge." },
-  { name: "Radif Fiaz ", role: "CTO", bio: "Expert in UI design , Frontend Developer and Marketing Specilist ." },
-  { name: "Radif Fiaz", role: "Frontend Developer  & UI/UX Designer", bio: "Frontend developer and UI/UX designer focused on accessible, beautiful product experiences." },
-  { name: "Sohail Shabbir", role: "Product Manager & Full Stack Engennier ", bio: "Shapes strategy and roadmap. Passionate about Pakistan's housing market." },
+  { name: "Sohail Shabbir", role: "CEO & Co-founder", bio: "Full-stack developer with 3+ years in MERN. Architect of RoomBridge." },
+  { name: "Muhammad Radif Fiaz", role: "CTO & founder", bio: "Expert in UI design, Frontend Developer and Marketing Specialist." },
 ];
 
 const VALUES = [
@@ -156,9 +154,9 @@ const FAQItem = ({ q, a }) => {
 ════════════════════════════════════════════════════════════════ */
 const AboutPage = () => {
   useSEO({
-    title: "How It Works | RoomBridge Pakistan",
-    description: "Learn how RoomBridge works for room seekers and hostel owners in Pakistan. Steps to find rooms, match roommates, and list properties on roombridge.site.",
-    keywords: "how roombridge works, room rental guide, list room Pakistan, room rental steps, roombridge.site"
+    title: "How It Works & Renting Guide",
+    description: "Step-by-step guide to finding hostels, matching roommates, and listing rooms for rent in Pakistan on RoomBridge. Clean, transparent, and direct.",
+    keywords: "how to find hostel, rent room guide, list hostel pakistan, student roommate finder, roombridge guide, room rental steps"
   });
 
   return (
