@@ -263,14 +263,15 @@ const TypewriterHeadline = () => {
         @keyframes rb-blink { 0%,100%{opacity:1} 50%{opacity:0} }
         .rb-cursor { display:inline-block; width:3px; animation: rb-blink 0.85s step-end infinite; margin-left:2px; vertical-align:baseline; }
       `}</style>
-      <h1
-        className="text-4xl sm:text-5xl lg:text-[62px] font-black font-sans leading-[1.15] mb-6 min-h-[1.15em]"
-        style={{ color: "#FFAB69", fontFamily: "'Inter', sans-serif" }}
-        aria-live="polite"
-      >
-        {text}
-        <span className="rb-cursor" style={{ backgroundColor: "#FFAB69", borderRadius: "2px" }}>&nbsp;</span>
-      </h1>
+      <div aria-live="polite" className="flex items-center justify-center min-h-[110px] sm:min-h-[130px] lg:min-h-[150px] mb-6">
+        <h1
+          className="text-4xl sm:text-5xl lg:text-[62px] font-black font-sans leading-[1.15]"
+          style={{ color: "#FFAB69", fontFamily: "'Inter', sans-serif" }}
+        >
+          {text}
+          <span className="rb-cursor" style={{ backgroundColor: "#FFAB69", borderRadius: "2px" }}>&nbsp;</span>
+        </h1>
+      </div>
     </>
   );
 };
@@ -403,6 +404,8 @@ const HomePage = () => {
                 <button
                   type="button"
                   aria-label="Select City or University Area"
+                  aria-haspopup="listbox"
+                  aria-expanded={openDropdown === "city"}
                   onClick={() => setOpenDropdown(openDropdown === "city" ? null : "city")}
                   className="w-full flex items-center gap-2.5 px-4.5 py-3 bg-[#F5F2EB] rounded-[18px] min-h-[52px] text-left transition-all hover:bg-[#ebdcc8]/20"
                 >
@@ -455,6 +458,8 @@ const HomePage = () => {
                 <button
                   type="button"
                   aria-label="Select Gender Preference"
+                  aria-haspopup="listbox"
+                  aria-expanded={openDropdown === "gender"}
                   onClick={() => setOpenDropdown(openDropdown === "gender" ? null : "gender")}
                   className="w-full flex items-center gap-2.5 px-4.5 py-3 bg-[#F5F2EB] rounded-[18px] min-h-[52px] text-left transition-all hover:bg-[#ebdcc8]/20"
                 >
@@ -504,6 +509,8 @@ const HomePage = () => {
                 <button
                   type="button"
                   aria-label="Select Budget Range"
+                  aria-haspopup="listbox"
+                  aria-expanded={openDropdown === "budget"}
                   onClick={() => setOpenDropdown(openDropdown === "budget" ? null : "budget")}
                   className="w-full flex items-center gap-2.5 px-4.5 py-3 bg-[#F5F2EB] rounded-[18px] min-h-[52px] text-left transition-all hover:bg-[#ebdcc8]/20"
                 >
