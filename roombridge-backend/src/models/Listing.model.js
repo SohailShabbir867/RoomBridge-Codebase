@@ -221,6 +221,22 @@ const listingSchema = new mongoose.Schema(
 
     views: { type: Number, default: 0, min: 0 },
     savedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+
+    /* ── Ranking system ──────────────────────────────────── */
+    rankingScore: { type: Number, default: 0 },
+    scoreBreakdown: {
+      relevance: { type: Number, default: 0 },
+      freshness: { type: Number, default: 0 },
+      popularity: { type: Number, default: 0 },
+      trust: { type: Number, default: 0 },
+      quality: { type: Number, default: 0 },
+      availability: { type: Number, default: 0 },
+    },
+    lastScoreComputedAt: { type: Date },
+
+    /* ── Monetization (paid ranking boost) ───────────────── */
+    featured: { type: Boolean, default: false },
+    featuredUntil: { type: Date },
   },
   {
     timestamps: true,
@@ -271,6 +287,7 @@ listingSchema.index({ nearbyUniversity: 1 });   // fast regex prefix lookups
 listingSchema.index({ createdAt: -1 });
 listingSchema.index({ status: 1, createdAt: -1 });
 listingSchema.index({ owner: 1, status: 1, createdAt: -1 });
+listingSchema.index({ status: 1, rankingScore: -1 });
 
 /* ── Virtual ───────────────────────────────────────────── */
 listingSchema.virtual("isAvailable").get(function () {

@@ -18,6 +18,12 @@ const adminService = {
   updateListingStatus: async (id, data) =>
     (await api.put(`/admin/listings/${id}/status`, data)).data,
   deleteListing: async (id) => (await api.delete(`/admin/listings/${id}`)).data,
+  featureListing: async (id, data) =>
+    (await api.put(`/admin/listings/${id}/feature`, data)).data,
+  derankListing: async (id, data) =>
+    (await api.put(`/admin/listings/${id}/derank`, data)).data,
+  recomputeRankings: async () =>
+    (await api.post("/admin/listings/recompute-rankings")).data,
 
   // Reports
   getReports: async (params = {}) =>

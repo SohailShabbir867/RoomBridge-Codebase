@@ -205,6 +205,13 @@ const getAllListings = async (req, res, next) => {
          "LUMS"     → matches address/description containing "LUMS"           */
     const andClauses = [];
 
+    /* Captured while building search $or branches below, reused later to give
+       synonym-matched documents relevance credit in the search-ranking blend
+       (fixes: previously a doc that only matched via a room-type/gender/city
+       synonym got _relevance = 0 and sank in the results, even though the
+       filter itself still correctly included it). */
+    const synonymMatch = { roomTypes: [], genderPrefs: new Set(), fuzzyCity: null };
+
     if (search && search.trim()) {
       const rawSearch = search.trim();
       const lowerSearch = rawSearch.toLowerCase();
@@ -222,28 +229,35 @@ const getAllListings = async (req, res, next) => {
       // Smart synonym mapping for Room Types
       if (/\b(single|1\s*person|one\s*room|1\s*room|1\s*bed|private)\b/i.test(lowerSearch)) {
         searchOrBranches.push({ roomType: "1_person" });
+        synonymMatch.roomTypes.push("1_person");
       }
       if (/\b(double|two\s*rooms?|2\s*persons?|2\s*rooms?|2\s*beds?|shared)\b/i.test(lowerSearch)) {
         searchOrBranches.push({ roomType: "2_person" });
+        synonymMatch.roomTypes.push("2_person");
       }
       if (/\b(triple|three\s*rooms?|3\s*persons?|3\s*rooms?|3\s*beds?)\b/i.test(lowerSearch)) {
         searchOrBranches.push({ roomType: "3_person" });
+        synonymMatch.roomTypes.push("3_person");
       }
       if (/\b(quad|four\s*rooms?|4\s*persons?|4\s*rooms?|4\s*beds?)\b/i.test(lowerSearch)) {
         searchOrBranches.push({ roomType: "4_person" });
+        synonymMatch.roomTypes.push("4_person");
       }
 
       // Smart synonym mapping for Gender
       if (/\b(boy|boys|male|gents)\b/i.test(lowerSearch)) {
         searchOrBranches.push({ genderPreference: { $in: ["male", "any"] } });
+        synonymMatch.genderPrefs.add("male").add("any");
       }
       if (/\b(girl|girls|female|ladies)\b/i.test(lowerSearch)) {
         searchOrBranches.push({ genderPreference: { $in: ["female", "any"] } });
+        synonymMatch.genderPrefs.add("female").add("any");
       }
 
       // Fuzzy mapping for Faisalabad
       if (/faisalbe|faislabad|faisalabad/i.test(lowerSearch)) {
         searchOrBranches.push({ city: { $regex: "Faisalabad", $options: "i" } });
+        synonymMatch.fuzzyCity = "Faisalabad";
       }
 
       andClauses.push({ $or: searchOrBranches });
@@ -272,10 +286,14 @@ const getAllListings = async (req, res, next) => {
       price_asc:   { rent:  1 },
       price_desc:  { rent: -1 },
       most_viewed: { views: -1 },
+      recommended: { rankingScore: -1, createdAt: -1 },
     };
 
-    const sort       = sortMap[sortBy] || sortMap.newest;
-    const projection = {}; // no text score needed
+    /* ── Default sort is now the composite ranking score, not raw "newest".
+       See /src/utils/ranking.js for how rankingScore is computed and
+       /scripts/recompute-rankings.js for the batch job that fills it in. */
+    const sort       = sortMap[sortBy] || sortMap.recommended;
+    const projection = {}; // no text score needed for non-search sorts
 
 
 
@@ -284,34 +302,136 @@ const getAllListings = async (req, res, next) => {
     const limitNum = safeInt(limit, 12, 1, 50);
     const skip     = (pageNum - 1) * limitNum;
 
-    /* ── Query ───────────────────────────────────────── */
-    const [listings, total] = await Promise.all([
-      Listing.find(filter, projection)
-        .sort(sort)
-        .skip(skip)
-        .limit(limitNum)
-        .populate("owner", "name profilePhoto city")
-        .lean(),
-      Listing.countDocuments(filter),
-    ]);
+    /* ── Query ─────────────────────────────────────────
+       Two paths:
+       1. No search term → plain find() sorted by rankingScore (or whatever
+          sortBy was requested). Fast, cheap, unchanged from before.
+       2. Search term present → aggregation pipeline that blends a text
+          relevance score (mirroring the weighted text index: title 10 >
+          university 8 > description 5 > address/area 4) with the
+          precomputed rankingScore. Results are then both on-topic AND
+          from trustworthy/quality listings — not just "newest with the
+          term in it". See /src/utils/ranking.js for how rankingScore
+          itself is computed. */
+    const hasSearch = Boolean(search && search.trim());
+    let listings, total;
 
-    /* ── O(1) isSaved check using Set of user's savedListings ── */
+    if (hasSearch) {
+      const rawSearch = search.trim();
+      const escapedSearch = rawSearch.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      let RELEVANCE_MAX = 10 + 8 + 5 + 4 + 4; // mirrors listing_text_search index weights
+
+      /* Extra relevance credit for docs that matched via a synonym branch
+         (e.g. query "boys hostel" matching genderPreference) rather than a
+         literal text-field hit — otherwise those docs scored _relevance = 0
+         and sank to the bottom of the blend despite correctly being in the
+         result set. */
+      const synonymConds = [];
+      if (synonymMatch.roomTypes.length > 0) {
+        synonymConds.push({ $cond: [{ $in: ["$roomType", synonymMatch.roomTypes] }, 6, 0] });
+        RELEVANCE_MAX += 6;
+      }
+      if (synonymMatch.genderPrefs.size > 0) {
+        synonymConds.push({ $cond: [{ $in: ["$genderPreference", [...synonymMatch.genderPrefs]] }, 4, 0] });
+        RELEVANCE_MAX += 4;
+      }
+      if (synonymMatch.fuzzyCity) {
+        synonymConds.push({ $cond: [{ $eq: ["$city", synonymMatch.fuzzyCity] }, 6, 0] });
+        RELEVANCE_MAX += 6;
+      }
+
+      const basePipeline = [
+        { $match: filter },
+        {
+          $addFields: {
+            _relevance: {
+              $add: [
+                { $cond: [{ $regexMatch: { input: { $ifNull: ["$title", ""] }, regex: escapedSearch, options: "i" } }, 10, 0] },
+                { $cond: [{ $regexMatch: { input: { $ifNull: ["$nearbyUniversity", ""] }, regex: escapedSearch, options: "i" } }, 8, 0] },
+                { $cond: [{ $regexMatch: { input: { $ifNull: ["$description", ""] }, regex: escapedSearch, options: "i" } }, 5, 0] },
+                { $cond: [{ $regexMatch: { input: { $ifNull: ["$address", ""] }, regex: escapedSearch, options: "i" } }, 4, 0] },
+                { $cond: [{ $regexMatch: { input: { $ifNull: ["$area", ""] }, regex: escapedSearch, options: "i" } }, 4, 0] },
+                ...synonymConds,
+              ],
+            },
+          },
+        },
+        {
+          $addFields: {
+            /* 35% relevance to the search term, 65% overall listing quality/trust.
+               Keeps results on-topic while still favoring better listings among matches. */
+            _blendedScore: {
+              $add: [
+                { $multiply: [{ $divide: ["$_relevance", RELEVANCE_MAX] }, 0.35] },
+                { $multiply: [{ $ifNull: ["$rankingScore", 0] }, 0.65] },
+              ],
+            },
+          },
+        },
+      ];
+
+      /* Count uses the plain filter, not the pipeline — there's no reason to
+         run the relevance/blend math (regex scans across every field) on
+         thousands of documents just to produce an integer total. */
+      const [pageResult, totalCount] = await Promise.all([
+        Listing.aggregate([
+          ...basePipeline,
+          { $sort: { _blendedScore: -1 } },
+          { $skip: skip },
+          { $limit: limitNum },
+          {
+            $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: "owner",
+              pipeline: [{ $project: { name: 1, profilePhoto: 1, city: 1 } }],
+            },
+          },
+          { $unwind: { path: "$owner", preserveNullAndEmptyArrays: true } },
+        ]),
+        Listing.countDocuments(filter),
+      ]);
+
+      listings = pageResult;
+      total = totalCount;
+    } else {
+      [listings, total] = await Promise.all([
+        Listing.find(filter, projection)
+          .sort(sort)
+          .skip(skip)
+          .limit(limitNum)
+          .populate("owner", "name profilePhoto city")
+          .lean(),
+        Listing.countDocuments(filter),
+      ]);
+    }
+
+    /* ── O(1) isSaved check & clean public fields ── */
+    const isAvailableVal = (l) =>
+      l.status === "active" &&
+      (!l.availableFrom || new Date(l.availableFrom) <= new Date());
+
+    const sanitizeListing = (l, isSaved) => {
+      const { _relevance, _blendedScore, scoreBreakdown, ...clean } = l;
+      return {
+        ...clean,
+        isAvailable: isAvailableVal(l),
+        amenities: toAmenities(l.features),
+        isSaved,
+      };
+    };
+
     let enriched;
     if (req.user) {
       const savedSet = new Set(
         (req.user.savedListings || []).map((id) => id.toString())
       );
-      enriched = listings.map((l) => ({
-        ...l,
-        amenities: toAmenities(l.features),
-        isSaved: savedSet.has(l._id.toString()),
-      }));
+      enriched = listings.map((l) =>
+        sanitizeListing(l, savedSet.has(l._id.toString()))
+      );
     } else {
-      enriched = listings.map((l) => ({
-        ...l,
-        amenities: toAmenities(l.features),
-        isSaved: false,
-      }));
+      enriched = listings.map((l) => sanitizeListing(l, false));
     }
 
     const payload = {
@@ -474,7 +594,7 @@ const createListing = async (req, res, next) => {
       const finalPhotos = rtPhotos.length > 0 ? rtPhotos : photos;
       const finalTitle = roomType.length > 1 ? `${title} - ${ROOM_TYPE_LABELS[rt] || rt}` : title;
 
-      const listing = await Listing.create({
+      const listing = new Listing({
         title: finalTitle,
         description,
         rent: rentVal,
@@ -498,6 +618,15 @@ const createListing = async (req, res, next) => {
         owner: req.user._id,
         status: "pending",
       });
+
+      const { computeListingScore } = require("../utils/ranking");
+      const cityStats = { maxViews: 50, maxSaves: 20 };
+      const { rankingScore, scoreBreakdown } = await computeListingScore(listing, cityStats);
+      listing.rankingScore = rankingScore;
+      listing.scoreBreakdown = scoreBreakdown;
+      listing.lastScoreComputedAt = new Date();
+
+      await listing.save();
       createdListings.push(listing);
     }
 

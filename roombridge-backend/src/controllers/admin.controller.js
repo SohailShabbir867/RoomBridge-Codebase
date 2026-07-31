@@ -568,11 +568,21 @@ const updateListingStatus = async (req, res, next) => {
         ? rejectionReason || "Does not meet platform guidelines."
         : undefined;
 
-    await listing.save({ validateBeforeSave: false });
-
     if (prevStatus !== status && status === "active") {
+      try {
+        const { computeListingScore } = require("../utils/ranking");
+        const cityStats = { maxViews: 100, maxSaves: 50 };
+        const { rankingScore, scoreBreakdown } = await computeListingScore(listing, cityStats);
+        listing.rankingScore = rankingScore;
+        listing.scoreBreakdown = scoreBreakdown;
+        listing.lastScoreComputedAt = new Date();
+      } catch (err) {
+        console.error("Failed to compute initial approval rank score:", err.message);
+      }
       notifySubscribersOfNewRoom(listing);
     }
+
+    await listing.save({ validateBeforeSave: false });
 
     if (listing.owner?.email && prevStatus !== status) {
       if (status === "active") {
@@ -1105,6 +1115,110 @@ const sendErrorAlert = async (req, res, next) => {
   }
 };
 
+/* ══════════════════════════════════════════════════════════
+   FEATURE / BOOST LISTING  (admin)
+   PUT /api/v1/admin/listings/:id/feature
+══════════════════════════════════════════════════════════ */
+const featureListing = async (req, res, next) => {
+  try {
+    const { featured, days = 30 } = req.body;
+    const listing = await Listing.findById(req.params.id);
+    if (!listing) return errorResponse(res, 404, "Listing not found.");
+
+    listing.featured = Boolean(featured);
+    if (listing.featured) {
+      listing.featuredUntil = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+    } else {
+      listing.featuredUntil = undefined;
+    }
+
+    const { computeListingScore } = require("../utils/ranking");
+    const cityStats = { maxViews: 100, maxSaves: 50 };
+    const { rankingScore, scoreBreakdown } = await computeListingScore(listing, cityStats);
+    listing.rankingScore = rankingScore;
+    listing.scoreBreakdown = scoreBreakdown;
+    listing.lastScoreComputedAt = new Date();
+
+    await listing.save({ validateBeforeSave: false });
+
+    return successResponse(res, 200, `Listing ${listing.featured ? "featured" : "unfeatured"} successfully.`, {
+      listing,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/* ══════════════════════════════════════════════════════════
+   DERANK LISTING  (admin)
+   PUT /api/v1/admin/listings/:id/derank
+══════════════════════════════════════════════════════════ */
+const derankListing = async (req, res, next) => {
+  try {
+    const { isDeranked, reason } = req.body;
+    const listing = await Listing.findById(req.params.id);
+    if (!listing) return errorResponse(res, 404, "Listing not found.");
+
+    listing.isDeranked = Boolean(isDeranked);
+    listing.derankReason = listing.isDeranked ? reason || "Demoted by admin policy." : "";
+
+    if (listing.isDeranked) {
+      listing.rankingScore = Math.min(listing.rankingScore || 0, 0.10);
+    }
+
+    await listing.save({ validateBeforeSave: false });
+
+    return successResponse(res, 200, `Listing ${listing.isDeranked ? "deranked" : "restored"} successfully.`, {
+      listing,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/* ══════════════════════════════════════════════════════════
+   RECOMPUTE ALL RANKINGS ON DEMAND  (admin)
+   POST /api/v1/admin/listings/recompute-rankings
+══════════════════════════════════════════════════════════ */
+const recomputeAllRankings = async (req, res, next) => {
+  try {
+    const { computeListingScore } = require("../utils/ranking");
+    const cities = await Listing.distinct("city", { status: "active" });
+
+    let totalScored = 0;
+    for (const city of cities) {
+      const [stats] = await Listing.aggregate([
+        { $match: { city, status: "active" } },
+        {
+          $group: {
+            _id: null,
+            maxViews: { $max: "$views" },
+            maxSaves: { $max: { $size: { $ifNull: ["$savedBy", []] } } },
+          },
+        },
+      ]);
+      const cityStats = stats || { maxViews: 0, maxSaves: 0 };
+      const listings = await Listing.find({ city, status: "active" });
+
+      for (const l of listings) {
+        const { rankingScore, scoreBreakdown } = await computeListingScore(l, cityStats);
+        l.rankingScore = l.isDeranked ? Math.min(rankingScore, 0.10) : rankingScore;
+        l.scoreBreakdown = scoreBreakdown;
+        l.lastScoreComputedAt = new Date();
+        await l.save({ validateBeforeSave: false });
+        totalScored++;
+      }
+    }
+
+    return successResponse(res, 200, `Recalculated rankings for ${totalScored} hostels across ${cities.length} cities.`, {
+      totalScored,
+      citiesCount: cities.length,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getDashboardStats,
   getAllUsers,
@@ -1124,4 +1238,7 @@ module.exports = {
   sendNotification,
   sendMaintenanceNotification,
   sendErrorAlert,
+  featureListing,
+  derankListing,
+  recomputeAllRankings,
 };

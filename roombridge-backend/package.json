@@ -10,6 +10,7 @@
     "seed:admin": "node scripts/seed-admin.js",
     "seed:demo": "node scripts/seed-demo-data.js",
     "cleanup:demo": "node scripts/cleanup-demo-data.js",
+    "recompute:rankings": "node scripts/recompute-rankings.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

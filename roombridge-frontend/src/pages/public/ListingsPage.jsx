@@ -123,6 +123,16 @@ const ListingCard = ({ listing, view, onToggleSave }) => {
 
         {/* Badges overlay on image left */}
         <div className="absolute top-4 left-4 flex flex-col gap-1.5 items-start pointer-events-none">
+          {listing.featured && (
+            <span className="bg-amber-500/95 backdrop-blur-sm text-white text-[8px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider shadow-md flex items-center gap-1">
+              ⭐ Featured
+            </span>
+          )}
+          {listing.rankingScore >= 0.70 && !listing.featured && (
+            <span className="bg-emerald-600/95 backdrop-blur-sm text-white text-[8px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider shadow-md flex items-center gap-1">
+              ⚡ Top Rated
+            </span>
+          )}
           <span className="bg-[#E8F5E9]/95 backdrop-blur-sm text-[#2E7D32] text-[8px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider shadow-sm flex items-center gap-1">
             ✓ Verified
           </span>

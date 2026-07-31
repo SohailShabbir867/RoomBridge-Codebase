@@ -122,6 +122,49 @@ const ManageListings = () => {
     searchTimer.current = setTimeout(() => fetchListings({ page: 1, search: val, status: statusFilter }), 400);
   };
 
+  const handleToggleFeature = async (l) => {
+    try {
+      setUpdating(l._id);
+      const nextFeatured = !l.featured;
+      const res = await adminService.featureListing(l._id, { featured: nextFeatured });
+      setListings((ls) => ls.map((x) => x._id === l._id ? { ...x, featured: nextFeatured, rankingScore: res.data?.listing?.rankingScore ?? x.rankingScore } : x));
+      toast.success(`"${l.title}" is now ${nextFeatured ? "Featured ⭐" : "Unfeatured"}.`);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to update feature status.");
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const handleToggleDerank = async (l) => {
+    const nextDerank = !l.isDeranked;
+    const reason = nextDerank ? prompt("Enter reason for deranking this listing:", "Low quality / Reported") : "";
+    if (nextDerank && reason === null) return;
+
+    try {
+      setUpdating(l._id);
+      const res = await adminService.derankListing(l._id, { isDeranked: nextDerank, reason });
+      setListings((ls) => ls.map((x) => x._id === l._id ? { ...x, isDeranked: nextDerank, rankingScore: res.data?.listing?.rankingScore ?? x.rankingScore } : x));
+      toast.success(`"${l.title}" ${nextDerank ? "deranked" : "restored"}.`);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to update derank status.");
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const handleRecomputeRankings = async () => {
+    try {
+      setLoading(true);
+      const res = await adminService.recomputeRankings();
+      toast.success(res.message || "Recalculated ranking scores!");
+      fetchListings();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to recalculate rankings.");
+      setLoading(false);
+    }
+  };
+
   const handleApprove = async (l) => {
     try {
       setUpdating(l._id);
@@ -189,13 +232,22 @@ const ManageListings = () => {
       title="Manage Listings"
       subtitle={`${total} total listings`}
       headerAction={
-        <button
-          onClick={() => fetchListings()}
-          className="flex items-center gap-2 text-xs font-bold text-white px-4 py-2 rounded-xl hover:opacity-90 transition-all"
-          style={{ backgroundColor: BTN }}
-        >
-          <RiRefreshLine className={loading ? "animate-spin" : ""} /> Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleRecomputeRankings}
+            disabled={loading}
+            className="flex items-center gap-1.5 text-xs font-bold text-white px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 transition-all shadow-sm disabled:opacity-50"
+          >
+            ⚡ Recalculate Rankings
+          </button>
+          <button
+            onClick={() => fetchListings()}
+            className="flex items-center gap-2 text-xs font-bold text-white px-4 py-2 rounded-xl hover:opacity-90 transition-all"
+            style={{ backgroundColor: BTN }}
+          >
+            <RiRefreshLine className={loading ? "animate-spin" : ""} /> Refresh
+          </button>
+        </div>
       }
     >
       <div className="max-w-7xl mx-auto">
@@ -234,14 +286,14 @@ const ManageListings = () => {
             <p className="font-bold" style={{ color: DK }}>No listings found</p>
           </div>
         ) : (
-          <div className="bg-white rounded-2xl border shadow-sm overflow-hidden" style={{ borderColor: "#E8E2D9" }}>
+          <div className="bg-[#FFF] rounded-2xl border shadow-sm overflow-hidden" style={{ borderColor: "#E8E2D9" }}>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b" style={{ backgroundColor: CR, borderColor: "#E8E2D9" }}>
-                    {["Listing", "Owner", "Status", "Rent", "Submitted", "Actions"].map((h, i) => (
+                    {["Listing", "Owner", "Status", "Rank Score", "Rent", "Submitted", "Actions"].map((h, i) => (
                       <th key={h}
-                        className={`px-4 py-3 text-[10px] font-black uppercase tracking-widest ${i === 5 ? "text-right" : "text-left"}`}
+                        className={`px-4 py-3 text-[10px] font-black uppercase tracking-widest ${i === 6 ? "text-right" : "text-left"}`}
                         style={{ color: `${DK}70` }}
                       >
                         {h}
@@ -254,6 +306,7 @@ const ManageListings = () => {
                     const isUpdating = updating === l._id;
                     const isDeleting = deleting === l._id;
                     const sc = STATUS_COLORS[l.status] || STATUS_COLORS.inactive;
+                    const rankScore = (l.rankingScore || 0).toFixed(2);
                     return (
                       <tr key={l._id} className="border-b transition-colors hover:bg-[#F7F4EF]" style={{ borderColor: "#F3EFE9" }}>
                         <td className="px-4 py-3">
@@ -288,6 +341,23 @@ const ManageListings = () => {
                             {l.status}
                           </span>
                         </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-black text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
+                              {rankScore}
+                            </span>
+                            {l.featured && (
+                              <span className="text-[9px] font-extrabold bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded uppercase">
+                                ⭐ Featured
+                              </span>
+                            )}
+                            {l.isDeranked && (
+                              <span className="text-[9px] font-extrabold bg-red-100 text-red-800 px-1.5 py-0.5 rounded uppercase">
+                                🚫 Deranked
+                              </span>
+                            )}
+                          </div>
+                        </td>
                         <td className="px-4 py-3 font-bold text-xs" style={{ color: DK }}>
                           PKR {(l.rent || 0).toLocaleString()}
                         </td>
@@ -296,6 +366,16 @@ const ManageListings = () => {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-end gap-1.5">
+                            {l.status === "active" && (
+                              <>
+                                <ActionBtn onClick={() => handleToggleFeature(l)} disabled={isUpdating} color={l.featured ? "#D97706" : "#059669"} title="Toggle featured status">
+                                  {l.featured ? "Unfeature" : "⭐ Feature"}
+                                </ActionBtn>
+                                <ActionBtn onClick={() => handleToggleDerank(l)} disabled={isUpdating} color={l.isDeranked ? "#2563EB" : "#DC2626"} title="Toggle derank status">
+                                  {l.isDeranked ? "Restore" : "🚫 Derank"}
+                                </ActionBtn>
+                              </>
+                            )}
                             {l.status !== "active" && (
                               <ActionBtn onClick={() => handleApprove(l)} disabled={isUpdating} color="#16A34A" title="Approve listing">
                                 {isUpdating ? <RiLoader4Line className="animate-spin" /> : <RiCheckLine />} Approve

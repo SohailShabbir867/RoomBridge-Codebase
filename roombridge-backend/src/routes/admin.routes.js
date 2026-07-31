@@ -20,6 +20,9 @@ const {
   sendNotification,
   sendMaintenanceNotification,
   sendErrorAlert,
+  featureListing,
+  derankListing,
+  recomputeAllRankings,
 } = require("../controllers/admin.controller");
 
 const { protect } = require("../middleware/auth.middleware");
@@ -74,11 +77,32 @@ router.delete("/users/:id", deleteUser);
 router.get("/listings", getAllListingsAdmin);
 
 /**
+ * @route   POST /api/v1/admin/listings/recompute-rankings
+ * @desc    On-demand batch recomputation of all hostel ranking scores
+ * @access  Admin
+ */
+router.post("/listings/recompute-rankings", recomputeAllRankings);
+
+/**
  * @route   PUT /api/v1/admin/listings/:id/status
  * @desc    Approve (active), reject, or deactivate a listing
  * @access  Admin
  */
 router.put("/listings/:id/status", updateListingStatus);
+
+/**
+ * @route   PUT /api/v1/admin/listings/:id/feature
+ * @desc    Feature/boost or unfeature a hostel listing
+ * @access  Admin
+ */
+router.put("/listings/:id/feature", featureListing);
+
+/**
+ * @route   PUT /api/v1/admin/listings/:id/derank
+ * @desc    Derank/demote a hostel listing with a reason
+ * @access  Admin
+ */
+router.put("/listings/:id/derank", derankListing);
 
 /**
  * @route   DELETE /api/v1/admin/listings/:id
