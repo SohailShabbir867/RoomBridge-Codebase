@@ -7,12 +7,10 @@ import {
   RiMapPin2Line,
   RiMailLine,
   RiPhoneLine,
-  RiTwitterXLine,
   RiFacebookBoxLine,
-  RiInstagramLine,
-  RiLinkedinBoxLine,
   RiBuildingLine,
   RiHeartLine,
+  RiDiscordLine,
 } from "react-icons/ri";
 
 const QUICK_LINKS = [
@@ -39,10 +37,9 @@ const CITIES = [
 ];
 
 const SOCIAL = [
-  { icon: RiTwitterXLine, href: "#", label: "Twitter" },
-  { icon: RiFacebookBoxLine, href: "#", label: "Facebook" },
-  { icon: RiInstagramLine, href: "#", label: "Instagram" },
-  { icon: RiLinkedinBoxLine, href: "#", label: "LinkedIn" },
+  { icon: RiDiscordLine, href: "https://discord.gg/JFMCVxpF5", label: "Discord" },
+  { icon: RiFacebookBoxLine, href: "https://web.facebook.com/share/g/186h4ZJ7ZW/", label: "Facebook" },
+  { icon: RiMailLine, href: "mailto:contact.roombridge@gmail.com", label: "Email" },
 ];
 
 const CONTACT = [
