@@ -1018,6 +1018,55 @@ const sendNotification = async (req, res, next) => {
 };
 
 /* ══════════════════════════════════════════════════════════
+   SEND EXTERNAL NOTIFICATION (raw email, not necessarily a RoomBridge user)
+   POST /api/v1/admin/notifications/send-external
+   Used for marketing/outreach campaigns targeting prospects who are
+   not yet registered on the platform (e.g. hostel owners found via
+   Places API search, to invite them to list for free).
+══════════════════════════════════════════════════════════ */
+const sendExternalNotification = async (req, res, next) => {
+  try {
+    const { to, subject, message, recipientName } = req.body;
+
+    if (!to?.trim() || !subject?.trim() || !message?.trim()) {
+      return errorResponse(res, 400, "to, subject, and message are required.");
+    }
+
+    /* Basic email format validation — reuse the same pattern the rest
+       of the app expects, avoid sending to obviously malformed addresses. */
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(to.trim())) {
+      return errorResponse(res, 400, "Invalid email address format.");
+    }
+
+    try {
+      await sendEmail({
+        to: to.trim(),
+        subject: subject.trim(),
+        html: adminNotificationEmail(
+          recipientName?.trim() || "there",
+          subject.trim(),
+          message.trim(),
+        ),
+      });
+
+      console.log(`[Admin External Notification] Sent to: ${to.trim()}`);
+
+      return successResponse(res, 200, `Notification sent to ${to.trim()}.`, {
+        sent: 1,
+        failed: 0,
+        to: to.trim(),
+      });
+    } catch (sendErr) {
+      console.error(`[Admin External Notification] Failed to send to ${to.trim()}:`, sendErr.message);
+      return errorResponse(res, 502, "Failed to send email. Please try again.");
+    }
+  } catch (err) {
+    next(err);
+  }
+};
+
+/* ══════════════════════════════════════════════════════════
    SEND MAINTENANCE NOTIFICATION
    POST /api/v1/admin/notifications/maintenance
 ══════════════════════════════════════════════════════════ */
@@ -1236,6 +1285,7 @@ module.exports = {
   getAllBookings,
   getRecipientCount,
   sendNotification,
+  sendExternalNotification,
   sendMaintenanceNotification,
   sendErrorAlert,
   featureListing,

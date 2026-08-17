@@ -18,6 +18,7 @@ const {
   getAllBookings,
   getRecipientCount,
   sendNotification,
+  sendExternalNotification,
   sendMaintenanceNotification,
   sendErrorAlert,
   featureListing,
@@ -181,6 +182,15 @@ router.get("/notifications/recipient-count", getRecipientCount);
  * @access  Admin
  */
 router.post("/notifications/send", sendNotification);
+
+/**
+ * @route   POST /api/v1/admin/notifications/send-external
+ * @desc    Send an email to a raw address not yet in the RoomBridge database
+ *          (used for marketing/outreach campaigns, e.g. inviting hostel
+ *          owners found via Places API search to list on the platform)
+ * @access  Admin
+ */
+router.post("/notifications/send-external", sendExternalNotification);
 
 /**
  * @route   POST /api/v1/admin/notifications/maintenance
