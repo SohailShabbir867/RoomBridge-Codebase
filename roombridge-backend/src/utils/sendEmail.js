@@ -45,17 +45,62 @@ const createTransporter = () => {
   });
 };
 
-/* ── Core send function ─────────────────────────────────────── */
-const sendEmail = async ({ to, subject, html }) => {
+/* ── Gmail SMTP (notifications) ─────────────────────────────── */
+const sendViaSmtp = async ({ to, subject, html }) => {
   const transporter = createTransporter();
   const info = await transporter.sendMail({
-    from: `"RoomBridge" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
+    from: process.env.EMAIL_FROM
+      ? process.env.EMAIL_FROM
+      : `"RoomBridge" <${process.env.EMAIL_USER}>`,
     to,
     subject,
     html,
   });
-  console.log(`📧 Email sent to ${to}: ${info.messageId}`);
+  console.log(`📧 [smtp] Email sent to ${to}: ${info.messageId}`);
   return info;
+};
+
+/* ── Resend (transactional: verification, password reset, welcome) ── */
+const sendViaResend = async ({ to, subject, html }) => {
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: process.env.RESEND_FROM || "RoomBridge <onboarding@resend.dev>",
+      to: Array.isArray(to) ? to : [to],
+      subject,
+      html,
+    }),
+    signal: AbortSignal.timeout(10000),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(
+      `Resend ${res.status}: ${body.message || body.name || "request failed"}`
+    );
+  }
+  console.log(`📧 [resend] Email sent to ${to}: ${body.id}`);
+  return body;
+};
+
+/* ── Core send function ─────────────────────────────────────── */
+/**
+ * provider: "resend" for transactional mail (verification / reset / welcome),
+ * anything else uses Gmail SMTP. If Resend is selected but unconfigured or
+ * failing, falls back to SMTP so auth emails are never silently dropped.
+ */
+const sendEmail = async ({ to, subject, html, provider = "smtp" }) => {
+  if (provider === "resend" && process.env.RESEND_API_KEY) {
+    try {
+      return await sendViaResend({ to, subject, html });
+    } catch (err) {
+      console.error(`⚠️ Resend failed (${err.message}); falling back to SMTP`);
+    }
+  }
+  return sendViaSmtp({ to, subject, html });
 };
 
 /**

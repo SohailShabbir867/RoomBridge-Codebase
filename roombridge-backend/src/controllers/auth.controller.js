@@ -77,6 +77,7 @@ const registerUser = async (req, res) => {
     to: user.email,
     subject: "RoomBridge — Verify Your Email Address",
     html: verificationEmail(user.name, verifyURL),
+    provider: "resend",
   }).catch((err) =>
     console.error("[Email] Verification email failed:", err.message),
   );
@@ -269,6 +270,7 @@ const forgotPassword = async (req, res) => {
       to: user.email,
       subject: "RoomBridge — Password Reset Request",
       html: resetPasswordEmail(user.name, resetURL),
+      provider: "resend",
     });
     return successResponse(res, 200, genericMessage);
   } catch (err) {
@@ -417,13 +419,9 @@ const verifyEmail = async (req, res) => {
     .update(req.params.token)
     .digest("hex");
 
-  const user = await User.findOne({
-    verificationToken: hashedToken,
-    verificationTokenExpire: { $gt: Date.now() },
-  });
+  const user = await User.findOne({ verificationToken: hashedToken });
 
   if (!user) {
-    /* Token not found or expired */
     return errorResponse(
       res,
       400,
@@ -431,9 +429,25 @@ const verifyEmail = async (req, res) => {
     );
   }
 
-  /* Mark as verified and clear token */
+  /* Idempotent: a second hit (email-scanner prefetch, double click, refresh)
+     on an already-used link must still report success, not "invalid". */
+  if (user.isVerified) {
+    return successResponse(res, 200, "Email already verified. You can log in.", {
+      user: safeUser(user),
+    });
+  }
+
+  if (!user.verificationTokenExpire || user.verificationTokenExpire < Date.now()) {
+    return errorResponse(
+      res,
+      400,
+      "Invalid or expired verification link. Please request a new one.",
+    );
+  }
+
+  /* Mark as verified. The token hash is kept (expiry cleared) so repeat
+     visits to the same link stay idempotent; resend issues a fresh one. */
   user.isVerified = true;
-  user.verificationToken = undefined;
   user.verificationTokenExpire = undefined;
   await user.save({ validateBeforeSave: false });
 
@@ -442,6 +456,7 @@ const verifyEmail = async (req, res) => {
     to: user.email,
     subject: "Welcome to RoomBridge!",
     html: welcomeEmail(user.name),
+    provider: "resend",
   }).catch((err) =>
     console.error("[Email] Welcome email failed:", err.message),
   );
@@ -488,6 +503,7 @@ const resendVerification = async (req, res) => {
     to: user.email,
     subject: "RoomBridge — Verify Your Email Address",
     html: verificationEmail(user.name, verifyURL),
+    provider: "resend",
   }).catch((err) =>
     console.error("[Email] Resend verification failed:", err.message),
   );

@@ -11,6 +11,8 @@
   { "name": "EMAIL_PASS", "value": "YOUR_GMAIL_APP_PASSWORD", "slotSetting": false },
   { "name": "EMAIL_PORT", "value": "587", "slotSetting": false },
   { "name": "EMAIL_USER", "value": "your_admin_email@gmail.com", "slotSetting": false },
+  { "name": "RESEND_API_KEY", "value": "YOUR_RESEND_API_KEY", "slotSetting": false },
+  { "name": "RESEND_FROM", "value": "RoomBridge <noreply@yourdomain.com>", "slotSetting": false },
   { "name": "JWT_EXPIRE", "value": "7d", "slotSetting": false },
   { "name": "JWT_SECRET", "value": "YOUR_LONG_RANDOM_JWT_SECRET", "slotSetting": false },
   { "name": "MONGO_URI", "value": "mongodb+srv://<username>:<password>@cluster0.example.mongodb.net/roombridge?retryWrites=true&w=majority", "slotSetting": false },
