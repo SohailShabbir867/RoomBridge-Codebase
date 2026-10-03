@@ -419,7 +419,10 @@ const verifyEmail = async (req, res) => {
     .update(req.params.token)
     .digest("hex");
 
-  const user = await User.findOne({ verificationToken: hashedToken });
+  /* verificationTokenExpire is select:false — must be requested explicitly */
+  const user = await User.findOne({ verificationToken: hashedToken }).select(
+    "+verificationTokenExpire",
+  );
 
   if (!user) {
     return errorResponse(
